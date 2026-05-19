@@ -1,4 +1,5 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+import tailwindcss from '@tailwindcss/vite'
+
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
@@ -7,6 +8,21 @@ export default defineNuxtConfig({
     '@nuxt/test-utils',
     '@oro.ad/nuxt-claude-devtools',
     '@vueuse/nuxt',
-    '@nuxtjs/tailwindcss'
-  ]
+  ],
+
+  css: ['~/assets/css/main.css'],
+
+  vite: {
+    plugins: [tailwindcss()],
+  },
+
+  runtimeConfig: {
+    public: {
+      appName: process.env.NUXT_PUBLIC_APP_NAME ?? 'Meal Planner',
+    },
+  },
+
+  nitro: {
+    experimental: { tasks: true },
+  },
 })
