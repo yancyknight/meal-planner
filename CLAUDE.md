@@ -107,4 +107,6 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Project setup. Execute on Milestone 0 from the backlog.
+Milestone 0 complete. All items done and pushed to https://github.com/yancyknight/meal-planner.
+
+**Implementation note:** Tailwind CSS v4 is configured via `@tailwindcss/vite` (Vite plugin) rather than `@nuxtjs/tailwindcss`, because the Nuxt module only supports Tailwind v3 as of this writing. Update `docs/architecture.md` if this is worth documenting.

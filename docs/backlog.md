@@ -13,18 +13,18 @@ Update status as sessions complete:
 ## Milestone 0 — Project Scaffold
 *Everything else depends on this. Do this first and get it clean before any features.*
 
-- `[ ]` Initialize Nuxt 4 project with `app/` directory structure
-- `[ ]` Install and configure Tailwind CSS v4
-- `[ ]` Install and configure TanStack Query (`@tanstack/vue-query`)
-- `[ ]` Install Drizzle ORM + drizzle-kit + better-sqlite3; create DB connection with WAL mode
-- `[ ]` Create empty `server/database/schema.ts`; configure drizzle-kit; add `db:*` scripts to `package.json`
-- `[ ]` Create base app layout: header with nav links (Dishes, Calendar, Planning, Shopping Lists, Ingredients, Settings)
-- `[ ]` Create `app/composables/queryKeys.ts` (empty, structure only)
-- `[ ]` Create `shared/schemas/` and `shared/types/` directories with placeholder files
-- `[ ]` Write `Dockerfile` and `compose.yaml`; confirm container builds and `/data` volume mounts correctly
-- `[ ]` Write `.env.example`
-- `[ ]` Confirm `pnpm dev` runs and `pnpm build` succeeds
-- `[ ]` Use the github cli to create a repo, init a local repo, set the remote repo, and commit and push everything
+- `[x]` Initialize Nuxt 4 project with `app/` directory structure
+- `[x]` Install and configure Tailwind CSS v4
+- `[x]` Install and configure TanStack Query (`@tanstack/vue-query`)
+- `[x]` Install Drizzle ORM + drizzle-kit + better-sqlite3; create DB connection with WAL mode
+- `[x]` Create empty `server/database/schema.ts`; configure drizzle-kit; add `db:*` scripts to `package.json`
+- `[x]` Create base app layout: header with nav links (Dishes, Calendar, Planning, Shopping Lists, Ingredients, Settings)
+- `[x]` Create `app/composables/queryKeys.ts` (empty, structure only)
+- `[x]` Create `shared/schemas/` and `shared/types/` directories with placeholder files
+- `[x]` Write `Dockerfile` and `compose.yaml`; confirm container builds and `/data` volume mounts correctly
+- `[x]` Write `.env.example`
+- `[x]` Confirm `pnpm dev` runs and `pnpm build` succeeds
+- `[x]` Use the github cli to create a repo, init a local repo, set the remote repo, and commit and push everything
 
 ---
 
