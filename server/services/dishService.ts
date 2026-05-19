@@ -74,9 +74,6 @@ export async function createDish(input: CreateDishInput): Promise<Dish> {
 }
 
 export async function updateDish(id: number, input: UpdateDishInput): Promise<Dish | null> {
-  const existing = await getDishById(id)
-  if (!existing) return null
-
   const updates: Partial<DishRow> = { updatedAt: now() }
 
   if (input.name !== undefined) updates.name = input.name
@@ -95,7 +92,7 @@ export async function updateDish(id: number, input: UpdateDishInput): Promise<Di
   if (input.archived !== undefined) updates.archived = input.archived
 
   const rows = await db.update(dishes).set(updates).where(eq(dishes.id, id)).returning()
-  return rowToDish(rows[0]!)
+  return rows[0] ? rowToDish(rows[0]) : null
 }
 
 export async function deleteDish(id: number): Promise<boolean> {

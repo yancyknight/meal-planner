@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { setup, $fetch } from '@nuxt/test-utils/e2e'
 import { fileURLToPath } from 'node:url'
 import { existsSync, unlinkSync } from 'node:fs'
@@ -12,7 +12,10 @@ const TEST_DB_PATH = '/tmp/dishes-api-test.db'
 if (existsSync(TEST_DB_PATH)) unlinkSync(TEST_DB_PATH)
 const _sqlite = new Database(TEST_DB_PATH)
 migrate(drizzle(_sqlite), { migrationsFolder: 'server/database/migrations' })
-_sqlite.close()
+
+beforeEach(() => {
+  _sqlite.exec('DELETE FROM dishes')
+})
 
 process.env.DATABASE_URL = TEST_DB_PATH
 

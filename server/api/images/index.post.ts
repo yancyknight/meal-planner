@@ -13,6 +13,11 @@ export default defineEventHandler(async (event) => {
     return { error: 'No image file found in request' }
   }
 
+  if (!filePart.type?.startsWith('image/')) {
+    setResponseStatus(event, 400)
+    return { error: 'File must be an image' }
+  }
+
   const filename = await saveImage(filePart.data, filePart.filename ?? 'upload.jpg')
   return { filename }
 })

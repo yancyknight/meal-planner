@@ -1,5 +1,5 @@
 import { mkdir, writeFile, readFile } from 'node:fs/promises'
-import { join, extname } from 'node:path'
+import { join, extname, basename } from 'node:path'
 import { randomUUID } from 'node:crypto'
 
 const MIME_MAP: Record<string, string> = {
@@ -27,7 +27,7 @@ export async function saveImage(buffer: Buffer, originalFilename: string): Promi
 
 export async function readImageFile(filename: string): Promise<{ buffer: Buffer; mimeType: string }> {
   const dir = getImageDir()
-  const filepath = join(dir, filename)
+  const filepath = join(dir, basename(filename))
   const buffer = await readFile(filepath)
   const ext = extname(filename).replace('.', '').toLowerCase()
   const mimeType = MIME_MAP[ext] ?? 'application/octet-stream'

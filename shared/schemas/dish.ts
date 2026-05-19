@@ -6,11 +6,11 @@ export const DIFFICULTY_OPTIONS = ['easy', 'medium', 'hard'] as const
 
 export const createDishSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  imageUrl: z.string().nullable().optional(),
+  imageUrl: z.string().url().nullable().optional(),
   imageLocalPath: z.string().nullable().optional(),
   timeEstimateMinutes: z.number().int().positive().nullable().optional(),
   yieldServings: z.number().int().positive().nullable().optional(),
-  sourceUrl: z.string().nullable().optional(),
+  sourceUrl: z.string().url().nullable().optional(),
   sourceName: z.string().nullable().optional(),
   difficulty: z.enum(DIFFICULTY_OPTIONS).nullable().optional(),
   allergens: z.array(z.string()).optional(),
