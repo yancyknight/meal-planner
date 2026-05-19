@@ -22,6 +22,14 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>
+      <select
+        v-if="allTags?.length"
+        v-model="selectedTagId"
+        class="rounded-md border border-gray-300 px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <option :value="undefined">All tags</option>
+        <option v-for="tag in allTags" :key="tag.id" :value="tag.id">{{ tag.name }}</option>
+      </select>
       <label class="flex items-center gap-2 cursor-pointer text-sm text-gray-600">
         <input v-model="showArchived" type="checkbox" class="rounded border-gray-300 text-blue-600" />
         Show archived
@@ -48,14 +56,23 @@
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
 import type { Dish } from '#shared/types/dish'
+import type { Tag } from '#shared/types/tag'
 
 const search = ref('')
 const showArchived = ref(false)
+const selectedTagId = ref<number>()
 const debouncedSearch = refDebounced(search, 300)
+
+const { data: allTags } = useQuery({
+  queryKey: computed(() => queryKeys.tags.all()),
+  queryFn: () => $fetch<Tag[]>('/api/tags'),
+  initialData: [],
+})
 
 const filters = computed(() => ({
   search: debouncedSearch.value || undefined,
   archived: showArchived.value,
+  tagId: selectedTagId.value,
 }))
 
 const { data: dishes, isPending, error } = useQuery({
@@ -64,6 +81,7 @@ const { data: dishes, isPending, error } = useQuery({
     const params = new URLSearchParams()
     if (filters.value.search) params.set('search', filters.value.search)
     if (filters.value.archived) params.set('archived', 'true')
+    if (filters.value.tagId) params.set('tagId', String(filters.value.tagId))
     return $fetch<Dish[]>(`/api/dishes?${params}`)
   },
 })

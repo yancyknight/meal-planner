@@ -31,26 +31,26 @@ Update status as sessions complete:
 ## Milestone 1 — Dish Library (Core CRUD)
 *The central entity. Required before ingredients, tags, calendar, or planning.*
 
-- `[ ]` Add `dishes` table to schema; generate and run migration
-- `[ ]` Implement `dishService`: create, getById, list (with basic filters), update, delete, archive/unarchive
-- `[ ]` API routes: `GET /api/dishes`, `POST /api/dishes`, `GET /api/dishes/[id]`, `PATCH /api/dishes/[id]`, `DELETE /api/dishes/[id]`
-- `[ ]` Zod schemas for dish create/update in `shared/schemas/`
-- `[ ]` Dish list page (`/dishes`): display cards, search by name, archived toggle
-- `[ ]` Dish detail page (`/dishes/[id]`): all fields displayed
-- `[ ]` Dish create/edit form (`/dishes/new`, `/dishes/[id]/edit`): all fields, allergen multi-select, season multi-select, difficulty select
-- `[ ]` Image upload: `POST /api/images`, `GET /api/images/[filename]`; local path stored on dish
-- `[ ]` Unit tests: dishService logic; API route validation tests
+- `[x]` Add `dishes` table to schema; generate and run migration
+- `[x]` Implement `dishService`: create, getById, list (with basic filters), update, delete, archive/unarchive
+- `[x]` API routes: `GET /api/dishes`, `POST /api/dishes`, `GET /api/dishes/[id]`, `PATCH /api/dishes/[id]`, `DELETE /api/dishes/[id]`
+- `[x]` Zod schemas for dish create/update in `shared/schemas/`
+- `[x]` Dish list page (`/dishes`): display cards, search by name, archived toggle
+- `[x]` Dish detail page (`/dishes/[id]`): all fields displayed
+- `[x]` Dish create/edit form (`/dishes/new`, `/dishes/[id]/edit`): all fields, allergen multi-select, season multi-select, difficulty select
+- `[x]` Image upload: `POST /api/images`, `GET /api/images/[filename]`; local path stored on dish
+- `[x]` Unit tests: dishService logic; API route validation tests
 
 ---
 
 ## Milestone 2 — Tags
 *Small, but needed before recipe import and planning filters.*
 
-- `[ ]` Add `tags` and `dish_tags` tables; migration
-- `[ ]` Tag creation inline in dish form (type to create or select existing)
-- `[ ]` Tag display on dish cards and detail
-- `[ ]` Filter dishes by tag in list view
-- `[ ]` Tests: tag creation, dish-tag association, filter query
+- `[x]` Add `tags` and `dish_tags` tables; migration
+- `[x]` Tag creation inline in dish form (type to create or select existing)
+- `[x]` Tag display on dish cards and detail
+- `[x]` Filter dishes by tag in list view
+- `[x]` Tests: tag creation, dish-tag association, filter query
 
 ---
 

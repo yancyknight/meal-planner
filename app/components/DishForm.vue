@@ -121,6 +121,12 @@
       />
     </div>
 
+    <!-- Tags -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+      <DishTagSelector v-model="form.tagIds" />
+    </div>
+
     <!-- Notes -->
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -149,9 +155,10 @@
 <script setup lang="ts">
 import type { CreateDishInput } from '#shared/schemas/dish'
 import { ALLERGEN_PRESETS, SEASON_OPTIONS } from '#shared/schemas/dish'
+import type { Tag } from '#shared/types/tag'
 
 interface Props {
-  initialValues?: Partial<CreateDishInput> & { imageLocalPath?: string | null }
+  initialValues?: Partial<CreateDishInput> & { imageLocalPath?: string | null; tags?: Tag[] }
   submitLabel?: string
   loading?: boolean
 }
@@ -162,16 +169,17 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  submit: [data: CreateDishInput & { pendingImageFile?: File }]
+  submit: [data: CreateDishInput & { tagIds: number[]; pendingImageFile?: File }]
 }>()
 
 const fileInputRef = ref<HTMLInputElement>()
 const pendingImageFile = ref<File>()
 const imagePreview = ref<string>()
 
-type DishFormState = Omit<CreateDishInput, 'allergens' | 'season'> & {
+type DishFormState = Omit<CreateDishInput, 'allergens' | 'season' | 'tagIds'> & {
   allergens: string[]
   season: (typeof SEASON_OPTIONS)[number][]
+  tagIds: number[]
 }
 
 const form = reactive<DishFormState>({
@@ -188,6 +196,7 @@ const form = reactive<DishFormState>({
   notes: props.initialValues?.notes ?? null,
   weight: props.initialValues?.weight ?? 50,
   minIntervalDays: props.initialValues?.minIntervalDays ?? null,
+  tagIds: props.initialValues?.tagIds ?? props.initialValues?.tags?.map(t => t.id) ?? [],
 })
 
 onMounted(() => {

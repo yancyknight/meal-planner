@@ -1,17 +1,20 @@
-import { and, eq, like, desc } from 'drizzle-orm'
+import { and, eq, like, desc, inArray } from 'drizzle-orm'
 import { db } from '../database'
-import { dishes } from '../database/schema'
+import { dishes, dishTags } from '../database/schema'
 import type { Dish } from '../../shared/types/dish'
+import type { Tag } from '../../shared/types/tag'
 import type { CreateDishInput, UpdateDishInput } from '../../shared/schemas/dish'
+import { getTagsForDishes, setDishTags } from './tagService'
 
 type DishRow = typeof dishes.$inferSelect
 
-function rowToDish(row: DishRow): Dish {
+function rowToDish(row: DishRow, dishTagList: Tag[] = []): Dish {
   return {
     ...row,
     difficulty: row.difficulty as Dish['difficulty'],
     allergens: JSON.parse(row.allergens) as string[],
     season: JSON.parse(row.season) as Dish['season'],
+    tags: dishTagList,
   }
 }
 
@@ -22,14 +25,22 @@ function now(): string {
 export interface ListDishesOptions {
   search?: string
   archived?: boolean
+  tagId?: number
 }
 
 export async function listDishes(opts: ListDishesOptions = {}): Promise<Dish[]> {
-  const { search, archived = false } = opts
-
+  const { search, archived = false, tagId } = opts
   const conditions = [eq(dishes.archived, archived)]
-  if (search) {
-    conditions.push(like(dishes.name, `%${search}%`))
+
+  if (search) conditions.push(like(dishes.name, `%${search}%`))
+
+  if (tagId !== undefined) {
+    const tagged = await db
+      .select({ dishId: dishTags.dishId })
+      .from(dishTags)
+      .where(eq(dishTags.tagId, tagId))
+    if (tagged.length === 0) return []
+    conditions.push(inArray(dishes.id, tagged.map(r => r.dishId)))
   }
 
   const rows = await db
@@ -38,15 +49,19 @@ export async function listDishes(opts: ListDishesOptions = {}): Promise<Dish[]> 
     .where(and(...conditions))
     .orderBy(desc(dishes.createdAt))
 
-  return rows.map(rowToDish)
+  if (rows.length === 0) return []
+  const tagMap = await getTagsForDishes(rows.map(r => r.id))
+  return rows.map(row => rowToDish(row, tagMap.get(row.id) ?? []))
 }
 
 export async function getDishById(id: number): Promise<Dish | null> {
   const rows = await db.select().from(dishes).where(eq(dishes.id, id))
-  return rows[0] ? rowToDish(rows[0]) : null
+  if (!rows[0]) return null
+  const tagMap = await getTagsForDishes([id])
+  return rowToDish(rows[0], tagMap.get(id) ?? [])
 }
 
-export async function createDish(input: CreateDishInput): Promise<Dish> {
+export async function createDish(input: CreateDishInput & { tagIds?: number[] }): Promise<Dish> {
   const ts = now()
   const rows = await db
     .insert(dishes)
@@ -70,10 +85,18 @@ export async function createDish(input: CreateDishInput): Promise<Dish> {
     })
     .returning()
 
-  return rowToDish(rows[0]!)
+  const dish = rowToDish(rows[0]!)
+
+  if (input.tagIds?.length) {
+    await setDishTags(dish.id, input.tagIds)
+    const tagMap = await getTagsForDishes([dish.id])
+    return { ...dish, tags: tagMap.get(dish.id) ?? [] }
+  }
+
+  return dish
 }
 
-export async function updateDish(id: number, input: UpdateDishInput): Promise<Dish | null> {
+export async function updateDish(id: number, input: UpdateDishInput & { tagIds?: number[] }): Promise<Dish | null> {
   const updates: Partial<DishRow> = { updatedAt: now() }
 
   if (input.name !== undefined) updates.name = input.name
@@ -92,7 +115,14 @@ export async function updateDish(id: number, input: UpdateDishInput): Promise<Di
   if (input.archived !== undefined) updates.archived = input.archived
 
   const rows = await db.update(dishes).set(updates).where(eq(dishes.id, id)).returning()
-  return rows[0] ? rowToDish(rows[0]) : null
+  if (!rows[0]) return null
+
+  if (input.tagIds !== undefined) {
+    await setDishTags(id, input.tagIds)
+  }
+
+  const tagMap = await getTagsForDishes([id])
+  return rowToDish(rows[0], tagMap.get(id) ?? [])
 }
 
 export async function deleteDish(id: number): Promise<boolean> {

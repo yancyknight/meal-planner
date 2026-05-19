@@ -19,6 +19,7 @@ export const createDishSchema = z.object({
   weight: z.number().int().min(0).max(100).optional(),
   minIntervalDays: z.number().int().positive().nullable().optional(),
   archived: z.boolean().optional(),
+  tagIds: z.array(z.number().int().positive()).optional(),
 })
 
 export const updateDishSchema = createDishSchema.partial()
