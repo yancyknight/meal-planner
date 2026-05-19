@@ -15,6 +15,13 @@
       "when": 1779215598905,
       "tag": "0001_narrow_kinsey_walden",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779231001000,
+      "tag": "0002_wild_deathstrike",
+      "breakpoints": true
     }
   ]
 }
