@@ -1,3 +1,5 @@
+import type { Tag } from './tag'
+
 export interface Dish {
   id: number
   name: string
@@ -14,6 +16,7 @@ export interface Dish {
   weight: number
   minIntervalDays: number | null
   archived: boolean
+  tags: Tag[]
   createdAt: string
   updatedAt: string
 }

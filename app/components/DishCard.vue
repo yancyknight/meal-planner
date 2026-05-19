@@ -30,6 +30,14 @@
         <span v-if="dish.timeEstimateMinutes" class="text-xs text-gray-400">{{ dish.timeEstimateMinutes }}m</span>
         <span v-if="dish.season.length" class="text-xs text-gray-400">{{ dish.season.join(', ') }}</span>
       </div>
+      <div v-if="dish.tags.length" class="flex flex-wrap gap-1 mt-1.5">
+        <span
+          v-for="tag in dish.tags"
+          :key="tag.id"
+          class="px-1.5 py-0.5 rounded-full text-xs font-medium text-white leading-tight"
+          :style="{ backgroundColor: tag.color ?? '#6b7280' }"
+        >{{ tag.name }}</span>
+      </div>
     </div>
   </NuxtLink>
 </template>

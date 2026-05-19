@@ -73,6 +73,19 @@
         </div>
       </div>
 
+      <!-- Tags -->
+      <div v-if="dish.tags.length" class="mb-6">
+        <p class="text-xs text-gray-400 uppercase tracking-wide mb-2">Tags</p>
+        <div class="flex flex-wrap gap-1.5">
+          <span
+            v-for="tag in dish.tags"
+            :key="tag.id"
+            class="px-2 py-0.5 rounded-full text-xs font-medium text-white"
+            :style="{ backgroundColor: tag.color ?? '#6b7280' }"
+          >{{ tag.name }}</span>
+        </div>
+      </div>
+
       <!-- Notes -->
       <div v-if="dish.notes" class="mb-6">
         <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Notes</p>
