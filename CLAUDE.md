@@ -29,7 +29,7 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 ### 3. Implement
 - Work through checklist items one at a time; check each off as completed
 - Write tests alongside feature code — not after
-- If an unexpected decision point arises mid-implementation, stop and ask rather than assume
+- After plan sign-off, run to completion without asking for confirmation on routine decisions — only stop for a genuine blocker (ambiguous spec, unresolvable conflict, external dependency missing)
 - Keep changes focused on the current feature; note any scope creep opportunities for the backlog instead
 
 ### 4. Verify
@@ -40,8 +40,9 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 ### 5. Close
 - Mark all completed checklist items in Current Sprint
 - Note anything deferred, and why
-- If any implementation decision diverged from the spec docs, flag it so docs can be updated
-- Ask the user to confirm the session is done before clearing Current Sprint
+- Create a PR via `gh pr create` — description must cover: what was built, every judgment call made during implementation, anything deferred and why, any spec divergences that need doc updates
+- Send a push notification via the PushNotification tool so the PR is flagged for review
+- Stop — do not wait for user confirmation; the PR is the handoff point
 
 ## Commands
 
