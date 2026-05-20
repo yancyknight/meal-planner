@@ -1,10 +1,10 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-6 flex items-end justify-between">
+    <div class="mb-6 flex flex-wrap items-end gap-3 justify-between">
       <div>
         <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Calendar</p>
-        <h1 class="font-serif text-4xl font-semibold text-text">
+        <h1 class="font-serif text-3xl sm:text-4xl font-semibold text-text">
           <template v-if="view === 'month'">
             <em class="font-normal italic text-accent-deep">{{ format(anchor, 'MMMM') }}</em>
             {{ format(anchor, 'yyyy') }}
@@ -18,14 +18,14 @@
           </template>
         </h1>
       </div>
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 flex-wrap">
         <!-- View toggle -->
         <div class="flex gap-1 rounded-full border border-border p-1">
           <button
             v-for="v in VIEWS"
             :key="v"
             type="button"
-            class="rounded-full px-4 py-1 text-xs font-medium capitalize transition"
+            class="rounded-full px-3 py-1 text-xs font-medium capitalize transition min-h-[32px]"
             :class="view === v
               ? 'bg-accent-soft text-accent-deep'
               : 'text-text-muted hover:text-text'"
@@ -36,17 +36,17 @@
         <div class="flex items-center gap-1">
           <button
             type="button"
-            class="rounded-full border border-border px-3 py-1.5 text-sm text-text-muted hover:bg-surface-alt transition"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-border text-sm text-text-muted hover:bg-surface-alt transition"
             @click="navigate(-1)"
           >‹</button>
           <button
             type="button"
-            class="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-muted hover:bg-surface-alt transition"
+            class="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-text-muted hover:bg-surface-alt transition min-h-[36px]"
             @click="goToday"
           >Today</button>
           <button
             type="button"
-            class="rounded-full border border-border px-3 py-1.5 text-sm text-text-muted hover:bg-surface-alt transition"
+            class="flex h-9 w-9 items-center justify-center rounded-full border border-border text-sm text-text-muted hover:bg-surface-alt transition"
             @click="navigate(1)"
           >›</button>
         </div>
@@ -60,7 +60,8 @@
 
     <!-- Week view -->
     <template v-else-if="view === 'week'">
-      <div class="overflow-x-auto">
+      <!-- Desktop: 8-column table -->
+      <div class="hidden sm:block overflow-x-auto">
         <table class="w-full border-collapse">
           <thead>
             <tr>
@@ -119,6 +120,54 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Mobile: stacked day layout -->
+      <div class="sm:hidden space-y-3">
+        <div
+          v-for="day in weekDays"
+          :key="day.iso"
+          class="rounded-lg border border-border bg-surface overflow-hidden"
+        >
+          <!-- Day header -->
+          <div
+            class="flex items-center gap-3 px-4 py-3 border-b border-border"
+            :class="day.isToday ? 'bg-accent-soft' : 'bg-surface-alt'"
+          >
+            <div
+              class="flex h-8 w-8 items-center justify-center rounded-full font-serif text-lg font-semibold shrink-0"
+              :class="day.isToday ? 'bg-accent text-white' : 'text-text'"
+            >{{ day.dayNum }}</div>
+            <span
+              class="text-xs font-medium uppercase tracking-wider"
+              :class="day.isToday ? 'text-accent-deep' : 'text-text-muted'"
+            >{{ day.label }}</span>
+          </div>
+
+          <!-- Meal rows -->
+          <div class="divide-y divide-border">
+            <div v-for="mt in MEAL_TYPES" :key="mt" class="px-4 py-3">
+              <div class="mb-2 flex items-center gap-1.5">
+                <span class="h-2 w-2 rounded-full shrink-0" :style="{ backgroundColor: MEAL_COLORS[mt] }" />
+                <span class="text-xs font-medium capitalize text-text-muted">{{ mt }}</span>
+              </div>
+              <div class="space-y-1.5">
+                <PlanEntryChip
+                  v-for="entry in entriesFor(day.iso, mt)"
+                  :key="entry.id"
+                  :entry="entry"
+                  @delete="deleteEntry(entry.id)"
+                  @move="openMove(entry)"
+                />
+                <button
+                  type="button"
+                  class="flex h-9 w-full items-center justify-center rounded-lg border border-dashed border-border text-text-subtle hover:border-accent hover:text-accent transition text-sm"
+                  @click="openAdd(day.iso, mt)"
+                >+ Add</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </template>
 
     <!-- Month view -->
@@ -148,7 +197,7 @@
           >{{ cell.dayNum }}</div>
           <div v-if="cell.inMonth" class="space-y-0.5">
             <div
-              v-for="entry in allEntriesForDay(cell.iso).slice(0, 3)"
+              v-for="entry in allEntriesForDay(cell.iso).slice(0, monthPreviewCount)"
               :key="entry.id"
               class="truncate rounded px-1.5 py-0.5 text-xs"
               :class="entry.entryKind === 'leftover'
@@ -156,9 +205,9 @@
                 : 'bg-surface-alt text-text-muted'"
             >{{ entry.dishName ?? entry.oneOffText }}</div>
             <div
-              v-if="allEntriesForDay(cell.iso).length > 3"
+              v-if="allEntriesForDay(cell.iso).length > monthPreviewCount"
               class="text-xs text-text-subtle"
-            >+{{ allEntriesForDay(cell.iso).length - 3 }} more</div>
+            >+{{ allEntriesForDay(cell.iso).length - monthPreviewCount }} more</div>
           </div>
         </div>
       </div>
@@ -245,6 +294,14 @@ const MEAL_COLORS: Record<MealType, string> = {
 const queryClient = useQueryClient()
 const view = ref<View>('week')
 const anchor = ref(startOfDay(new Date()))
+
+// Reduce month-cell previews to 1 on narrow screens
+const monthPreviewCount = ref(3)
+if (import.meta.client) {
+  const mq = window.matchMedia('(max-width: 639px)')
+  monthPreviewCount.value = mq.matches ? 1 : 3
+  mq.addEventListener('change', e => { monthPreviewCount.value = e.matches ? 1 : 3 })
+}
 
 // ── Date range helpers ──────────────────────────────────────────
 const weekStart = computed(() => startOfWeek(anchor.value, { weekStartsOn: 1 }))

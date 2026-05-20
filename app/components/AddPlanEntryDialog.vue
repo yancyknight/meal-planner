@@ -2,12 +2,12 @@
   <Teleport to="body">
     <div
       v-if="show"
-      class="fixed inset-0 z-50 flex items-center justify-center p-4"
+      class="fixed inset-0 z-50 flex sm:items-center sm:justify-center sm:p-4 items-end"
       @click.self="$emit('close')"
     >
       <div class="absolute inset-0 bg-text/20 backdrop-blur-sm" @click="$emit('close')" />
 
-      <div class="relative w-full max-w-md rounded-xl border border-border bg-surface shadow-lg">
+      <div class="relative w-full sm:max-w-md sm:rounded-xl rounded-t-xl border border-border bg-surface shadow-lg">
         <!-- Header -->
         <div class="border-b border-border px-6 py-4">
           <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Calendar</p>

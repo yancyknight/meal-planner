@@ -11,8 +11,8 @@
 
     <template v-else>
       <!-- Back + actions bar -->
-      <div class="mb-6 flex items-center gap-3">
-        <NuxtLink to="/dishes" class="text-text-subtle transition hover:text-text-muted">‹ Dishes</NuxtLink>
+      <div class="mb-6 flex flex-wrap items-center gap-2">
+        <NuxtLink to="/dishes" class="text-text-subtle transition hover:text-text-muted text-sm">‹ Dishes</NuxtLink>
         <span class="flex-1" />
         <span
           v-if="dish.archived"
@@ -20,14 +20,14 @@
         >Archived</span>
         <NuxtLink
           :to="`/dishes/${dish.id}/edit`"
-          class="rounded-lg border border-border px-4 py-1.5 text-sm text-text transition hover:bg-surface-alt"
+          class="rounded-lg border border-border px-4 py-1.5 text-sm text-text transition hover:bg-surface-alt min-h-[36px] flex items-center"
         >Edit</NuxtLink>
         <button
-          class="rounded-lg border border-border px-4 py-1.5 text-sm text-text transition hover:bg-surface-alt"
+          class="rounded-lg border border-border px-4 py-1.5 text-sm text-text transition hover:bg-surface-alt min-h-[36px]"
           @click="toggleArchive"
         >{{ dish.archived ? 'Unarchive' : 'Archive' }}</button>
         <button
-          class="rounded-lg border border-border px-4 py-1.5 text-sm text-warning transition hover:bg-accent-soft"
+          class="rounded-lg border border-border px-4 py-1.5 text-sm text-warning transition hover:bg-accent-soft min-h-[36px]"
           @click="confirmDelete"
         >Delete</button>
       </div>
@@ -122,7 +122,7 @@
           <!-- Headline -->
           <div>
             <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Dish</p>
-            <h1 class="font-serif text-4xl font-semibold leading-tight text-text">{{ dish.name }}</h1>
+            <h1 class="font-serif text-3xl sm:text-4xl font-semibold leading-tight text-text">{{ dish.name }}</h1>
           </div>
 
           <!-- Allergens -->

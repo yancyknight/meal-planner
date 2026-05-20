@@ -43,7 +43,7 @@
     </div>
 
     <!-- Source -->
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
         <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Source URL</label>
         <input
@@ -65,7 +65,7 @@
     </div>
 
     <!-- Time + Yield -->
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
         <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Time (minutes)</label>
         <input
@@ -91,7 +91,7 @@
     <!-- Difficulty pills -->
     <div>
       <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">Difficulty</label>
-      <div class="flex gap-2">
+      <div class="flex flex-wrap gap-2">
         <button
           v-for="opt in difficultyOptions"
           :key="opt.value ?? 'none'"
@@ -168,7 +168,7 @@
     </div>
 
     <!-- Submit -->
-    <div class="flex items-center justify-end gap-3 border-t border-border pt-5">
+    <div class="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-5">
       <slot name="actions" />
       <button
         type="submit"
