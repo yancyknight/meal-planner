@@ -31,3 +31,10 @@ export const createPlanEntrySchema = basePlanEntry.superRefine((val, ctx) => {
 })
 
 export type CreatePlanEntryInput = z.infer<typeof createPlanEntrySchema>
+
+export const updatePlanEntrySchema = basePlanEntry
+  .pick({ date: true, mealType: true, guestCount: true })
+  .partial()
+  .strict()
+
+export type UpdatePlanEntryInput = z.infer<typeof updatePlanEntrySchema>

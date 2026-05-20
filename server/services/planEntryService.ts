@@ -2,7 +2,7 @@ import { and, eq, gte, lte, desc, isNull } from 'drizzle-orm'
 import { db } from '../database'
 import { planEntries, dishes } from '../database/schema'
 import type { PlanEntry, MealType, EntryKind } from '../../shared/types/planEntry'
-import type { CreatePlanEntryInput } from '../../shared/schemas/planEntry'
+import type { CreatePlanEntryInput, UpdatePlanEntryInput } from '../../shared/schemas/planEntry'
 
 type PlanEntryRow = typeof planEntries.$inferSelect
 
@@ -75,6 +75,34 @@ export async function createPlanEntry(input: CreatePlanEntryInput): Promise<Plan
     dish = dishRows[0] ?? null
   }
 
+  return rowToPlanEntry(row, dish)
+}
+
+export async function updatePlanEntry(id: number, patch: UpdatePlanEntryInput): Promise<PlanEntry | null> {
+  const updates: Partial<typeof planEntries.$inferInsert> = {}
+  if (patch.date !== undefined) updates.date = patch.date
+  if (patch.mealType !== undefined) updates.mealType = patch.mealType
+  if (patch.guestCount !== undefined) updates.guestCount = patch.guestCount
+
+  if (Object.keys(updates).length === 0) {
+    const rows = await db.select({ entry: planEntries, dishName: dishes.name, dishImageLocalPath: dishes.imageLocalPath, dishImageUrl: dishes.imageUrl, dishYieldServings: dishes.yieldServings })
+      .from(planEntries).leftJoin(dishes, eq(planEntries.dishId, dishes.id)).where(eq(planEntries.id, id))
+    if (!rows[0]) return null
+    const r = rows[0]
+    return rowToPlanEntry(r.entry, r.dishName != null ? { name: r.dishName, imageLocalPath: r.dishImageLocalPath, imageUrl: r.dishImageUrl, yieldServings: r.dishYieldServings } : null)
+  }
+
+  const updated = await db.update(planEntries).set(updates).where(eq(planEntries.id, id)).returning()
+  if (!updated[0]) return null
+
+  const row = updated[0]
+  let dish = null
+  if (row.dishId) {
+    const dishRows = await db
+      .select({ name: dishes.name, imageLocalPath: dishes.imageLocalPath, imageUrl: dishes.imageUrl, yieldServings: dishes.yieldServings })
+      .from(dishes).where(eq(dishes.id, row.dishId))
+    dish = dishRows[0] ?? null
+  }
   return rowToPlanEntry(row, dish)
 }
 

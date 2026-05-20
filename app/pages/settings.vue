@@ -9,7 +9,7 @@
     </div>
 
     <div v-if="isPending" class="space-y-4">
-      <div v-for="n in 2" :key="n" class="h-20 animate-pulse rounded-lg bg-surface-alt" />
+      <div class="h-20 animate-pulse rounded-lg bg-surface-alt" />
     </div>
 
     <div v-else class="max-w-lg space-y-6">
@@ -38,23 +38,6 @@
         </div>
       </div>
 
-      <!-- App name -->
-      <div class="rounded-lg border border-border bg-surface p-6">
-        <p class="mb-1 text-xs font-medium uppercase tracking-wider text-text-muted">Display</p>
-        <h2 class="mb-4 font-serif text-xl font-semibold text-text">
-          App <em class="font-normal italic text-accent-deep">name</em>
-        </h2>
-        <p class="mb-4 text-sm text-text-muted">
-          Shown in the header and browser tab.
-        </p>
-        <input
-          v-model="form.appName"
-          type="text"
-          placeholder="Meal Planner"
-          class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
-        />
-      </div>
-
       <!-- Save -->
       <div class="flex items-center gap-4">
         <button
@@ -81,7 +64,7 @@ const { data: settings, isPending } = useQuery({
   queryFn: () => $fetch<AppSettings>('/api/settings'),
 })
 
-const form = reactive({ householdSize: 3, appName: 'Meal Planner' })
+const form = reactive({ householdSize: 3 })
 const saving = ref(false)
 const saved = ref(false)
 const saveError = ref('')
@@ -89,14 +72,11 @@ const saveError = ref('')
 watch(settings, (s) => {
   if (s) {
     form.householdSize = s.householdSize
-    form.appName = s.appName
   }
 }, { immediate: true })
 
 const isDirty = computed(() =>
-  settings.value
-    ? form.householdSize !== settings.value.householdSize || form.appName !== settings.value.appName
-    : false,
+  settings.value ? form.householdSize !== settings.value.householdSize : false,
 )
 
 const { mutateAsync } = useMutation({
@@ -110,7 +90,7 @@ async function save() {
   saved.value = false
   saveError.value = ''
   try {
-    await mutateAsync({ householdSize: form.householdSize, appName: form.appName })
+    await mutateAsync({ householdSize: form.householdSize })
     saved.value = true
     setTimeout(() => { saved.value = false }, 3000)
   }
