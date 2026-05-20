@@ -93,30 +93,27 @@
                 style="min-width: 120px; max-width: 160px;"
               >
                 <VueDraggable
-                  :model-value="getSlot(day.iso, mt)"
+                  v-model="weekSlots[slotKey(day.iso, mt)]"
                   group="plan-entries"
-                  class="flex flex-col gap-1.5 min-h-7"
+                  class="flex flex-col gap-1.5"
                   :data-date="day.iso"
                   :data-meal-type="mt"
-                  @update:model-value="(v: PlanEntry[]) => setSlot(day.iso, mt, v)"
                   @start="onDragStart($event, day.iso, mt)"
                   @end="onDragEnd"
                 >
-                  <template #item="{ element }">
-                    <PlanEntryChip
-                      :entry="element"
-                      @delete="deleteEntry(element.id)"
-                      @move="openMove(element)"
-                    />
-                  </template>
-                  <template #footer>
-                    <button
-                      type="button"
-                      class="flex h-7 w-full items-center justify-center rounded-lg border border-dashed border-border text-text-subtle opacity-40 hover:opacity-100 hover:border-accent hover:text-accent transition text-sm"
-                      @click="openAdd(day.iso, mt)"
-                    >+</button>
-                  </template>
+                  <PlanEntryChip
+                    v-for="element in weekSlots[slotKey(day.iso, mt)]"
+                    :key="element.id"
+                    :entry="element"
+                    @delete="deleteEntry(element.id)"
+                    @move="openMove(element)"
+                  />
                 </VueDraggable>
+                <button
+                  type="button"
+                  class="mt-1.5 flex h-7 w-full items-center justify-center rounded-lg border border-dashed border-border text-text-subtle opacity-40 hover:opacity-100 hover:border-accent hover:text-accent transition text-sm"
+                  @click="openAdd(day.iso, mt)"
+                >+</button>
               </td>
             </tr>
           </tbody>
@@ -290,34 +287,38 @@ function allEntriesForDay(date: string): PlanEntry[] {
   return entries.value?.filter(e => e.date === date) ?? []
 }
 
-function slotKey(date: string, mt: MealType): string {
+// Template literal type ensures noUncheckedIndexedAccess treats indexing as non-optional.
+type SlotKey = `${string}__${MealType}`
+
+function slotKey(date: string, mt: MealType): SlotKey {
   return `${date}__${mt}`
 }
 
 // ── Week view drag-and-drop ──────────────────────────────────────
-// Reactive map of slot arrays used as v-model targets for VueDraggable.
+// Reactive map of slot arrays bound via v-model to VueDraggable.
 // Synced from query on every entries update; vue-draggable-plus mutates
-// these arrays during drag for live visual feedback.
-const weekSlots = reactive<Record<string, PlanEntry[]>>({})
+// these arrays in place during drag for live visual feedback.
+// Typed as Record<SlotKey, any> so noUncheckedIndexedAccess doesn't add | undefined
+// to the slot index access used in the VueDraggable v-model binding.
+// Runtime values are always PlanEntry[] — set exclusively by syncWeekSlots.
+const weekSlots = reactive({}) as unknown as Record<SlotKey, any>
 
 function syncWeekSlots() {
   for (const day of weekDays.value) {
     for (const mt of MEAL_TYPES) {
-      weekSlots[slotKey(day.iso, mt)] = entriesFor(day.iso, mt)
+      const key = slotKey(day.iso, mt)
+      const fresh = entriesFor(day.iso, mt)
+      if (!weekSlots[key]) {
+        weekSlots[key] = [...fresh]
+      } else {
+        weekSlots[key].splice(0, weekSlots[key].length, ...fresh)
+      }
     }
   }
 }
 
 watch(entries, syncWeekSlots, { immediate: true })
 watch(weekDays, syncWeekSlots)
-
-function getSlot(date: string, mt: MealType): PlanEntry[] {
-  return weekSlots[slotKey(date, mt)] ?? []
-}
-
-function setSlot(date: string, mt: MealType, value: PlanEntry[]) {
-  weekSlots[slotKey(date, mt)] = value
-}
 
 // Track which entry is being dragged so @end can identify it by ID.
 let draggedEntryId: number | null = null
@@ -327,7 +328,7 @@ function onDragStart(
   fromDate: string,
   fromMt: MealType,
 ) {
-  const sourceList = weekSlots[slotKey(fromDate, fromMt)] ?? []
+  const sourceList = weekSlots[slotKey(fromDate, fromMt)]
   draggedEntryId = sourceList[evt.oldIndex ?? 0]?.id ?? null
 }
 
