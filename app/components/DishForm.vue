@@ -153,7 +153,7 @@
     <!-- Ingredients -->
     <div>
       <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">Ingredients</label>
-      <IngredientList v-model="ingredients" />
+      <IngredientList v-model="ingredients" :pending-texts="props.pendingIngredientTexts" />
     </div>
 
     <!-- Notes -->
@@ -190,6 +190,7 @@ import type { DishIngredient } from '#shared/types/ingredient'
 interface Props {
   initialValues?: Partial<CreateDishInput> & { imageLocalPath?: string | null; tags?: Tag[] }
   initialIngredients?: DishIngredient[]
+  pendingIngredientTexts?: string[]
   submitLabel?: string
   loading?: boolean
 }

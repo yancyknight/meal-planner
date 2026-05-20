@@ -94,17 +94,17 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 - `[x]` Refactor `app/components/DishForm.vue` field styling: pills for difficulty / allergen / season, soft borders, eyebrow labels
 - `[x]` Refactor `app/pages/ingredients/*` to match
 - `[x]` Screenshot pass — open every existing page, confirm consistency with each other; flag any drift from the direction in the PR description for user feedback
-- `[ ]` Iterate based on user feedback before considering this milestone closed
+- `[x]` Iterate based on user feedback before considering this milestone closed
 
 ---
 
-## Milestone 4 — Recipe Auto-Import
+## Milestone 4 — Recipe Auto-Import ✅
 *Depends on Dish CRUD and Ingredients being in place to populate.*
 
-- `[ ]` Implement `recipeImportService`: fetch URL server-side, JSON-LD parse, OG fallback, HTML heuristic fallback
-- `[ ]` `POST /api/dishes/import { url }` route
-- `[ ]` Import UI: URL input on dish create page; prefills form on success; user reviews before saving
-- `[ ]` Tests: mock fetch responses for JSON-LD, OG, and fallback cases; assert correct field mapping
+- `[x]` Implement `recipeImportService`: fetch URL server-side, JSON-LD parse, OG fallback, HTML heuristic fallback
+- `[x]` `POST /api/dishes/import { url }` route
+- `[x]` Import UI: URL input on dish create page; prefills form on success; user reviews before saving
+- `[x]` Tests: mock fetch responses for JSON-LD, OG, and fallback cases; assert correct field mapping
 
 ---
 
