@@ -11,6 +11,7 @@ interface IngredientRow {
 
 const props = defineProps<{
   modelValue: DishIngredient[]
+  pendingTexts?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -28,7 +29,11 @@ function toRows(ingredients: DishIngredient[]): IngredientRow[] {
   }))
 }
 
-const rows = ref<IngredientRow[]>(toRows(props.modelValue))
+const rows = ref<IngredientRow[]>(
+  props.pendingTexts && props.pendingTexts.length > 0
+    ? props.pendingTexts.map(text => ({ key: nextKey++, rawText: text, canonicalIngredientId: null }))
+    : toRows(props.modelValue),
+)
 
 watch(() => props.modelValue, (val) => {
   if (val.length === 0 && rows.value.length === 0) return

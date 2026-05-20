@@ -8,11 +8,44 @@
       </div>
     </div>
 
-    <div v-if="error" class="mb-6 rounded-lg bg-accent-soft px-4 py-3 text-sm text-warning">
-      {{ error }}
+    <!-- Import from URL -->
+    <div class="mb-8 rounded-xl border border-border bg-surface p-5">
+      <p class="mb-3 text-xs font-medium uppercase tracking-wider text-text-muted">Import from URL</p>
+      <div class="flex gap-2">
+        <input
+          v-model="importUrl"
+          type="url"
+          placeholder="https://www.seriouseats.com/..."
+          class="min-w-0 flex-1 rounded-lg border border-border bg-canvas px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
+          :disabled="importLoading"
+          @keydown.enter.prevent="runImport"
+        />
+        <button
+          type="button"
+          :disabled="importLoading || !importUrl.trim()"
+          class="rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
+          @click="runImport"
+        >
+          {{ importLoading ? 'Importing…' : 'Import' }}
+        </button>
+      </div>
+      <p v-if="importError" class="mt-2 text-sm text-warning">{{ importError }}</p>
+      <p v-if="importSuccess" class="mt-2 text-sm text-text-muted">
+        Imported from <span class="font-medium text-text">{{ importSuccess }}</span>. Review the fields below before saving.
+      </p>
     </div>
 
-    <DishForm :loading="isPending" @submit="handleSubmit">
+    <div v-if="saveError" class="mb-6 rounded-lg bg-accent-soft px-4 py-3 text-sm text-warning">
+      {{ saveError }}
+    </div>
+
+    <DishForm
+      :key="formKey"
+      :initial-values="importedValues"
+      :pending-ingredient-texts="importedIngredientTexts"
+      :loading="isPending"
+      @submit="handleSubmit"
+    >
       <template #actions>
         <NuxtLink to="/dishes" class="rounded-lg border border-border px-4 py-2 text-sm text-text-muted transition hover:bg-surface-alt">Cancel</NuxtLink>
       </template>
@@ -25,10 +58,51 @@ import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { CreateDishInput } from '#shared/schemas/dish'
 import type { Dish } from '#shared/types/dish'
 import type { DishIngredient } from '#shared/types/ingredient'
+import type { RecipeImportResult } from '#shared/types/recipeImport'
 
 const router = useRouter()
 const queryClient = useQueryClient()
-const error = ref<string>()
+const saveError = ref<string>()
+
+// Import state
+const importUrl = ref('')
+const importLoading = ref(false)
+const importError = ref<string>()
+const importSuccess = ref<string>()
+const formKey = ref(0)
+const importedValues = ref<Partial<CreateDishInput> | undefined>()
+const importedIngredientTexts = ref<string[] | undefined>()
+
+async function runImport() {
+  const url = importUrl.value.trim()
+  if (!url) return
+  importError.value = undefined
+  importSuccess.value = undefined
+  importLoading.value = true
+  try {
+    const result = await $fetch<RecipeImportResult>('/api/dishes/import', {
+      method: 'POST',
+      body: { url },
+    })
+    importedValues.value = {
+      name: result.name,
+      imageUrl: result.imageUrl ?? null,
+      timeEstimateMinutes: result.timeEstimateMinutes ?? null,
+      yieldServings: result.yieldServings ?? null,
+      sourceUrl: result.sourceUrl,
+      sourceName: result.sourceName ?? null,
+    }
+    importedIngredientTexts.value = result.ingredientTexts
+    importSuccess.value = result.sourceName ?? new URL(url).hostname
+    formKey.value++
+  }
+  catch (e: unknown) {
+    importError.value = (e as { data?: { error?: string } })?.data?.error ?? 'Import failed'
+  }
+  finally {
+    importLoading.value = false
+  }
+}
 
 const { mutateAsync, isPending } = useMutation({
   mutationFn: async (data: CreateDishInput & { pendingImageFile?: File; ingredients: DishIngredient[] }) => {
@@ -70,12 +144,12 @@ const { mutateAsync, isPending } = useMutation({
 })
 
 async function handleSubmit(data: CreateDishInput & { pendingImageFile?: File; ingredients: DishIngredient[] }) {
-  error.value = undefined
+  saveError.value = undefined
   try {
     await mutateAsync(data)
   }
   catch (e: unknown) {
-    error.value = (e as { data?: { error?: string } })?.data?.error ?? 'Failed to save dish'
+    saveError.value = (e as { data?: { error?: string } })?.data?.error ?? 'Failed to save dish'
   }
 }
 </script>
