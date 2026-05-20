@@ -19,6 +19,13 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 - Re-read this file and any spec docs relevant to the feature being worked on
 - Review the Current Sprint section to see if anything is already in progress
 - If resuming an interrupted session, assess the current state before planning
+- **Before creating any new feature branch:** sync from remote to avoid merge conflicts:
+  ```bash
+  git fetch origin
+  git checkout main
+  git pull origin main
+  git checkout -b <new-branch-name>
+  ```
 
 ### 2. Plan
 - Write a concrete implementation checklist in the Current Sprint section (below)
@@ -40,9 +47,12 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 ### 5. Close
 - Mark all completed checklist items in Current Sprint
 - Note anything deferred, and why
-- Create a PR via `gh pr create` — description must cover: what was built, every judgment call made during implementation, anything deferred and why, any spec divergences that need doc updates
+- **For any UI changes:** follow `docs/close-protocol.md` to capture and embed screenshots/GIFs in the PR description.
+- Create a PR via `gh pr create` — description must cover: what was built, every judgment call made during implementation, anything deferred and why, any spec divergences that need doc updates, and embedded screenshots/GIFs for all UI changes
 - Send a push notification via the PushNotification tool so the PR is flagged for review
 - Stop — do not wait for user confirmation; the PR is the handoff point
+
+@import docs/close-protocol.md
 
 ## Commands
 
