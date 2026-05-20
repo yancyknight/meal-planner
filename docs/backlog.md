@@ -66,17 +66,17 @@ Update status as sessions complete:
 
 ---
 
-## Milestone 3.5 — Dish Suggestion Field Refactor
+## Milestone 3.5 — Dish Suggestion Field Refactor ✅
 *Aligns existing dish schema/code with the new frequency-control model (see `docs/spec.md` §5). Pure refactor — no user-facing nudge UI yet; that lands in M7.*
 
-- `[ ]` Schema migration: drop `weight` and `minIntervalDays` from `dishes`; add `cooldownDays` (integer NOT NULL DEFAULT 7), `targetIntervalDays` (integer NOT NULL DEFAULT 14), `excludedFromSuggestions` (integer NOT NULL DEFAULT 0)
-- `[ ]` Update `shared/schemas/dish.ts`: swap fields; add `.refine(cooldownDays ≤ targetIntervalDays)` validation
-- `[ ]` Update `shared/types/dish.ts`: swap field types
-- `[ ]` Update `server/services/dishService.ts` create/update field handling
-- `[ ]` Update `app/components/DishForm.vue` form state (just the field swap; no new UI controls — M7 builds those)
-- `[ ]` Update `app/pages/dishes/[id]/index.vue`: remove the "Weight" / "Min interval" display lines; show plain "Cooldown: X days · Target: Y days" until M7 replaces with proper UI
-- `[ ]` Update `test/unit/dishService.test.ts`: replace weight/minIntervalDays assertions with the new fields; verify default values; verify Zod refinement rejects `cooldown > target`
-- `[ ]` Verify `pnpm typecheck`, `pnpm lint`, and `pnpm test` are clean
+- `[x]` Schema migration: drop `weight` and `minIntervalDays` from `dishes`; add `cooldownDays` (integer NOT NULL DEFAULT 7), `targetIntervalDays` (integer NOT NULL DEFAULT 14), `excludedFromSuggestions` (integer NOT NULL DEFAULT 0)
+- `[x]` Update `shared/schemas/dish.ts`: swap fields; add `.refine(cooldownDays ≤ targetIntervalDays)` validation
+- `[x]` Update `shared/types/dish.ts`: swap field types
+- `[x]` Update `server/services/dishService.ts` create/update field handling
+- `[x]` Update `app/components/DishForm.vue` form state (just the field swap; no new UI controls — M7 builds those)
+- `[x]` Update `app/pages/dishes/[id]/index.vue`: remove the "Weight" / "Min interval" display lines; show plain "Cooldown: X days · Target: Y days" until M7 replaces with proper UI
+- `[x]` Update `test/unit/dishService.test.ts`: replace weight/minIntervalDays assertions with the new fields; verify default values; verify Zod refinement rejects `cooldown > target`
+- `[x]` Verify `pnpm typecheck`, `pnpm lint`, and `pnpm test` are clean
 
 ---
 
