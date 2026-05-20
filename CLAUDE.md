@@ -19,6 +19,13 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 - Re-read this file and any spec docs relevant to the feature being worked on
 - Review the Current Sprint section to see if anything is already in progress
 - If resuming an interrupted session, assess the current state before planning
+- **Before creating any new feature branch:** sync from remote to avoid merge conflicts:
+  ```bash
+  git fetch origin
+  git checkout main
+  git pull origin main
+  git checkout -b <new-branch-name>
+  ```
 
 ### 2. Plan
 - Write a concrete implementation checklist in the Current Sprint section (below)
@@ -40,9 +47,42 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 ### 5. Close
 - Mark all completed checklist items in Current Sprint
 - Note anything deferred, and why
-- Create a PR via `gh pr create` — description must cover: what was built, every judgment call made during implementation, anything deferred and why, any spec divergences that need doc updates
+- **For any UI changes:** follow the screenshot/GIF protocol below, then embed the images in the PR description.
+- Create a PR via `gh pr create` — description must cover: what was built, every judgment call made during implementation, anything deferred and why, any spec divergences that need doc updates, and embedded screenshots/GIFs for all UI changes
 - Send a push notification via the PushNotification tool so the PR is flagged for review
 - Stop — do not wait for user confirmation; the PR is the handoff point
+
+#### Screenshot / GIF Protocol
+
+GitHub resolves relative image paths in PR descriptions against the **default branch (main)**, not the PR branch. Images only committed to the feature branch will be broken until merge. Always use absolute `raw.githubusercontent.com` URLs tied to a specific commit hash — they work immediately and remain stable even after the branch is deleted.
+
+**Step 1 — Capture**
+- Screenshots: save PNGs to `docs/screenshots/<milestone>/` (e.g. `docs/screenshots/m4/01-overview.png`)
+- GIFs: record interaction flows with `peek` (GUI) or `byzanz-record` (CLI) and save to the same directory
+- Name files with a numeric prefix so order is clear: `01-`, `02-`, etc.
+
+**Step 2 — Commit**
+```bash
+git add docs/screenshots/
+git commit -m "docs: add screenshots for <milestone>"
+COMMIT=$(git rev-parse HEAD)
+```
+
+**Step 3 — Build working URLs**
+```bash
+# Template:
+# https://raw.githubusercontent.com/yancyknight/meal-planner/${COMMIT}/docs/screenshots/<milestone>/<filename>
+
+# Generate markdown for a whole milestone dir:
+REPO="yancyknight/meal-planner"
+for f in docs/screenshots/m4/*.png docs/screenshots/m4/*.gif; do
+  [ -f "$f" ] || continue
+  echo "![$(basename $f)](https://raw.githubusercontent.com/${REPO}/${COMMIT}/${f})"
+done
+```
+
+**Step 4 — Embed in PR description**
+Paste the `![alt](url)` lines into the PR body. Never use relative paths like `docs/screenshots/...` — always use the full `raw.githubusercontent.com` URL with the commit hash.
 
 ## Commands
 
