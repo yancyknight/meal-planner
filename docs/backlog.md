@@ -57,12 +57,44 @@ Update status as sessions complete:
 ## Milestone 3 — Canonical Ingredients + Dish Ingredients
 *Needed before shopping lists and planning can reference ingredients.*
 
-- `[ ]` Add `canonical_ingredients` and `dish_ingredients` tables; migration
-- `[ ]` Install fuse.js; implement fuzzy match suggestion in `ingredientService`
-- `[ ]` Dish ingredient editor on dish create/edit form: raw text input → fuzzy suggestion → canonical link or create new
-- `[ ]` Ingredient management page (`/ingredients`): list all canonicals, rename, merge, set Walmart URL, view linked dishes
-- `[ ]` API routes for canonical ingredients and dish ingredients
-- `[ ]` Tests: fuzzy match threshold behavior, merge logic, cascade behavior
+- `[x]` Add `canonical_ingredients` and `dish_ingredients` tables; migration
+- `[x]` Install fuse.js; implement fuzzy match suggestion in `ingredientService`
+- `[x]` Dish ingredient editor on dish create/edit form: raw text input → fuzzy suggestion → canonical link or create new
+- `[x]` Ingredient management page (`/ingredients`): list all canonicals, rename, merge, set Walmart URL, view linked dishes
+- `[x]` API routes for canonical ingredients and dish ingredients
+- `[x]` Tests: fuzzy match threshold behavior, merge logic, cascade behavior
+
+---
+
+## Milestone 3.5 — Dish Suggestion Field Refactor
+*Aligns existing dish schema/code with the new frequency-control model (see `docs/spec.md` §5). Pure refactor — no user-facing nudge UI yet; that lands in M7.*
+
+- `[ ]` Schema migration: drop `weight` and `minIntervalDays` from `dishes`; add `cooldownDays` (integer NOT NULL DEFAULT 7), `targetIntervalDays` (integer NOT NULL DEFAULT 14), `excludedFromSuggestions` (integer NOT NULL DEFAULT 0)
+- `[ ]` Update `shared/schemas/dish.ts`: swap fields; add `.refine(cooldownDays ≤ targetIntervalDays)` validation
+- `[ ]` Update `shared/types/dish.ts`: swap field types
+- `[ ]` Update `server/services/dishService.ts` create/update field handling
+- `[ ]` Update `app/components/DishForm.vue` form state (just the field swap; no new UI controls — M7 builds those)
+- `[ ]` Update `app/pages/dishes/[id]/index.vue`: remove the "Weight" / "Min interval" display lines; show plain "Cooldown: X days · Target: Y days" until M7 replaces with proper UI
+- `[ ]` Update `test/unit/dishService.test.ts`: replace weight/minIntervalDays assertions with the new fields; verify default values; verify Zod refinement rejects `cooldown > target`
+- `[ ]` Verify `pnpm typecheck`, `pnpm lint`, and `pnpm test` are clean
+
+---
+
+## Milestone 3.6 — UI Uplift to Design System
+*Establish design tokens and bring existing pages into the same visual voice. See `docs/design-system.md`.
+Acceptance is "consistent with each other and the design direction" — not pixel-perfect to the PDF.*
+
+- `[ ]` Add fonts — Playfair Display + Inter + JetBrains Mono (or close substitutes). Self-host or use a CDN; document the choice.
+- `[ ]` Define Tailwind v4 `@theme` tokens in `app/assets/css/main.css` from the palette / typography / spacing tables in `docs/design-system.md`
+- `[ ]` Apply base background, body font, and serif headline treatment globally
+- `[ ]` Refactor `app/layouts/default.vue`: centered nav with active-pill, brand mark with italic "for two", date in top-right
+- `[ ]` Refactor `app/pages/dishes/index.vue` (dish list): card grid, eyebrow + serif headline, search/filter controls in pills
+- `[ ]` Refactor `app/pages/dishes/[id]/index.vue` (dish detail): two-column layout, stat row, ingredient table, recent appearances list, source link, frequency controls (using whatever fields exist — full nudge UI is M7)
+- `[ ]` Refactor `app/pages/dishes/new.vue` and `app/pages/dishes/[id]/edit.vue` form chrome
+- `[ ]` Refactor `app/components/DishForm.vue` field styling: pills for difficulty / allergen / season, soft borders, eyebrow labels
+- `[ ]` Refactor `app/pages/ingredients/*` to match
+- `[ ]` Screenshot pass — open every existing page, confirm consistency with each other; flag any drift from the direction in the PR description for user feedback
+- `[ ]` Iterate based on user feedback before considering this milestone closed
 
 ---
 
@@ -79,13 +111,14 @@ Update status as sessions complete:
 ## Milestone 5 — Calendar + Plan Entries
 *Depends on Dish CRUD. Core calendar view and basic plan entry management.*
 
-- `[ ]` Add `plan_entries` table; migration
-- `[ ]` Implement `planEntryService`: create, delete, list by date range; leftover indicator logic
+- `[ ]` Add `plan_entries` table (including `entryKind` column with values `'fresh' | 'leftover' | 'one-off'` defaulting to `'fresh'`, plus the partial index `idx_plan_entries_dish_fresh`); migration
+- `[ ]` Implement `planEntryService`: create (with entryKind), delete, list by date range; leftover indicator logic; `daysSinceLastServedFresh(dishId, beforeDate)` helper that scans only `entryKind = 'fresh'` rows
+- `[ ]` Zod schema enforces entryKind/dishId/oneOffText correspondence (see `docs/data-model.md` plan_entries check)
 - `[ ]` API routes: `GET /api/plan-entries?start=&end=`, `POST /api/plan-entries`, `DELETE /api/plan-entries/[id]`
-- `[ ]` Calendar page (`/calendar`): week view (default), month view, day view
-- `[ ]` "Add to plan" dialog: dish search/select or one-off text; meal type selector; guest count
-- `[ ]` Leftover indicator on plan entries where yield exceeds household + guest count
-- `[ ]` Tests: plan entry CRUD, leftover calculation, date range queries
+- `[ ]` Calendar page (`/calendar`): week view (default), month view, day view. Visually distinguish leftover entries (e.g. 🥡 badge) from fresh entries.
+- `[ ]` "Add to plan" dialog: dish search/select or one-off text; meal type selector; guest count. Manual leftover creation is allowed (toggle: "this is a leftover serving").
+- `[ ]` Leftover indicator on fresh plan entries where yield exceeds household + guest count
+- `[ ]` Tests: plan entry CRUD across all three entryKinds, leftover calculation, date range queries, `daysSinceLastServedFresh` ignoring leftover entries
 
 ---
 
@@ -99,14 +132,25 @@ Update status as sessions complete:
 
 ---
 
-## Milestone 7 — Dish Weight & Nudge System
-*Depends on Dish CRUD. Needed before planning mode's suggestion engine.*
+## Milestone 7 — Frequency Controls (Nudge System)
+*Depends on Dish CRUD (M1) + Suggestion Field Refactor (M3.5) + Plan Entries (M5, for the `daysSinceLastServedFresh` helper). Needed before Planning Mode's suggestion engine.*
 
-- `[ ]` `weight` and `minIntervalDays` fields already in schema (added in M1); this milestone wires up the UI and engine logic
-- `[ ]` Implement effective weight calculation in `planningEngineService` (isolated, pure function — easy to unit test)
-- `[ ]` Nudge controls UI on dish detail/edit: weight slider, exclude toggle, "how often" dropdown, boost button
-- `[ ]` Dish detail: show planning stats (times made, last made date, days since last made)
-- `[ ]` Tests: effective weight formula across all factor combinations; edge cases (never made, interval not yet elapsed, interval elapsed)
+- `[ ]` Schema fields already exist (added in M3.5): `cooldownDays`, `targetIntervalDays`, `excludedFromSuggestions`. This milestone wires up the UI and the selection-weight calculation.
+- `[ ]` Implement `selectionWeight(dish, slotDate, daysSinceLastServedFresh)` in `planningEngineService` as a pure function — easy to unit test. Formula: `min(daysSinceFresh / targetIntervalDays, 3.0)`. Never-served dishes use `daysSinceFresh = 1.5 × targetIntervalDays`.
+- `[ ]` Implement `isEligibleForSlot(dish, slotDate, daysSinceLastServedFresh)` — checks `excludedFromSuggestions = false`, not archived, and `daysSinceLastServedFresh ≥ cooldownDays`.
+- `[ ]` Nudge controls UI on dish detail/edit:
+   - Frequency preset dropdown (Weekly / Biweekly / Monthly / Quarterly / Custom) sets both fields together
+   - "Custom" reveals numeric inputs for `targetIntervalDays` and `cooldownDays`; cooldown defaults to `ceil(target / 2)` when switching to Custom
+   - "Exclude from suggestions" toggle sets `excludedFromSuggestions`; greys (but does not hide) the frequency inputs while active
+- `[ ]` Dish detail: show planning stats — times cooked fresh, last cooked date, days since last cooked fresh (driven by the M5 `daysSinceLastServedFresh` helper)
+- `[ ]` Tests for `selectionWeight` and `isEligibleForSlot`:
+   - never-served dish → overdueness 1.5, selection weight 1.5
+   - just out of cooldown → eligible, selection weight < 1.0
+   - exactly at target → selection weight 1.0
+   - 5× overdue → selection weight capped at 3.0
+   - still in cooldown → ineligible (regardless of overdueness)
+   - excluded dish → ineligible
+   - leftover plan entries do not advance `daysSinceLastServedFresh` (integration test against M5 helper)
 
 ---
 
@@ -138,24 +182,24 @@ Update status as sessions complete:
 - `[ ]` Tests: session CRUD, step state serialization, step 2 entry query, step 3 one-off accumulation
 
 ### Session B — Steps 4–6 (Filters, Composition Rules, Leftover Suggestions)
-- `[ ]` Step 4: filter UI (time, difficulty, tags, allergens, season, min weight)
+- `[ ]` Step 4: filter UI (time, difficulty, tags, allergens, season) — no minimum-weight filter
 - `[ ]` Step 5: composition rule builder (add/remove rules, date + meal type + tag/ingredient constraint)
 - `[ ]` Composition rule conflict detection (warn if filters exclude all dishes matching a rule's constraint)
-- `[ ]` Step 6: leftover suggestion UI (per-dinner entry, opt-in toggle for next-day lunch)
+- `[ ]` Step 6: leftover suggestion UI (per-dinner entry, opt-in toggle for next-day lunch). Leftover placements are queued as `type: 'leftover'` in `draftPlan` and finalized as `entryKind: 'leftover'` plan entries.
 - `[ ]` Tests: filter application against dish pool, composition rule validation, leftover eligibility detection
 
 ### Session C — Steps 7–8 (Draft Generation, Reroll, Finalize)
-- `[ ]` Implement full Draft Plan generation in `planningEngineService`: slot iteration, filter + rule application, best-effort rule relaxation with warning labels, weighted random selection, used-dish tracking
-- `[ ]` Step 7: draft review UI — per-slot dish display, reroll button, reroll depletion warning, override (manual pick), clear slot
-- `[ ]` Step 8: finalize summary + confirm; write all entries to calendar; delete session
-- `[ ]` Tests: generation algorithm (weighted selection distribution, best-effort relaxation, depletion handling), finalize write logic, session cleanup on finalize
+- `[ ]` Implement full Draft Plan generation in `planningEngineService`: chronological slot iteration, filter + cooldown eligibility + rule application, best-effort rule relaxation with warning labels, weighted-random selection by `selectionWeight` (from M7), in-draft used-dish tracking, treating already-placed Fresh slots as fresh history for later slots in the same draft
+- `[ ]` Step 7: draft review UI — per-slot dish display, reroll button, reroll depletion warning, override (manual pick), clear slot. Slot warnings differentiate "no filter-matching dishes" vs "all matching dishes still in cooldown."
+- `[ ]` Step 8: finalize summary + confirm; write all entries to calendar with correct `entryKind` (`'dish' → 'fresh'`, `'leftover' → 'leftover'`, `'one-off' → 'one-off'`); delete session
+- `[ ]` Tests: generation algorithm (selection weight distribution matches target intervals in expectation, cooldown enforced across draft, best-effort relaxation, depletion handling), finalize write logic with correct entryKind mapping, session cleanup on finalize
 
 ---
 
 ## Milestone 10 — Polish & Edge Cases
 *After all features are working. One or more sessions.*
 
-- `[ ]` Dish list: sort options (last made, weight), advanced filter panel
+- `[ ]` Dish list: sort options (last cooked fresh, target interval), advanced filter panel
 - `[ ]` Calendar: navigate to arbitrary date, keyboard shortcuts
 - `[ ]` Prevent dish delete when plan entries exist (should already be in M1 — verify UX is clear)
 - `[ ]` Empty states for all list views

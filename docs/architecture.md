@@ -87,7 +87,7 @@ Key services:
 - `ingredientService.ts` — canonical ingredient management, fuzzy suggestions
 - `recipeImportService.ts` — URL fetch + structured data extraction
 - `planEntryService.ts` — calendar reads/writes, leftover calculations
-- `planningEngineService.ts` — effective weight calculation, Draft Plan generation
+- `planningEngineService.ts` — cooldown eligibility, selection weight (overdueness) calculation, Draft Plan generation
 - `shoppingListService.ts` — list generation and item management
 - `planningSessionService.ts` — session persistence and step management
 - `imageService.ts` — upload, serve, and cleanup of dish images
@@ -151,13 +151,14 @@ Stateless function in `planningEngineService.ts`. Inputs:
 }
 ```
 
-For each open slot:
-1. Apply session filters to get eligible dishes
-2. Apply composition rule if one exists for this date+mealType
-3. Compute effective weight for each eligible dish
-4. Exclude already-used dishes from primary pool (but keep in fallback pool)
-5. Select by weighted random from primary pool; use fallback if primary is empty
-6. Return selection or `{ noEligible: true, reason }` if nothing qualifies
+For each open slot (in chronological order):
+1. Apply session filters and drop dishes with `excludedFromSuggestions = true`
+2. Apply cooldown eligibility — drop dishes whose most recent Fresh Plan Entry is within `cooldownDays` of the slot date (counting both committed entries and already-placed Fresh slots earlier in this draft). Never-served dishes use `daysSinceLastServedFresh = 1.5 × targetIntervalDays`.
+3. Apply composition rule if one exists for this date+mealType (best-effort relaxation)
+4. Compute `selectionWeight = min(daysSinceLastServedFresh / targetIntervalDays, 3.0)` for each eligible dish
+5. Exclude already-used dishes from primary pool (but keep in fallback pool)
+6. Select by weighted random from primary pool; use fallback if primary is empty
+7. Return selection or `{ noEligible: true, reason }` if nothing qualifies (reason distinguishes "no filter matches" from "all matches in cooldown")
 
 ## Shopping List Generation
 

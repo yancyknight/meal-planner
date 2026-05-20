@@ -18,7 +18,7 @@ No separate test database process needed — better-sqlite3's in-memory mode is 
 
 Pure logic with no HTTP or DB involvement. The most important targets:
 
-- **Planning engine** — weight calculation, effective weight formula, best-effort composition rule relaxation, reroll depletion logic, slot generation given a set of candidates and filters
+- **Planning engine** — cooldown eligibility, selection weight (overdueness) formula and cap, best-effort composition rule relaxation, reroll depletion logic, slot generation given a set of candidates and filters
 - **Ingredient fuzzy matching** — confirm match suggestions fire above threshold, don't fire below it, and handle edge cases (empty library, exact duplicates, substring matches)
 - **Leftover calculation** — yield vs household size math, guestCount handling
 - **Shopping list generation** — ingredient grouping, rawTexts aggregation, source dish tracking

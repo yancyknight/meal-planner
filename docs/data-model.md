@@ -25,8 +25,9 @@ The core dish library. One row per saved dish template.
 | `allergens` | text | NOT NULL, DEFAULT '[]' | JSON string[]. Presets + freeform. |
 | `season` | text | NOT NULL, DEFAULT '[]' | JSON string[]. 'spring' \| 'summer' \| 'fall' \| 'winter'. Empty = year-round. |
 | `notes` | text | nullable | |
-| `weight` | integer | NOT NULL, DEFAULT 50 | 0–100. Planning suggestion probability. |
-| `minIntervalDays` | integer | nullable | Minimum days since the dish was last made before it is eligible for planning suggestions again. |
+| `cooldownDays` | integer | NOT NULL, DEFAULT 7 | Hard floor. Dish ineligible if its most recent Fresh Plan Entry is within this many days of the slot date. |
+| `targetIntervalDays` | integer | NOT NULL, DEFAULT 14 | Soft goal. Desired average gap between fresh servings. Must be ≥ `cooldownDays` (enforced in Zod). |
+| `excludedFromSuggestions` | integer | NOT NULL, DEFAULT 0 | Boolean (0/1). When 1, never proposed by the planning engine. |
 | `archived` | integer | NOT NULL, DEFAULT 0 | Boolean (0/1) |
 | `createdAt` | text | NOT NULL | ISO 8601 |
 | `updatedAt` | text | NOT NULL | ISO 8601 |
@@ -84,12 +85,13 @@ Individual scheduled items on the calendar.
 | `id` | integer | PK, autoincrement | |
 | `date` | text | NOT NULL | YYYY-MM-DD |
 | `mealType` | text | NOT NULL | 'breakfast' \| 'lunch' \| 'dinner' \| 'uncategorized' |
-| `dishId` | integer | nullable, FK → dishes.id | NULL for one-off entries |
-| `oneOffText` | text | nullable | NULL for dish entries. Set for one-off entries. |
-| `guestCount` | integer | NOT NULL, DEFAULT 0 | Extra guests beyond household size. Affects leftover calc. |
+| `entryKind` | text | NOT NULL, DEFAULT 'fresh' | 'fresh' \| 'leftover' \| 'one-off'. Only `fresh` rows count toward a Dish's cooldown / overdueness. |
+| `dishId` | integer | nullable, FK → dishes.id | Set for 'fresh' and 'leftover'; NULL for 'one-off'. |
+| `oneOffText` | text | nullable | Set for 'one-off'; NULL otherwise. |
+| `guestCount` | integer | NOT NULL, DEFAULT 0 | Extra guests beyond household size. Affects leftover calc. Only meaningful on 'fresh' entries. |
 | `createdAt` | text | NOT NULL | |
 
-Check: exactly one of `dishId` or `oneOffText` must be non-null (enforced in application layer).
+Check (enforced in application layer): `entryKind = 'one-off'` ↔ `oneOffText` non-null AND `dishId` null. `entryKind ∈ {'fresh', 'leftover'}` ↔ `dishId` non-null AND `oneOffText` null.
 
 ### `shopping_lists`
 
@@ -160,12 +162,15 @@ Default rows seeded on first run:
 ```sql
 CREATE INDEX idx_plan_entries_date ON plan_entries(date);
 CREATE INDEX idx_plan_entries_dish_id ON plan_entries(dishId);
+CREATE INDEX idx_plan_entries_dish_fresh ON plan_entries(dishId, date) WHERE entryKind = 'fresh';
 CREATE INDEX idx_dish_ingredients_dish_id ON dish_ingredients(dishId);
 CREATE INDEX idx_dish_ingredients_canonical_id ON dish_ingredients(canonicalIngredientId);
 CREATE INDEX idx_shopping_list_items_list_id ON shopping_list_items(shoppingListId);
 CREATE INDEX idx_canonical_ingredients_name ON canonical_ingredients(name);
 CREATE INDEX idx_dishes_archived ON dishes(archived);
 ```
+
+The partial index `idx_plan_entries_dish_fresh` accelerates the `daysSinceLastServedFresh` lookup used by the planning engine: "most recent fresh entry for this dish before this date."
 
 ---
 

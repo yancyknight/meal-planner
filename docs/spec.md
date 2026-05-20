@@ -30,8 +30,9 @@ A self-hosted meal planning web app for a two-person household. No authenticatio
 | `allergens` | string[] | Presets: gluten, dairy, nuts, shellfish, eggs, soy, peanuts. Plus freeform entries. |
 | `season` | string[] | Any combination of: spring, summer, fall, winter. Empty = year-round. |
 | `notes` | string \| null | Freeform internal notes |
-| `weight` | integer 0–100 | Base suggestion probability. Default 50. |
-| `minIntervalDays` | integer \| null | Min days that must pass since the dish was last made before it is eligible for planning again. Null = no constraint. |
+| `cooldownDays` | integer | Hard floor. Dish is ineligible for planning suggestions if it was last cooked fresh within this many days. Default 7. |
+| `targetIntervalDays` | integer | Soft goal. Desired average gap (days) between fresh servings. Drives Selection Weight. Must be ≥ `cooldownDays`. Default 14. |
+| `excludedFromSuggestions` | boolean | Default false. When true, never proposed by the planning engine but still visible in the library. |
 | `archived` | boolean | Default false. Archived dishes hidden from browsing and planning. |
 | `createdAt` | datetime | |
 | `updatedAt` | datetime | |
@@ -49,14 +50,14 @@ A self-hosted meal planning web app for a two-person household. No authenticatio
 - Default: shows non-archived dishes
 - Search: by name (full text)
 - Filters: tags, difficulty, allergens, season, max time, archived toggle
-- Sort: name A–Z, date added, last planned, weight
+- Sort: name A–Z, date added, last planned
 
 ### Dish Detail View
 
 - All fields displayed
 - Ingredient list (raw text with canonical ingredient linked)
 - Planning stats: times planned, last planned date
-- Suggestion settings (weight slider + nudge controls — see §5)
+- Frequency controls (preset dropdown + advanced cooldown/target inputs + exclude toggle — see §5)
 
 ### Ingredient Entry on a Dish
 
@@ -123,9 +124,10 @@ Each day has four slots: `breakfast`, `lunch`, `dinner`, `uncategorized`. Each s
 
 ### Plan Entry
 
-A Plan Entry is either:
-- **Dish Entry** — references a saved Dish. Shows name, meal type, thumbnail, difficulty badge.
-- **One-Off Entry** — free text only (e.g. "Burger King", "Dinner at Gram's House"). Does not link to the Dish library.
+A Plan Entry has an `entryKind`:
+- **Fresh** (`entryKind: 'fresh'`) — references a saved Dish, represents the cook event. Shows name, meal type, thumbnail, difficulty badge. The only kind that advances a Dish's cooldown / overdueness clock.
+- **Leftover** (`entryKind: 'leftover'`) — references a saved Dish (usually the same one cooked the prior day), represents eating leftovers. Visually distinguished from fresh entries (e.g. "🥡 Leftover: [Dish]"). Does **not** reset the cooldown clock.
+- **One-Off** (`entryKind: 'one-off'`) — free text only (e.g. "Burger King", "Dinner at Gram's House"). Does not link to the Dish library.
 
 ### Adding a Plan Entry
 
@@ -141,9 +143,10 @@ From any calendar slot, open the "Add" dialog:
 |---|---|---|
 | `date` | YYYY-MM-DD | |
 | `mealType` | breakfast \| lunch \| dinner \| uncategorized | |
-| `dishId` | integer \| null | Null for One-Off |
-| `oneOffText` | string \| null | Null for Dish entries |
-| `guestCount` | integer | Extra guests beyond household size. Default 0. |
+| `entryKind` | `fresh` \| `leftover` \| `one-off` | Default `fresh`. `one-off` requires `oneOffText`; `fresh` and `leftover` require `dishId`. |
+| `dishId` | integer \| null | Set for `fresh` and `leftover`; null for `one-off`. |
+| `oneOffText` | string \| null | Set for `one-off`; null otherwise. |
+| `guestCount` | integer | Extra guests beyond household size. Default 0. Only meaningful on `fresh` entries (leftovers don't consume fresh servings). |
 | `createdAt` | datetime | |
 
 ### Leftovers
@@ -155,41 +158,48 @@ When viewing a Dish Plan Entry:
 
 ---
 
-## 5. Dish Weight & Nudge System
+## 5. Dish Frequency Controls
 
-### Weight
+Each Dish carries two intuitive numbers that drive how often it appears in generated plans:
 
-Each Dish has a `weight` (0–100, default 50). This is the base suggestion probability used by the planning engine.
+- **`cooldownDays`** — hard floor. Never suggest the Dish if it was cooked fresh within this many days.
+- **`targetIntervalDays`** — soft goal. The desired average gap between fresh servings.
 
-- Weight **0** = dish is effectively excluded from all suggestions
-- Weight **100** = maximum probability of being selected
-- Dishes are selected by weighted random, not strict ordering
+Plus one boolean:
 
-### Effective Weight (planning engine internal)
+- **`excludedFromSuggestions`** — when true, never proposed by the planning engine (but Dish stays visible in the library).
+
+Validation: `1 ≤ cooldownDays ≤ targetIntervalDays`.
+
+### Selection Algorithm (planning engine internal)
+
+For each open slot, processed in date order:
 
 ```
-effectiveWeight = baseWeight × recencyFactor × intervalFactor
+daysSince        = days between slot date and the Dish's most recent FRESH past Plan Entry
+                   (if the Dish has never been served fresh: daysSince = 1.5 × targetIntervalDays)
+
+eligible         = daysSince ≥ cooldownDays   (plus filters and not excludedFromSuggestions)
+
+overdueness      = daysSince / targetIntervalDays
+selectionWeight  = min(overdueness, 3.0)
 ```
 
-**recencyFactor:**
-- 1.0 if the dish has never been made
-- Linearly decays from 1.0 toward 0.1 as `daysSinceLastMade` approaches `minIntervalDays` (or 60 days if null)
-- Recovers back to 1.0 after `minIntervalDays × 1.5` days (or 90 days if null)
+The planning engine builds the eligible pool for the slot, then picks via weighted-random using `selectionWeight`. **Leftover Plan Entries do not count** toward `daysSince` — only Fresh entries advance the cooldown / overdueness clock.
 
-**intervalFactor:**
-- 0 if `minIntervalDays` is set AND `daysSinceLastMade < minIntervalDays`
-- 1 otherwise
+**Why this works:** at steady state a Dish gets picked when its overdueness is ≈ 1.0, so the long-run gap converges to `targetIntervalDays`. A Dish with `target = 7` accrues weight twice as fast as one with `target = 14`, so over time it appears twice as often — exactly the ratio the user dialed in.
 
-`daysSinceLastMade` is derived from past Plan Entries (dates before today) for that dish — not from when it was last shown in a draft. A dish that was suggested but not selected is not penalized.
+**Why the cap at 3.0:** prevents a single forgotten Dish (e.g. one not served for a year) from dominating selection once it does become eligible again.
+
+**Why `1.5 × targetIntervalDays` for never-served:** mild "try this soon" bias without letting a bulk-imported batch crowd out the rotation.
 
 ### Nudge Controls (on Dish Detail / Edit)
 
 | Control | What it does |
 |---|---|
-| Weight slider 0–100 | Sets `weight` directly |
-| "Exclude from suggestions" toggle | Sets `weight = 0` (also disables slider while active) |
-| "How often" dropdown | Sets `minIntervalDays`: Anytime → null · Often → 14 · Monthly → 30 · Every 3 months → 90 · Every 6 months → 180 |
-| "Boost" button | `weight = min(weight + 20, 100)` — quick way to say "more of this" |
+| Frequency preset dropdown | Sets `targetIntervalDays` and `cooldownDays` together. Weekly → 7 / 4 · Biweekly → 14 / 7 · Monthly → 30 / 15 · Quarterly → 90 / 45 · Custom. When the user enters Custom mode, `cooldownDays` defaults to `ceil(targetIntervalDays / 2)`. |
+| Advanced (custom) | Numeric inputs for `targetIntervalDays` and `cooldownDays` directly. Enforces `cooldownDays ≤ targetIntervalDays`. |
+| "Exclude from suggestions" toggle | Sets `excludedFromSuggestions = true`. The frequency controls remain editable but greyed-out while exclusion is active. |
 
 ---
 
@@ -197,14 +207,15 @@ effectiveWeight = baseWeight × recencyFactor × intervalFactor
 
 **Strategy: Option 1** — assume planned = made. No manual confirmation required.
 
-Frequency stats are computed from Plan Entries with a `dishId` and a `date` in the past.
+Frequency stats are computed from Plan Entries with `entryKind = 'fresh'`, a non-null `dishId`, and a `date` in the past. Leftover entries are not counted (a leftover lunch is not a separate cook event).
 
 Stats displayed on Dish Detail:
-- Total times planned (all time)
-- Last planned date
-- Days since last planned
+- Total times cooked fresh (all time)
+- Last cooked date (most recent Fresh entry)
+- Days since last cooked fresh
+- (Optional in M10) Total times eaten as leftovers
 
-Used by the planning engine's recency factor calculation.
+Used by the planning engine to compute `daysSinceLastServedFresh` → overdueness → selection weight.
 
 Future options considered but not implemented in v1:
 - Weekly confirmation prompt (Option 2)
