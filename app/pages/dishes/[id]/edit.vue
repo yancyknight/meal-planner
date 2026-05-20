@@ -22,6 +22,7 @@
 
       <DishForm
         :initial-values="dish"
+        :initial-ingredients="existingIngredients ?? []"
         submit-label="Save changes"
         :loading="savePending"
         @submit="handleSubmit"
@@ -38,6 +39,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { CreateDishInput } from '#shared/schemas/dish'
 import type { Dish } from '#shared/types/dish'
+import type { DishIngredient } from '#shared/types/ingredient'
 
 const route = useRoute()
 const router = useRouter()
@@ -50,8 +52,13 @@ const { data: dish, isPending: loadPending, error: loadError } = useQuery({
   queryFn: () => $fetch<Dish>(`/api/dishes/${id.value}`),
 })
 
+const { data: existingIngredients } = useQuery({
+  queryKey: computed(() => queryKeys.dishIngredients.forDish(id.value)),
+  queryFn: () => $fetch<DishIngredient[]>(`/api/dishes/${id.value}/ingredients`),
+})
+
 const { mutateAsync, isPending: savePending } = useMutation({
-  mutationFn: async (data: CreateDishInput & { pendingImageFile?: File }) => {
+  mutationFn: async (data: CreateDishInput & { pendingImageFile?: File; ingredients: DishIngredient[] }) => {
     let imageLocalPath = data.imageLocalPath ?? null
 
     if (data.pendingImageFile) {
@@ -64,18 +71,28 @@ const { mutateAsync, isPending: savePending } = useMutation({
       imageLocalPath = result.filename
     }
 
-    return $fetch<Dish>(`/api/dishes/${id.value}`, {
+    await $fetch<Dish>(`/api/dishes/${id.value}`, {
       method: 'PATCH',
-      body: { ...data, pendingImageFile: undefined, imageLocalPath },
+      body: { ...data, pendingImageFile: undefined, ingredients: undefined, imageLocalPath },
+    })
+
+    await $fetch(`/api/dishes/${id.value}/ingredients`, {
+      method: 'PUT',
+      body: data.ingredients.map((i, idx) => ({
+        rawText: i.rawText,
+        canonicalIngredientId: i.canonicalIngredientId,
+        sortOrder: idx,
+      })),
     })
   },
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.dishes.all() })
+    queryClient.invalidateQueries({ queryKey: queryKeys.dishIngredients.forDish(id.value) })
     router.push(`/dishes/${id.value}`)
   },
 })
 
-async function handleSubmit(data: CreateDishInput & { pendingImageFile?: File }) {
+async function handleSubmit(data: CreateDishInput & { pendingImageFile?: File; ingredients: DishIngredient[] }) {
   saveError.value = undefined
   try {
     await mutateAsync(data)

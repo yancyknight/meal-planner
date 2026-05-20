@@ -86,6 +86,21 @@
         </div>
       </div>
 
+      <!-- Ingredients -->
+      <div v-if="dishIngredients && dishIngredients.length" class="mb-6">
+        <p class="text-xs text-gray-400 uppercase tracking-wide mb-2">Ingredients</p>
+        <ul class="space-y-1">
+          <li
+            v-for="ing in dishIngredients"
+            :key="ing.id"
+            class="flex items-baseline gap-2 text-sm"
+          >
+            <span class="text-gray-800">{{ ing.rawText }}</span>
+            <span class="text-xs text-gray-400">({{ ing.canonical.name }})</span>
+          </li>
+        </ul>
+      </div>
+
       <!-- Notes -->
       <div v-if="dish.notes" class="mb-6">
         <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Notes</p>
@@ -107,6 +122,7 @@
 <script setup lang="ts">
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { Dish } from '#shared/types/dish'
+import type { DishIngredient } from '#shared/types/ingredient'
 
 const route = useRoute()
 const router = useRouter()
@@ -116,6 +132,11 @@ const id = computed(() => Number(route.params.id))
 const { data: dish, isPending, error } = useQuery({
   queryKey: computed(() => queryKeys.dishes.detail(id.value)),
   queryFn: () => $fetch<Dish>(`/api/dishes/${id.value}`),
+})
+
+const { data: dishIngredients } = useQuery({
+  queryKey: computed(() => queryKeys.dishIngredients.forDish(id.value)),
+  queryFn: () => $fetch<DishIngredient[]>(`/api/dishes/${id.value}/ingredients`),
 })
 
 const imageSrc = computed(() => {

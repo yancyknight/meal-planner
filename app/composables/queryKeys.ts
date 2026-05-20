@@ -13,6 +13,11 @@ export const queryKeys = {
   },
   canonicalIngredients: {
     all: () => ['canonical-ingredients'] as const,
+    detail: (id: number) => ['canonical-ingredients', id] as const,
+    search: (q: string) => ['canonical-ingredients', 'search', q] as const,
+  },
+  dishIngredients: {
+    forDish: (dishId: number) => ['dish-ingredients', dishId] as const,
   },
   tags: {
     all: () => ['tags'] as const,

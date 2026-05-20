@@ -25,13 +25,14 @@
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { CreateDishInput } from '#shared/schemas/dish'
 import type { Dish } from '#shared/types/dish'
+import type { DishIngredient } from '#shared/types/ingredient'
 
 const router = useRouter()
 const queryClient = useQueryClient()
 const error = ref<string>()
 
 const { mutateAsync, isPending } = useMutation({
-  mutationFn: async (data: CreateDishInput & { pendingImageFile?: File }) => {
+  mutationFn: async (data: CreateDishInput & { pendingImageFile?: File; ingredients: DishIngredient[] }) => {
     let imageLocalPath: string | null = null
 
     if (data.pendingImageFile) {
@@ -44,18 +45,32 @@ const { mutateAsync, isPending } = useMutation({
       imageLocalPath = result.filename
     }
 
-    return $fetch<Dish>('/api/dishes', {
+    const dish = await $fetch<Dish>('/api/dishes', {
       method: 'POST',
-      body: { ...data, pendingImageFile: undefined, imageLocalPath: imageLocalPath ?? data.imageLocalPath },
+      body: { ...data, pendingImageFile: undefined, ingredients: undefined, imageLocalPath: imageLocalPath ?? data.imageLocalPath },
     })
+
+    if (data.ingredients.length > 0) {
+      await $fetch(`/api/dishes/${dish.id}/ingredients`, {
+        method: 'PUT',
+        body: data.ingredients.map((i, idx) => ({
+          rawText: i.rawText,
+          canonicalIngredientId: i.canonicalIngredientId,
+          sortOrder: idx,
+        })),
+      })
+    }
+
+    return dish
   },
   onSuccess: (dish) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.dishes.all() })
+    queryClient.invalidateQueries({ queryKey: queryKeys.dishIngredients.forDish(dish.id) })
     router.push(`/dishes/${dish.id}`)
   },
 })
 
-async function handleSubmit(data: CreateDishInput & { pendingImageFile?: File }) {
+async function handleSubmit(data: CreateDishInput & { pendingImageFile?: File; ingredients: DishIngredient[] }) {
   error.value = undefined
   try {
     await mutateAsync(data)

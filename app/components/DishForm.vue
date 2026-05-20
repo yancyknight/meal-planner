@@ -127,6 +127,12 @@
       <DishTagSelector v-model="form.tagIds" />
     </div>
 
+    <!-- Ingredients -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-2">Ingredients</label>
+      <IngredientList v-model="ingredients" />
+    </div>
+
     <!-- Notes -->
     <div>
       <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
@@ -156,9 +162,11 @@
 import type { CreateDishInput } from '#shared/schemas/dish'
 import { ALLERGEN_PRESETS, SEASON_OPTIONS } from '#shared/schemas/dish'
 import type { Tag } from '#shared/types/tag'
+import type { DishIngredient } from '#shared/types/ingredient'
 
 interface Props {
   initialValues?: Partial<CreateDishInput> & { imageLocalPath?: string | null; tags?: Tag[] }
+  initialIngredients?: DishIngredient[]
   submitLabel?: string
   loading?: boolean
 }
@@ -169,12 +177,19 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  submit: [data: CreateDishInput & { tagIds: number[]; pendingImageFile?: File }]
+  submit: [data: CreateDishInput & { tagIds: number[]; pendingImageFile?: File; ingredients: DishIngredient[] }]
 }>()
 
 const fileInputRef = ref<HTMLInputElement>()
 const pendingImageFile = ref<File>()
 const imagePreview = ref<string>()
+const ingredients = ref<DishIngredient[]>(props.initialIngredients ?? [])
+
+watch(() => props.initialIngredients, (val) => {
+  if (val && val.length > 0 && ingredients.value.length === 0) {
+    ingredients.value = val
+  }
+})
 
 type DishFormState = Omit<CreateDishInput, 'allergens' | 'season' | 'tagIds'> & {
   allergens: string[]
@@ -235,6 +250,6 @@ function clearImage() {
 }
 
 function handleSubmit() {
-  emit('submit', { ...form, pendingImageFile: pendingImageFile.value })
+  emit('submit', { ...form, pendingImageFile: pendingImageFile.value, ingredients: ingredients.value })
 }
 </script>

@@ -120,4 +120,13 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 Milestone 0 complete. All items done and pushed to https://github.com/yancyknight/meal-planner.
 
+## Milestone 3 — Canonical Ingredients + Dish Ingredients ✅
+
+- [x] Add `canonical_ingredients` and `dish_ingredients` tables; migration
+- [x] Install fuse.js; implement fuzzy match suggestion in `ingredientService`
+- [x] Dish ingredient editor on dish create/edit form: raw text input → fuzzy suggestion → canonical link or create new
+- [x] Ingredient management page (`/ingredients`): list all canonicals, rename, merge, set Walmart URL, view linked dishes
+- [x] API routes for canonical ingredients and dish ingredients
+- [x] Tests: fuzzy match threshold behavior, merge logic, cascade behavior
+
 **Implementation note:** Tailwind CSS v4 is configured via `@tailwindcss/vite` (Vite plugin) rather than `@nuxtjs/tailwindcss`, because the Nuxt module only supports Tailwind v3 as of this writing. Update `docs/architecture.md` if this is worth documenting.

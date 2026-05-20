@@ -1,5 +1,15 @@
 import { integer, sqliteTable, text, index, primaryKey } from 'drizzle-orm/sqlite-core'
 
+export const canonicalIngredients = sqliteTable('canonical_ingredients', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  walmartUrl: text('walmartUrl'),
+  createdAt: text('createdAt').notNull(),
+  updatedAt: text('updatedAt').notNull(),
+}, (table) => [
+  index('idx_canonical_ingredients_name').on(table.name),
+])
+
 export const dishes = sqliteTable('dishes', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
@@ -33,4 +43,15 @@ export const dishTags = sqliteTable('dish_tags', {
   tagId: integer('tagId').notNull().references(() => tags.id, { onDelete: 'cascade' }),
 }, (table) => [
   primaryKey({ columns: [table.dishId, table.tagId] }),
+])
+
+export const dishIngredients = sqliteTable('dish_ingredients', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  dishId: integer('dishId').notNull().references(() => dishes.id, { onDelete: 'cascade' }),
+  canonicalIngredientId: integer('canonicalIngredientId').notNull().references(() => canonicalIngredients.id),
+  rawText: text('rawText').notNull(),
+  sortOrder: integer('sortOrder').notNull().default(0),
+}, (table) => [
+  index('idx_dish_ingredients_dish_id').on(table.dishId),
+  index('idx_dish_ingredients_canonical_id').on(table.canonicalIngredientId),
 ])
