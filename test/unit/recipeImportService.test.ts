@@ -4,6 +4,10 @@ import { importFromUrl } from '../../server/services/recipeImportService'
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
 
+// Network tests hit real sites — skipped by default to avoid unnecessary traffic.
+// Run with: RUN_NETWORK_TESTS=1 pnpm test
+const describeNetwork = process.env.RUN_NETWORK_TESTS ? describe : describe.skip
+
 function makeResponse(body: string, status = 200) {
   return Promise.resolve({
     ok: status >= 200 && status < 300,
@@ -181,6 +185,18 @@ describe('importFromUrl — HTML heuristic fallback', () => {
     const result = await importFromUrl('https://example.com/page')
     expect(result.ingredientTexts).toEqual([])
   })
+})
+
+describeNetwork('importFromUrl — real network (RUN_NETWORK_TESTS=1)', () => {
+  it('imports from melskitchencafe.com via JSON-LD', async () => {
+    // Restore real fetch for this suite — the mock is set globally above
+    vi.restoreAllMocks()
+    const result = await importFromUrl('https://www.melskitchencafe.com/instant-pot-salsa-verde-chicken/')
+    expect(result.name).toBeTruthy()
+    expect(result.ingredientTexts.length).toBeGreaterThan(0)
+    expect(result.sourceUrl).toBe('https://www.melskitchencafe.com/instant-pot-salsa-verde-chicken/')
+    expect(result.sourceName).toBe('melskitchencafe.com')
+  }, 30_000)
 })
 
 describe('importFromUrl — error handling', () => {
