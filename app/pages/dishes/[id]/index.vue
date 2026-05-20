@@ -51,7 +51,7 @@
           </div>
 
           <!-- Stat row -->
-          <div class="flex gap-6">
+          <div class="flex items-end gap-6">
             <div v-if="dish.timeEstimateMinutes" class="flex flex-col">
               <span class="font-serif text-3xl font-semibold text-text">{{ dish.timeEstimateMinutes }}</span>
               <span class="text-xs font-medium uppercase tracking-wide text-text-muted">minutes</span>
