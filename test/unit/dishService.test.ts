@@ -148,14 +148,16 @@ describe('updateDish', () => {
 })
 
 describe('deleteDish', () => {
-  it('deletes an existing dish and returns true', async () => {
+  it('deletes an existing dish with no plan entries', async () => {
     const dish = await createDish({ name: 'Bye' })
-    expect(await deleteDish(dish.id)).toBe(true)
+    const result = await deleteDish(dish.id)
+    expect(result).toEqual({ deleted: true, hasPlanEntries: false })
     expect(await getDishById(dish.id)).toBeNull()
   })
 
-  it('returns false for a non-existent id', async () => {
-    expect(await deleteDish(999999)).toBe(false)
+  it('returns deleted: false for a non-existent id', async () => {
+    const result = await deleteDish(999999)
+    expect(result).toEqual({ deleted: false, hasPlanEntries: false })
   })
 })
 
