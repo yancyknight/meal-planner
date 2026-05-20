@@ -194,16 +194,16 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 8 — Shopping Lists
+## Milestone 8 — Shopping Lists ✅
 *Depends on Plan Entries and Canonical Ingredients.*
 
-- `[ ]` Add `shopping_lists` and `shopping_list_items` tables; migration
-- `[ ]` Implement `shoppingListService`: generate from date range, check/uncheck item, mark done, auto-delete eligibility query
-- `[ ]` Nitro scheduled task: `server/tasks/shopping-lists/cleanup.ts`; register in `nuxt.config.ts` with `experimental.tasks: true`
-- `[ ]` API routes for shopping lists and items
-- `[ ]` Shopping list management page (`/shopping-lists`): all lists, status badges, deletion countdown on done lists
-- `[ ]` Shopping list detail page (`/shopping-lists/[id]`): combined view + by-dish toggle, item checkboxes, Walmart links, mark-done button
-- `[ ]` Tests: list generation (ingredient grouping, rawTexts, source dish tracking), check state persistence, auto-delete timing logic, scheduled task runs
+- `[x]` Add `shopping_lists` and `shopping_list_items` tables; migration
+- `[x]` Implement `shoppingListService`: generate from date range, check/uncheck item, mark done, auto-delete eligibility query
+- `[x]` Nitro scheduled task: `server/tasks/shopping-lists/cleanup.ts`; register in `nuxt.config.ts` with `experimental.tasks: true`
+- `[x]` API routes for shopping lists and items
+- `[x]` Shopping list management page (`/shopping-lists`): all lists, status badges, deletion countdown on done lists
+- `[x]` Shopping list detail page (`/shopping-lists/[id]`): combined view + by-dish toggle, item checkboxes, Walmart links, mark-done button
+- `[x]` Tests: list generation (ingredient grouping, rawTexts, source dish tracking), check state persistence, auto-delete timing logic, scheduled task runs
 
 ---
 

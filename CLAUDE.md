@@ -125,7 +125,7 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestones 0–7 complete. Next up: **Milestone 8 — Shopping Lists**. See `docs/backlog.md` for the full checklists.
+Milestones 0–8 complete. Next up: **Milestone 9 — Planning Mode**. See `docs/backlog.md` for the full checklists.
 
 ## Milestone 3 — Canonical Ingredients + Dish Ingredients ✅
 

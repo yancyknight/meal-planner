@@ -18,5 +18,8 @@ export default defineNuxtConfig({
 
   nitro: {
     experimental: { tasks: true },
+    scheduledTasks: {
+      '*/15 * * * *': ['shopping-lists:cleanup'],
+    },
   },
 })

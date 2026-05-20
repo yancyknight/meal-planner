@@ -43,6 +43,13 @@
       "when": 1779300194233,
       "tag": "0005_clean_lord_hawal",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1779315428903,
+      "tag": "0006_colossal_slyde",
+      "breakpoints": true
     }
   ]
 }
