@@ -167,6 +167,16 @@
       />
     </div>
 
+    <!-- Frequency controls -->
+    <div class="rounded-lg border border-border p-4">
+      <p class="mb-4 text-xs font-medium uppercase tracking-wider text-text-muted">Planning Frequency</p>
+      <FrequencyControls
+        v-model:cooldown-days="form.cooldownDays"
+        v-model:target-interval-days="form.targetIntervalDays"
+        v-model:excluded-from-suggestions="form.excludedFromSuggestions"
+      />
+    </div>
+
     <!-- Submit -->
     <div class="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-5">
       <slot name="actions" />
@@ -223,10 +233,13 @@ watch(() => props.initialIngredients, (val) => {
   }
 })
 
-type DishFormState = Omit<CreateDishInput, 'allergens' | 'season' | 'tagIds'> & {
+type DishFormState = Omit<CreateDishInput, 'allergens' | 'season' | 'tagIds' | 'cooldownDays' | 'targetIntervalDays' | 'excludedFromSuggestions'> & {
   allergens: string[]
   season: (typeof SEASON_OPTIONS)[number][]
   tagIds: number[]
+  cooldownDays: number
+  targetIntervalDays: number
+  excludedFromSuggestions: boolean
 }
 
 const form = reactive<DishFormState>({
