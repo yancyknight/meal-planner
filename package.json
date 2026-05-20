@@ -22,6 +22,9 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/playfair-display": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@nuxt/test-utils": "4.0.3",
     "@oro.ad/nuxt-claude-devtools": "1.5.2",
     "@tailwindcss/vite": "^4.3.0",

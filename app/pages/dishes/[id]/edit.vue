@@ -1,22 +1,21 @@
 <template>
   <div class="max-w-2xl">
-    <div class="flex items-center gap-3 mb-6">
-      <NuxtLink :to="`/dishes/${id}`" class="text-gray-400 hover:text-gray-600">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </NuxtLink>
-      <h1 class="text-2xl font-semibold text-gray-900">Edit dish</h1>
+    <div class="mb-8">
+      <NuxtLink :to="`/dishes/${id}`" class="text-sm text-text-subtle transition hover:text-text-muted">‹ Dish</NuxtLink>
+      <div class="mt-2">
+        <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Edit</p>
+        <h1 class="font-serif text-3xl font-semibold text-text">Edit dish</h1>
+      </div>
     </div>
 
     <div v-if="loadPending" class="animate-pulse space-y-4">
-      <div v-for="n in 5" :key="n" class="h-10 bg-gray-200 rounded" />
+      <div v-for="n in 5" :key="n" class="h-10 rounded bg-surface-alt" />
     </div>
 
-    <div v-else-if="loadError || !dish" class="text-red-600 text-sm">Failed to load dish.</div>
+    <div v-else-if="loadError || !dish" class="text-sm text-warning">Failed to load dish.</div>
 
     <template v-else>
-      <div v-if="saveError" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+      <div v-if="saveError" class="mb-6 rounded-lg bg-accent-soft px-4 py-3 text-sm text-warning">
         {{ saveError }}
       </div>
 
@@ -28,7 +27,7 @@
         @submit="handleSubmit"
       >
         <template #actions>
-          <NuxtLink :to="`/dishes/${id}`" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</NuxtLink>
+          <NuxtLink :to="`/dishes/${id}`" class="rounded-lg border border-border px-4 py-2 text-sm text-text-muted transition hover:bg-surface-alt">Cancel</NuxtLink>
         </template>
       </DishForm>
     </template>

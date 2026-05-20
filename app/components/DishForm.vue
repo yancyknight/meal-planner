@@ -1,28 +1,27 @@
 <template>
-  <form class="space-y-6" @submit.prevent="handleSubmit">
+  <form class="space-y-7" @submit.prevent="handleSubmit">
     <!-- Name -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-red-500">*</span></label>
+      <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">
+        Name <span class="text-accent">*</span>
+      </label>
       <input
         v-model="form.name"
         type="text"
         required
-        class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
         placeholder="e.g. Spaghetti Carbonara"
       />
     </div>
 
     <!-- Image -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
-      <div
-        v-if="imagePreview"
-        class="mb-2 relative inline-block"
-      >
-        <img :src="imagePreview" alt="Dish preview" class="h-32 w-48 object-cover rounded-md border border-gray-200" />
+      <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Image</label>
+      <div v-if="imagePreview" class="mb-3 relative inline-block">
+        <img :src="imagePreview" alt="Dish preview" class="h-32 w-48 rounded-lg border border-border object-cover" />
         <button
           type="button"
-          class="absolute -top-2 -right-2 bg-white rounded-full border border-gray-300 w-5 h-5 flex items-center justify-center text-gray-500 hover:text-red-500 text-xs"
+          class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-xs text-text-muted hover:text-warning"
           @click="clearImage"
         >×</button>
       </div>
@@ -30,14 +29,14 @@
         ref="fileInputRef"
         type="file"
         accept="image/*"
-        class="block w-full text-sm text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-sm file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+        class="block w-full text-sm text-text-muted file:mr-3 file:rounded file:border-0 file:bg-surface-alt file:px-3 file:py-1.5 file:text-sm file:text-text hover:file:bg-border"
         @change="handleFileChange"
       />
-      <p class="text-xs text-gray-400 mt-1">Or enter an image URL:</p>
+      <p class="mt-2 text-xs text-text-subtle">Or enter an image URL:</p>
       <input
         v-model="form.imageUrl"
         type="url"
-        class="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        class="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
         placeholder="https://..."
         @blur="onImageUrlBlur"
       />
@@ -46,64 +45,79 @@
     <!-- Source -->
     <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Source URL</label>
+        <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Source URL</label>
         <input
           v-model="form.sourceUrl"
           type="url"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
           placeholder="https://..."
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Source Name</label>
+        <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Source Name</label>
         <input
           v-model="form.sourceName"
           type="text"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
           placeholder="e.g. NYT Cooking"
         />
       </div>
     </div>
 
-    <!-- Time, Yield, Difficulty -->
-    <div class="grid grid-cols-3 gap-4">
+    <!-- Time + Yield -->
+    <div class="grid grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Time (minutes)</label>
+        <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Time (minutes)</label>
         <input
           v-model.number="form.timeEstimateMinutes"
           type="number"
           min="1"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
           placeholder="30"
         />
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Yield (servings)</label>
+        <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Yield (servings)</label>
         <input
           v-model.number="form.yieldServings"
           type="number"
           min="1"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
           placeholder="4"
         />
       </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-        <select
-          v-model="form.difficulty"
-          class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+    </div>
+
+    <!-- Difficulty pills -->
+    <div>
+      <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">Difficulty</label>
+      <div class="flex gap-2">
+        <button
+          v-for="opt in difficultyOptions"
+          :key="opt.value ?? 'none'"
+          type="button"
+          class="rounded-full border px-4 py-1.5 text-sm transition"
+          :class="form.difficulty === opt.value
+            ? 'border-accent bg-accent-soft text-accent-deep font-medium'
+            : 'border-border text-text-muted hover:bg-surface-alt'"
+          @click="form.difficulty = opt.value"
         >
-          <option :value="null">—</option>
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
+          <span v-if="opt.value" class="mr-1.5 inline-flex gap-0.5">
+            <span
+              v-for="n in 3"
+              :key="n"
+              class="inline-block h-1.5 w-1.5 rounded-full"
+              :class="n <= (difficultyLevelMap[opt.value] ?? 0) ? 'bg-current' : 'opacity-20 bg-current'"
+            />
+          </span>
+          {{ opt.label }}
+        </button>
       </div>
     </div>
 
     <!-- Allergens -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">Allergens</label>
+      <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">Allergens</label>
       <TagInput
         v-model="form.allergens"
         :presets="ALLERGEN_PRESETS"
@@ -111,46 +125,55 @@
       />
     </div>
 
-    <!-- Season -->
+    <!-- Season pills -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">Season <span class="text-gray-400 text-xs font-normal">(empty = year-round)</span></label>
-      <CheckboxGroup
-        :model-value="form.season"
-        :options="SEASON_OPTIONS"
-        @update:model-value="form.season = $event as typeof form.season"
-      />
+      <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">
+        Season <span class="normal-case tracking-normal font-normal text-text-subtle">(empty = year-round)</span>
+      </label>
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="opt in SEASON_OPTIONS"
+          :key="opt"
+          type="button"
+          class="rounded-full border px-4 py-1.5 text-sm capitalize transition"
+          :class="form.season.includes(opt)
+            ? 'border-accent bg-accent-soft text-accent-deep font-medium'
+            : 'border-border text-text-muted hover:bg-surface-alt'"
+          @click="toggleSeason(opt)"
+        >{{ opt }}</button>
+      </div>
     </div>
 
     <!-- Tags -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">Tags</label>
+      <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">Tags</label>
       <DishTagSelector v-model="form.tagIds" />
     </div>
 
     <!-- Ingredients -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-2">Ingredients</label>
+      <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">Ingredients</label>
       <IngredientList v-model="ingredients" />
     </div>
 
     <!-- Notes -->
     <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+      <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Notes</label>
       <textarea
         v-model="form.notes"
         rows="3"
-        class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+        class="w-full resize-none rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
         placeholder="Internal notes, variations, tips..."
       />
     </div>
 
     <!-- Submit -->
-    <div class="flex items-center justify-end gap-3 pt-2 border-t border-gray-100">
+    <div class="flex items-center justify-end gap-3 border-t border-border pt-5">
       <slot name="actions" />
       <button
         type="submit"
         :disabled="loading"
-        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        class="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-hover disabled:cursor-not-allowed disabled:opacity-50"
       >
         {{ loading ? 'Saving…' : submitLabel }}
       </button>
@@ -179,6 +202,14 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   submit: [data: CreateDishInput & { tagIds: number[]; pendingImageFile?: File; ingredients: DishIngredient[] }]
 }>()
+
+const difficultyOptions = [
+  { value: null as null | 'easy' | 'medium' | 'hard', label: '—' },
+  { value: 'easy' as const, label: 'Easy' },
+  { value: 'medium' as const, label: 'Medium' },
+  { value: 'hard' as const, label: 'Hard' },
+]
+const difficultyLevelMap = { easy: 1, medium: 2, hard: 3 } as const
 
 const fileInputRef = ref<HTMLInputElement>()
 const pendingImageFile = ref<File>()
@@ -218,10 +249,17 @@ const form = reactive<DishFormState>({
 onMounted(() => {
   if (props.initialValues?.imageLocalPath) {
     imagePreview.value = `/api/images/${props.initialValues.imageLocalPath}`
-  } else if (props.initialValues?.imageUrl) {
+  }
+  else if (props.initialValues?.imageUrl) {
     imagePreview.value = props.initialValues.imageUrl
   }
 })
+
+function toggleSeason(opt: (typeof SEASON_OPTIONS)[number]) {
+  const idx = form.season.indexOf(opt)
+  if (idx === -1) form.season.push(opt)
+  else form.season.splice(idx, 1)
+}
 
 function handleFileChange(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0]

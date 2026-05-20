@@ -134,19 +134,27 @@ function toggleDishes(id: number) {
 
 <template>
   <div>
-    <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-semibold text-gray-900">Ingredients</h1>
-      <span v-if="!isPending" class="text-sm text-gray-400">{{ ingredients?.length ?? 0 }} total</span>
+    <!-- Header -->
+    <div class="mb-8 flex items-end justify-between">
+      <div>
+        <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Pantry</p>
+        <h1 class="font-serif text-4xl font-semibold text-text">
+          <em class="font-normal italic text-accent-deep">Canonical</em> ingredients
+        </h1>
+      </div>
+      <span v-if="!isPending" class="font-mono text-sm text-text-subtle">
+        {{ ingredients?.length ?? 0 }} total
+      </span>
     </div>
 
     <!-- Merge panel -->
-    <div v-if="showMergePanel" class="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
-      <p class="mb-3 text-sm font-medium text-amber-800">
-        Merge "{{ mergeSourceName }}" into:
+    <div v-if="showMergePanel" class="mb-6 rounded-lg border border-border bg-accent-soft p-5">
+      <p class="mb-3 text-sm font-medium text-text">
+        Merge <strong class="text-accent-deep">{{ mergeSourceName }}</strong> into:
       </p>
       <select
         v-model="mergeTargetId"
-        class="mb-3 w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm"
+        class="mb-3 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
       >
         <option :value="null">— select target —</option>
         <option
@@ -157,97 +165,104 @@ function toggleDishes(id: number) {
           {{ ing.name }}
         </option>
       </select>
-      <p class="mb-3 text-xs text-amber-700">
-        All dish ingredients referencing "{{ mergeSourceName }}" will be relinked to the target. "{{ mergeSourceName }}" will be deleted.
+      <p class="mb-4 text-xs text-text-muted">
+        All dish ingredients referencing "{{ mergeSourceName }}" will be relinked to the target and "{{ mergeSourceName }}" will be deleted.
       </p>
       <div class="flex gap-2">
         <button
           :disabled="!mergeTargetId || mergePending"
-          class="rounded bg-amber-600 px-3 py-1.5 text-sm text-white hover:bg-amber-700 disabled:opacity-50"
+          class="rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-hover disabled:opacity-50"
           @click="submitMerge"
         >
           Merge
         </button>
-        <button class="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50" @click="cancelMerge">
+        <button
+          class="rounded-lg border border-border px-4 py-2 text-sm text-text-muted transition hover:bg-surface"
+          @click="cancelMerge"
+        >
           Cancel
         </button>
       </div>
     </div>
 
+    <!-- Loading -->
     <div v-if="isPending" class="space-y-2">
-      <div v-for="n in 6" :key="n" class="h-12 animate-pulse rounded-lg bg-gray-200" />
+      <div v-for="n in 6" :key="n" class="h-12 animate-pulse rounded-lg bg-surface-alt" />
     </div>
 
-    <div v-else-if="!ingredients?.length" class="py-12 text-center text-sm text-gray-400">
-      No ingredients yet. They're created when you add ingredients to dishes.
+    <!-- Empty state -->
+    <div v-else-if="!ingredients?.length" class="py-16 text-center">
+      <p class="font-serif text-xl italic text-text-subtle">No ingredients yet.</p>
+      <p class="mt-2 text-sm text-text-muted">They're created when you add ingredients to dishes.</p>
     </div>
 
-    <div v-else class="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white">
-      <div v-for="ing in ingredients" :key="ing.id" class="px-4 py-3">
+    <!-- List -->
+    <div v-else class="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
+      <div v-for="ing in ingredients" :key="ing.id" class="px-5 py-3.5">
         <!-- Name row -->
         <div class="flex items-center gap-3">
           <div class="flex-1">
             <div v-if="editingId === ing.id" class="flex items-center gap-2">
               <input
                 v-model="editingName"
-                class="rounded border border-indigo-400 px-2 py-0.5 text-sm focus:outline-none"
+                class="rounded-lg border border-accent/60 px-2.5 py-1 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
                 @keyup.enter="submitRename(ing.id)"
                 @keyup.escape="cancelRename"
               >
-              <button class="text-xs text-indigo-600 hover:underline" @click="submitRename(ing.id)">
+              <button class="text-xs font-medium text-accent hover:text-accent-hover" @click="submitRename(ing.id)">
                 Save
               </button>
-              <button class="text-xs text-gray-400 hover:text-gray-600" @click="cancelRename">
+              <button class="text-xs text-text-subtle hover:text-text-muted" @click="cancelRename">
                 Cancel
               </button>
             </div>
-            <span v-else class="font-medium text-gray-800">{{ ing.name }}</span>
+            <span v-else class="text-sm font-medium text-text">{{ ing.name }}</span>
           </div>
 
-          <div class="flex shrink-0 items-center gap-2">
+          <div class="flex shrink-0 items-center gap-3">
             <a
               v-if="ing.walmartUrl"
               :href="ing.walmartUrl"
               target="_blank"
               rel="noopener"
-              class="text-xs text-blue-500 hover:underline"
-            >Walmart</a>
-            <button class="text-xs text-gray-400 hover:text-gray-600" @click="toggleDishes(ing.id)">
+              class="text-xs text-accent hover:text-accent-hover hover:underline"
+            >Walmart ↗</a>
+            <button class="text-xs text-text-subtle transition hover:text-text-muted" @click="toggleDishes(ing.id)">
               dishes
             </button>
-            <button class="text-xs text-gray-400 hover:text-indigo-600" @click="startRename(ing)">
+            <button class="text-xs text-text-subtle transition hover:text-accent" @click="startRename(ing)">
               rename
             </button>
-            <button class="text-xs text-gray-400 hover:text-amber-600" @click="startMerge(ing)">
+            <button class="text-xs text-text-subtle transition hover:text-warning" @click="startMerge(ing)">
               merge
             </button>
-            <button class="text-xs text-gray-400 hover:text-red-500" @click="confirmDelete(ing)">
+            <button class="text-xs text-text-subtle transition hover:text-warning" @click="confirmDelete(ing)">
               delete
             </button>
           </div>
         </div>
 
-        <!-- Walmart URL row -->
-        <div class="mt-1">
+        <!-- Walmart URL edit row -->
+        <div class="mt-1.5">
           <div v-if="editingWalmartId === ing.id" class="flex items-center gap-2">
             <input
               v-model="editingWalmartUrl"
               type="url"
               placeholder="https://www.walmart.com/ip/..."
-              class="min-w-0 flex-1 rounded border border-gray-300 px-2 py-0.5 text-xs focus:outline-none focus:border-indigo-400"
+              class="min-w-0 flex-1 rounded-lg border border-border px-2.5 py-1 text-xs text-text focus:outline-none focus:border-accent"
               @keyup.enter="submitWalmart(ing.id)"
               @keyup.escape="cancelWalmartEdit"
             >
-            <button class="text-xs text-indigo-600 hover:underline" @click="submitWalmart(ing.id)">
+            <button class="text-xs font-medium text-accent hover:text-accent-hover" @click="submitWalmart(ing.id)">
               Save
             </button>
-            <button class="text-xs text-gray-400 hover:text-gray-600" @click="cancelWalmartEdit">
+            <button class="text-xs text-text-subtle hover:text-text-muted" @click="cancelWalmartEdit">
               Cancel
             </button>
           </div>
           <button
             v-else
-            class="text-xs text-gray-400 hover:text-gray-600"
+            class="text-xs text-text-subtle transition hover:text-text-muted"
             @click="startWalmartEdit(ing)"
           >
             {{ ing.walmartUrl ? 'edit Walmart URL' : '+ set Walmart URL' }}
@@ -255,18 +270,16 @@ function toggleDishes(id: number) {
         </div>
 
         <!-- Linked dishes -->
-        <div v-if="expandedId === ing.id" class="mt-2 rounded bg-gray-50 px-3 py-2">
-          <div v-if="!linkedDishes" class="text-xs text-gray-400">
-            Loading…
-          </div>
-          <div v-else-if="linkedDishes.length === 0" class="text-xs text-gray-400">
+        <div v-if="expandedId === ing.id" class="mt-3 rounded-lg bg-surface-alt px-4 py-3">
+          <div v-if="!linkedDishes" class="text-xs text-text-subtle">Loading…</div>
+          <div v-else-if="linkedDishes.length === 0" class="text-xs text-text-muted">
             No dishes use this ingredient.
           </div>
-          <ul v-else class="flex flex-wrap gap-1">
+          <ul v-else class="flex flex-wrap gap-1.5">
             <li v-for="d in linkedDishes" :key="d.id">
               <NuxtLink
                 :to="`/dishes/${d.id}`"
-                class="rounded border border-gray-200 bg-white px-2 py-0.5 text-xs text-gray-700 hover:border-indigo-300 hover:text-indigo-700"
+                class="rounded-full border border-border bg-surface px-3 py-1 text-xs text-text-muted transition hover:border-accent/40 hover:text-accent-deep"
               >{{ d.name }}</NuxtLink>
             </li>
           </ul>

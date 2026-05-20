@@ -1,21 +1,20 @@
 <template>
   <div class="max-w-2xl">
-    <div class="flex items-center gap-3 mb-6">
-      <NuxtLink to="/dishes" class="text-gray-400 hover:text-gray-600">
-        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-      </NuxtLink>
-      <h1 class="text-2xl font-semibold text-gray-900">New dish</h1>
+    <div class="mb-8">
+      <NuxtLink to="/dishes" class="text-sm text-text-subtle transition hover:text-text-muted">‹ Dishes</NuxtLink>
+      <div class="mt-2">
+        <p class="text-xs font-medium uppercase tracking-wider text-text-muted">New</p>
+        <h1 class="font-serif text-3xl font-semibold text-text">Add a dish</h1>
+      </div>
     </div>
 
-    <div v-if="error" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+    <div v-if="error" class="mb-6 rounded-lg bg-accent-soft px-4 py-3 text-sm text-warning">
       {{ error }}
     </div>
 
     <DishForm :loading="isPending" @submit="handleSubmit">
       <template #actions>
-        <NuxtLink to="/dishes" class="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</NuxtLink>
+        <NuxtLink to="/dishes" class="rounded-lg border border-border px-4 py-2 text-sm text-text-muted transition hover:bg-surface-alt">Cancel</NuxtLink>
       </template>
     </DishForm>
   </div>

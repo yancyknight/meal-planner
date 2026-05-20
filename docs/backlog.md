@@ -80,20 +80,20 @@ Update status as sessions complete:
 
 ---
 
-## Milestone 3.6 — UI Uplift to Design System
+## Milestone 3.6 — UI Uplift to Design System ✅
 *Establish design tokens and bring existing pages into the same visual voice. See `docs/design-system.md`.
 Acceptance is "consistent with each other and the design direction" — not pixel-perfect to the PDF.*
 
-- `[ ]` Add fonts — Playfair Display + Inter + JetBrains Mono (or close substitutes). Self-host or use a CDN; document the choice.
-- `[ ]` Define Tailwind v4 `@theme` tokens in `app/assets/css/main.css` from the palette / typography / spacing tables in `docs/design-system.md`
-- `[ ]` Apply base background, body font, and serif headline treatment globally
-- `[ ]` Refactor `app/layouts/default.vue`: centered nav with active-pill, brand mark with italic "for two", date in top-right
-- `[ ]` Refactor `app/pages/dishes/index.vue` (dish list): card grid, eyebrow + serif headline, search/filter controls in pills
-- `[ ]` Refactor `app/pages/dishes/[id]/index.vue` (dish detail): two-column layout, stat row, ingredient table, recent appearances list, source link, frequency controls (using whatever fields exist — full nudge UI is M7)
-- `[ ]` Refactor `app/pages/dishes/new.vue` and `app/pages/dishes/[id]/edit.vue` form chrome
-- `[ ]` Refactor `app/components/DishForm.vue` field styling: pills for difficulty / allergen / season, soft borders, eyebrow labels
-- `[ ]` Refactor `app/pages/ingredients/*` to match
-- `[ ]` Screenshot pass — open every existing page, confirm consistency with each other; flag any drift from the direction in the PR description for user feedback
+- `[x]` Add fonts — Playfair Display + Inter + JetBrains Mono (or close substitutes). Self-host or use a CDN; document the choice.
+- `[x]` Define Tailwind v4 `@theme` tokens in `app/assets/css/main.css` from the palette / typography / spacing tables in `docs/design-system.md`
+- `[x]` Apply base background, body font, and serif headline treatment globally
+- `[x]` Refactor `app/layouts/default.vue`: centered nav with active-pill, brand mark with italic "for two", date in top-right
+- `[x]` Refactor `app/pages/dishes/index.vue` (dish list): card grid, eyebrow + serif headline, search/filter controls in pills
+- `[x]` Refactor `app/pages/dishes/[id]/index.vue` (dish detail): two-column layout, stat row, ingredient table, recent appearances list, source link, frequency controls (using whatever fields exist — full nudge UI is M7)
+- `[x]` Refactor `app/pages/dishes/new.vue` and `app/pages/dishes/[id]/edit.vue` form chrome
+- `[x]` Refactor `app/components/DishForm.vue` field styling: pills for difficulty / allergen / season, soft borders, eyebrow labels
+- `[x]` Refactor `app/pages/ingredients/*` to match
+- `[x]` Screenshot pass — open every existing page, confirm consistency with each other; flag any drift from the direction in the PR description for user feedback
 - `[ ]` Iterate based on user feedback before considering this milestone closed
 
 ---
