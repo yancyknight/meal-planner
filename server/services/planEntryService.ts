@@ -6,10 +6,6 @@ import type { CreatePlanEntryInput } from '../../shared/schemas/planEntry'
 
 type PlanEntryRow = typeof planEntries.$inferSelect
 
-// Hardcoded until M6 (App Settings) wires up the actual setting.
-// Value is 3: two adults + kids sharing ~1 equivalent serving.
-const HOUSEHOLD_SIZE = 3
-
 function rowToPlanEntry(
   row: PlanEntryRow,
   dish?: { name: string; imageLocalPath: string | null; imageUrl: string | null; yieldServings: number | null } | null,
@@ -120,7 +116,7 @@ export async function daysSinceLastServedFresh(dishId: number, beforeDate: strin
 }
 
 /** Returns true if a fresh plan entry's yield exceeds the household serving need. */
-export function hasLeftovers(yieldServings: number | null, guestCount: number): boolean {
+export function hasLeftovers(yieldServings: number | null, guestCount: number, householdSize: number): boolean {
   if (yieldServings == null) return false
-  return yieldServings > HOUSEHOLD_SIZE + guestCount
+  return yieldServings > householdSize + guestCount
 }

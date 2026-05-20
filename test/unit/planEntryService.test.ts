@@ -228,21 +228,25 @@ describe('hasEntriesForDish', () => {
 
 describe('hasLeftovers', () => {
   it('returns false when yieldServings is null', () => {
-    expect(hasLeftovers(null, 0)).toBe(false)
+    expect(hasLeftovers(null, 0, 3)).toBe(false)
   })
 
-  it('returns false when yield equals household (3) + guests', () => {
-    expect(hasLeftovers(3, 0)).toBe(false)
+  it('returns false when yield equals household + guests', () => {
+    expect(hasLeftovers(3, 0, 3)).toBe(false)
   })
 
-  it('returns true when yield exceeds household (3) + guests', () => {
-    expect(hasLeftovers(4, 0)).toBe(true)  // 4 > 3+0
-    expect(hasLeftovers(7, 2)).toBe(true)  // 7 > 3+2
+  it('returns true when yield exceeds household + guests', () => {
+    expect(hasLeftovers(4, 0, 3)).toBe(true)  // 4 > 3+0
+    expect(hasLeftovers(7, 2, 3)).toBe(true)  // 7 > 3+2
   })
 
   it('accounts for guest count', () => {
-    // household=3, guests=2 → threshold is 5; needs strictly more than 5 to have leftovers
-    expect(hasLeftovers(5, 2)).toBe(false) // 5 > 5 is false
-    expect(hasLeftovers(6, 2)).toBe(true)  // 6 > 5
+    expect(hasLeftovers(5, 2, 3)).toBe(false) // 5 > 5 is false
+    expect(hasLeftovers(6, 2, 3)).toBe(true)  // 6 > 5
+  })
+
+  it('respects a different householdSize', () => {
+    expect(hasLeftovers(2, 0, 2)).toBe(false)
+    expect(hasLeftovers(3, 0, 2)).toBe(true)
   })
 })

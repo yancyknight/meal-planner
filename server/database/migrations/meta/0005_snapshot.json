@@ -1,9 +1,33 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "d91f5d50-84f5-46d4-8835-23d0a35a0c8f",
-  "prevId": "10a2e198-9969-454f-86af-7e82f0418267",
+  "id": "e5a881f0-9c0f-4c32-964b-6d9a9a2431c7",
+  "prevId": "f987c692-234c-48a3-9692-f94352d86be4",
   "tables": {
+    "app_settings": {
+      "name": "app_settings",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "canonical_ingredients": {
       "name": "canonical_ingredients",
       "columns": {
@@ -300,28 +324,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "archived": {
-          "name": "archived",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
         "cooldownDays": {
           "name": "cooldownDays",
           "type": "integer",
@@ -345,6 +347,28 @@
           "notNull": true,
           "autoincrement": false,
           "default": 0
+        },
+        "archived": {
+          "name": "archived",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
         }
       },
       "indexes": {
@@ -357,6 +381,112 @@
         }
       },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "plan_entries": {
+      "name": "plan_entries",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mealType": {
+          "name": "mealType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entryKind": {
+          "name": "entryKind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'fresh'"
+        },
+        "dishId": {
+          "name": "dishId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "oneOffText": {
+          "name": "oneOffText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "guestCount": {
+          "name": "guestCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_plan_entries_date": {
+          "name": "idx_plan_entries_date",
+          "columns": [
+            "date"
+          ],
+          "isUnique": false
+        },
+        "idx_plan_entries_dish_id": {
+          "name": "idx_plan_entries_dish_id",
+          "columns": [
+            "dishId"
+          ],
+          "isUnique": false
+        },
+        "idx_plan_entries_dish_fresh": {
+          "name": "idx_plan_entries_dish_fresh",
+          "columns": [
+            "dishId",
+            "date"
+          ],
+          "isUnique": false,
+          "where": "entryKind = 'fresh'"
+        }
+      },
+      "foreignKeys": {
+        "plan_entries_dishId_dishes_id_fk": {
+          "name": "plan_entries_dishId_dishes_id_fk",
+          "tableFrom": "plan_entries",
+          "tableTo": "dishes",
+          "columnsFrom": [
+            "dishId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

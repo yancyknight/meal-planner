@@ -122,13 +122,13 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 6 — App Settings
+## Milestone 6 — App Settings ✅
 *Small. Unblocks leftover calculation (householdSize) and is needed before planning mode.*
 
-- `[ ]` Add `app_settings` table; seed defaults; migration
-- `[ ]` `GET /api/settings`, `PATCH /api/settings` routes
-- `[ ]` Settings page (`/settings`): household size input, app name input
-- `[ ]` Tests: settings read/write, default seeding
+- `[x]` Add `app_settings` table; seed defaults; migration
+- `[x]` `GET /api/settings`, `PATCH /api/settings` routes
+- `[x]` Settings page (`/settings`): household size input, app name input
+- `[x]` Tests: settings read/write, default seeding
 
 ---
 

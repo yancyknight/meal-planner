@@ -2,7 +2,7 @@
   "version": "6",
   "dialect": "sqlite",
   "id": "f987c692-234c-48a3-9692-f94352d86be4",
-  "prevId": "snapshot-0003",
+  "prevId": "d91f5d50-84f5-46d4-8835-23d0a35a0c8f",
   "tables": {
     "canonical_ingredients": {
       "name": "canonical_ingredients",

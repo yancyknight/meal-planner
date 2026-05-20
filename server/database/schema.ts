@@ -58,6 +58,11 @@ export const dishIngredients = sqliteTable('dish_ingredients', {
   index('idx_dish_ingredients_canonical_id').on(table.canonicalIngredientId),
 ])
 
+export const appSettings = sqliteTable('app_settings', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+})
+
 export const planEntries = sqliteTable('plan_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   date: text('date').notNull(),
