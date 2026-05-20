@@ -125,7 +125,7 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestones 0–6.5 complete. Next up: **Milestone 6.6 — Mobile-Responsive UI Pass**. See `docs/backlog.md` for the full checklists.
+Milestones 0–6.6 complete. Next up: **Milestone 7 — Frequency Controls (Nudge System)**. See `docs/backlog.md` for the full checklists.
 
 ## Milestone 3 — Canonical Ingredients + Dish Ingredients ✅
 

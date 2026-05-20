@@ -3,10 +3,10 @@
     <Transition name="fade">
       <div
         v-if="show"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+        class="fixed inset-0 z-50 flex sm:items-center sm:justify-center sm:p-4 items-end bg-black/40"
         @click.self="$emit('close')"
       >
-        <div class="w-full max-w-sm rounded-xl border border-border bg-surface shadow-xl">
+        <div class="w-full sm:max-w-sm sm:rounded-xl rounded-t-xl border border-border bg-surface shadow-xl">
           <!-- Header -->
           <div class="flex items-center justify-between border-b border-border px-5 py-4">
             <h2 class="font-serif text-lg font-semibold text-text">Move entry</h2>

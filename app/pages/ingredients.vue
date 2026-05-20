@@ -135,10 +135,10 @@ function toggleDishes(id: number) {
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-8 flex items-end justify-between">
+    <div class="mb-8 flex flex-wrap items-end gap-3 justify-between">
       <div>
         <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Pantry</p>
-        <h1 class="font-serif text-4xl font-semibold text-text">
+        <h1 class="font-serif text-3xl sm:text-4xl font-semibold text-text">
           <em class="font-normal italic text-accent-deep">Canonical</em> ingredients
         </h1>
       </div>
@@ -200,12 +200,12 @@ function toggleDishes(id: number) {
     <div v-else class="divide-y divide-border overflow-hidden rounded-lg border border-border bg-surface">
       <div v-for="ing in ingredients" :key="ing.id" class="px-5 py-3.5">
         <!-- Name row -->
-        <div class="flex items-center gap-3">
-          <div class="flex-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <div class="flex-1 min-w-0">
             <div v-if="editingId === ing.id" class="flex items-center gap-2">
               <input
                 v-model="editingName"
-                class="rounded-lg border border-accent/60 px-2.5 py-1 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
+                class="min-w-0 flex-1 rounded-lg border border-accent/60 px-2.5 py-1 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
                 @keyup.enter="submitRename(ing.id)"
                 @keyup.escape="cancelRename"
               >
@@ -219,24 +219,24 @@ function toggleDishes(id: number) {
             <span v-else class="text-sm font-medium text-text">{{ ing.name }}</span>
           </div>
 
-          <div class="flex shrink-0 items-center gap-3">
+          <div class="flex flex-wrap shrink-0 items-center gap-x-3 gap-y-1">
             <a
               v-if="ing.walmartUrl"
               :href="ing.walmartUrl"
               target="_blank"
               rel="noopener"
-              class="text-xs text-accent hover:text-accent-hover hover:underline"
+              class="text-xs text-accent hover:text-accent-hover hover:underline min-h-[32px] flex items-center"
             >Walmart ↗</a>
-            <button class="text-xs text-text-subtle transition hover:text-text-muted" @click="toggleDishes(ing.id)">
+            <button class="text-xs text-text-subtle transition hover:text-text-muted min-h-[32px]" @click="toggleDishes(ing.id)">
               dishes
             </button>
-            <button class="text-xs text-text-subtle transition hover:text-accent" @click="startRename(ing)">
+            <button class="text-xs text-text-subtle transition hover:text-accent min-h-[32px]" @click="startRename(ing)">
               rename
             </button>
-            <button class="text-xs text-text-subtle transition hover:text-warning" @click="startMerge(ing)">
+            <button class="text-xs text-text-subtle transition hover:text-warning min-h-[32px]" @click="startMerge(ing)">
               merge
             </button>
-            <button class="text-xs text-text-subtle transition hover:text-warning" @click="confirmDelete(ing)">
+            <button class="text-xs text-text-subtle transition hover:text-warning min-h-[32px]" @click="confirmDelete(ing)">
               delete
             </button>
           </div>

@@ -37,13 +37,13 @@
     <div class="absolute right-1 top-1 flex items-center gap-0.5">
       <button
         type="button"
-        class="flex h-8 w-8 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-alt hover:text-text transition"
+        class="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-alt hover:text-text transition"
         title="Move to another slot"
         @click.stop="$emit('move')"
       >↗</button>
       <button
         type="button"
-        class="flex h-8 w-8 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-alt hover:text-text transition"
+        class="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-alt hover:text-text transition"
         title="Remove"
         @click.stop="$emit('delete')"
       >×</button>

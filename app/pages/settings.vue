@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="mb-8">
       <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Configuration</p>
-      <h1 class="font-serif text-4xl font-semibold text-text">
+      <h1 class="font-serif text-3xl sm:text-4xl font-semibold text-text">
         App <em class="font-normal italic text-accent-deep">settings</em>
       </h1>
     </div>

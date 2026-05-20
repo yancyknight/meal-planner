@@ -155,20 +155,20 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 6.6 — Mobile-Responsive UI Pass
+## Milestone 6.6 — Mobile-Responsive UI Pass ✅
 *Make every page usable on a phone, including a best-effort responsive layout for planning mode. Acceptance: usable at 375px wide without horizontal scroll except where explicitly intentional.*
 
-- `[ ]` **Nav/header:** collapse links into a hamburger sheet under ~640px; brand mark stays visible; today's date moves into the sheet or is dropped on small screens.
-- `[ ]` **Calendar week view:** the 8-column table doesn't fit phones — switch to a single-column day-stacked layout on small screens (each day shows its meal rows). Re-test DnD/Move in that layout.
-- `[ ]` **Calendar month view:** verify legibility; reduce per-cell entry previews from 3 → 1 on small screens; ensure the day-number bubble still fits.
-- `[ ]` **Calendar day view:** verify; confirm meal cards stack cleanly and **Move…** dialog is reachable.
-- `[ ]` **Dishes list / detail / new / edit:** card grid → single column on small screens; verify ingredient editor input, allergen/season pill wrap, image upload on touch.
-- `[ ]` **Ingredients page:** table → stacked cards on small screens; rename/merge/Walmart-URL controls reachable.
-- `[ ]` **Shopping lists:** not yet built (M8). Add a note to M8 to design responsive from the start instead of retrofitting.
-- `[ ]` **Dialogs** (`AddPlanEntryDialog`, the new slot-picker from M6.5): full-screen sheet on mobile, easy dismiss, no inner scroll traps.
-- `[ ]` **Planning wizard (`/planning/[id]`):** best-effort responsive — step indicator wraps or collapses, each step's controls stack vertically on small screens, draft review's per-slot UI usable on touch. Wizard is not yet built (M9); this is a constraint on M9, not retrofit.
-- `[ ]` **Touch targets:** any interactive control under 32px (chip `×`, calendar arrows, view toggle pills) bumped to ≥40px hit area on small screens.
-- `[ ]` **Verification:** resize browser to 375px and walk every existing page; smoke-test on a real phone against the docker port-3001 dev server; capture before/after screenshots for the PR.
+- `[x]` **Nav/header:** collapse links into a hamburger sheet under ~640px; brand mark stays visible; today's date moves into the sheet or is dropped on small screens.
+- `[x]` **Calendar week view:** the 8-column table doesn't fit phones — switch to a single-column day-stacked layout on small screens (each day shows its meal rows). Re-test DnD/Move in that layout.
+- `[x]` **Calendar month view:** verify legibility; reduce per-cell entry previews from 3 → 1 on small screens; ensure the day-number bubble still fits.
+- `[x]` **Calendar day view:** verify; confirm meal cards stack cleanly and **Move…** dialog is reachable.
+- `[x]` **Dishes list / detail / new / edit:** card grid → single column on small screens; verify ingredient editor input, allergen/season pill wrap, image upload on touch.
+- `[x]` **Ingredients page:** table → stacked cards on small screens; rename/merge/Walmart-URL controls reachable.
+- `[x]` **Shopping lists:** not yet built (M8). Add a note to M8 to design responsive from the start instead of retrofitting.
+- `[x]` **Dialogs** (`AddPlanEntryDialog`, the new slot-picker from M6.5): full-screen sheet on mobile, easy dismiss, no inner scroll traps.
+- `[x]` **Planning wizard (`/planning/[id]`):** best-effort responsive — step indicator wraps or collapses, each step's controls stack vertically on small screens, draft review's per-slot UI usable on touch. Wizard is not yet built (M9); this is a constraint on M9, not retrofit.
+- `[x]` **Touch targets:** any interactive control under 32px (chip `×`, calendar arrows, view toggle pills) bumped to ≥40px hit area on small screens.
+- `[x]` **Verification:** resize browser to 375px and walk every existing page; smoke-test on a real phone against the docker port-3001 dev server; capture before/after screenshots for the PR.
 
 ---
 

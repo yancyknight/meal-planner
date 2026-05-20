@@ -1,16 +1,16 @@
 <template>
   <div>
     <!-- Header -->
-    <div class="mb-8 flex items-end justify-between">
+    <div class="mb-8 flex flex-wrap items-end gap-3 justify-between">
       <div>
         <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Library</p>
-        <h1 class="font-serif text-4xl font-semibold text-text">
+        <h1 class="font-serif text-3xl sm:text-4xl font-semibold text-text">
           Your <em class="font-normal italic text-accent-deep">dishes</em>
         </h1>
       </div>
       <NuxtLink
         to="/dishes/new"
-        class="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-hover"
+        class="rounded-lg bg-accent px-5 py-2.5 text-sm font-medium text-white transition hover:bg-accent-hover shrink-0"
       >
         ✦ Add dish
       </NuxtLink>
@@ -59,7 +59,7 @@
     </div>
 
     <!-- Loading skeletons -->
-    <div v-if="isPending" class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div v-if="isPending" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <div v-for="n in 8" :key="n" class="h-52 animate-pulse rounded-lg bg-surface-alt" />
     </div>
 
@@ -75,7 +75,7 @@
     </div>
 
     <!-- Grid -->
-    <div v-else class="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div v-else class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <DishCard v-for="dish in dishes" :key="dish.id" :dish="dish" />
     </div>
   </div>

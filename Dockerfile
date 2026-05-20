@@ -20,6 +20,7 @@ ENV DATABASE_URL=/data/app.db
 ENV IMAGE_DIR=/data/images
 
 COPY --from=build /app/.output ./.output
+COPY --from=build /app/server/database/migrations ./server/database/migrations
 
 VOLUME ["/data"]
 EXPOSE 3000
