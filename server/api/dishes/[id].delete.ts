@@ -7,8 +7,14 @@ export default defineEventHandler(async (event) => {
     return { error: 'Invalid dish ID' }
   }
 
-  const deleted = await deleteDish(id)
-  if (!deleted) {
+  const result = await deleteDish(id)
+
+  if (result.hasPlanEntries) {
+    setResponseStatus(event, 409)
+    return { error: 'Cannot delete a dish that has plan entries. Archive it instead.' }
+  }
+
+  if (!result.deleted) {
     setResponseStatus(event, 404)
     return { error: 'Dish not found' }
   }

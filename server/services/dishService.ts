@@ -5,6 +5,7 @@ import type { Dish } from '../../shared/types/dish'
 import type { Tag } from '../../shared/types/tag'
 import type { CreateDishInput, UpdateDishInput } from '../../shared/schemas/dish'
 import { getTagsForDishes, setDishTags } from './tagService'
+import { hasEntriesForDish } from './planEntryService'
 
 type DishRow = typeof dishes.$inferSelect
 
@@ -128,10 +129,12 @@ export async function updateDish(id: number, input: UpdateDishInput & { tagIds?:
   return rowToDish(rows[0], tagMap.get(id) ?? [])
 }
 
-export async function deleteDish(id: number): Promise<boolean> {
-  // Note: plan-entry guard will be enforced here once plan_entries table exists (M5).
+export async function deleteDish(id: number): Promise<{ deleted: boolean; hasPlanEntries: boolean }> {
+  if (await hasEntriesForDish(id)) {
+    return { deleted: false, hasPlanEntries: true }
+  }
   const result = await db.delete(dishes).where(eq(dishes.id, id)).returning({ id: dishes.id })
-  return result.length > 0
+  return { deleted: result.length > 0, hasPlanEntries: false }
 }
 
 export async function archiveDish(id: number): Promise<Dish | null> {

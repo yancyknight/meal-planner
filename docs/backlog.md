@@ -108,17 +108,17 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 5 — Calendar + Plan Entries
+## Milestone 5 — Calendar + Plan Entries ✅
 *Depends on Dish CRUD. Core calendar view and basic plan entry management.*
 
-- `[ ]` Add `plan_entries` table (including `entryKind` column with values `'fresh' | 'leftover' | 'one-off'` defaulting to `'fresh'`, plus the partial index `idx_plan_entries_dish_fresh`); migration
-- `[ ]` Implement `planEntryService`: create (with entryKind), delete, list by date range; leftover indicator logic; `daysSinceLastServedFresh(dishId, beforeDate)` helper that scans only `entryKind = 'fresh'` rows
-- `[ ]` Zod schema enforces entryKind/dishId/oneOffText correspondence (see `docs/data-model.md` plan_entries check)
-- `[ ]` API routes: `GET /api/plan-entries?start=&end=`, `POST /api/plan-entries`, `DELETE /api/plan-entries/[id]`
-- `[ ]` Calendar page (`/calendar`): week view (default), month view, day view. Visually distinguish leftover entries (e.g. 🥡 badge) from fresh entries.
-- `[ ]` "Add to plan" dialog: dish search/select or one-off text; meal type selector; guest count. Manual leftover creation is allowed (toggle: "this is a leftover serving").
-- `[ ]` Leftover indicator on fresh plan entries where yield exceeds household + guest count
-- `[ ]` Tests: plan entry CRUD across all three entryKinds, leftover calculation, date range queries, `daysSinceLastServedFresh` ignoring leftover entries
+- `[x]` Add `plan_entries` table (including `entryKind` column with values `'fresh' | 'leftover' | 'one-off'` defaulting to `'fresh'`, plus the partial index `idx_plan_entries_dish_fresh`); migration
+- `[x]` Implement `planEntryService`: create (with entryKind), delete, list by date range; leftover indicator logic; `daysSinceLastServedFresh(dishId, beforeDate)` helper that scans only `entryKind = 'fresh'` rows
+- `[x]` Zod schema enforces entryKind/dishId/oneOffText correspondence (see `docs/data-model.md` plan_entries check)
+- `[x]` API routes: `GET /api/plan-entries?start=&end=`, `POST /api/plan-entries`, `DELETE /api/plan-entries/[id]`
+- `[x]` Calendar page (`/calendar`): week view (default), month view, day view. Visually distinguish leftover entries (↻ badge in violet) from fresh entries.
+- `[x]` "Add to plan" dialog: dish search/select or one-off text; meal type selector; guest count. Manual leftover creation is allowed (toggle: "this is a leftover serving").
+- `[x]` Leftover indicator on fresh plan entries where yield exceeds household + guest count
+- `[x]` Tests: plan entry CRUD across all three entryKinds, leftover calculation, date range queries, `daysSinceLastServedFresh` ignoring leftover entries
 
 ---
 

@@ -1,4 +1,5 @@
 import { integer, sqliteTable, text, index, primaryKey } from 'drizzle-orm/sqlite-core'
+import { sql } from 'drizzle-orm'
 
 export const canonicalIngredients = sqliteTable('canonical_ingredients', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -55,4 +56,19 @@ export const dishIngredients = sqliteTable('dish_ingredients', {
 }, (table) => [
   index('idx_dish_ingredients_dish_id').on(table.dishId),
   index('idx_dish_ingredients_canonical_id').on(table.canonicalIngredientId),
+])
+
+export const planEntries = sqliteTable('plan_entries', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  date: text('date').notNull(),
+  mealType: text('mealType').notNull(),
+  entryKind: text('entryKind').notNull().default('fresh'),
+  dishId: integer('dishId').references(() => dishes.id),
+  oneOffText: text('oneOffText'),
+  guestCount: integer('guestCount').notNull().default(0),
+  createdAt: text('createdAt').notNull(),
+}, (table) => [
+  index('idx_plan_entries_date').on(table.date),
+  index('idx_plan_entries_dish_id').on(table.dishId),
+  index('idx_plan_entries_dish_fresh').on(table.dishId, table.date).where(sql`entryKind = 'fresh'`),
 ])
