@@ -4,7 +4,18 @@ export const ALLERGEN_PRESETS = ['gluten', 'dairy', 'nuts', 'shellfish', 'eggs',
 export const SEASON_OPTIONS = ['spring', 'summer', 'fall', 'winter'] as const
 export const DIFFICULTY_OPTIONS = ['easy', 'medium', 'hard'] as const
 
-export const createDishSchema = z.object({
+const frequencyRefinement = (d: { cooldownDays?: number; targetIntervalDays?: number }) => {
+  if (d.cooldownDays !== undefined && d.targetIntervalDays !== undefined) {
+    return d.cooldownDays <= d.targetIntervalDays
+  }
+  return true
+}
+const frequencyRefinementOptions = {
+  message: 'cooldownDays must be ≤ targetIntervalDays',
+  path: ['cooldownDays'],
+}
+
+const dishFields = z.object({
   name: z.string().min(1, 'Name is required'),
   imageUrl: z.string().url().nullable().optional(),
   imageLocalPath: z.string().nullable().optional(),
@@ -16,13 +27,15 @@ export const createDishSchema = z.object({
   allergens: z.array(z.string()).optional(),
   season: z.array(z.enum(SEASON_OPTIONS)).optional(),
   notes: z.string().nullable().optional(),
-  weight: z.number().int().min(0).max(100).optional(),
-  minIntervalDays: z.number().int().positive().nullable().optional(),
+  cooldownDays: z.number().int().min(1).optional(),
+  targetIntervalDays: z.number().int().min(1).optional(),
+  excludedFromSuggestions: z.boolean().optional(),
   archived: z.boolean().optional(),
   tagIds: z.array(z.number().int().positive()).optional(),
 })
 
-export const updateDishSchema = createDishSchema.partial()
+export const createDishSchema = dishFields.refine(frequencyRefinement, frequencyRefinementOptions)
+export const updateDishSchema = dishFields.partial().refine(frequencyRefinement, frequencyRefinementOptions)
 
 export type CreateDishInput = z.infer<typeof createDishSchema>
 export type UpdateDishInput = z.infer<typeof updateDishSchema>

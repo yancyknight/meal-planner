@@ -209,8 +209,9 @@ const form = reactive<DishFormState>({
   allergens: [...(props.initialValues?.allergens ?? [])],
   season: [...(props.initialValues?.season ?? [])] as (typeof SEASON_OPTIONS)[number][],
   notes: props.initialValues?.notes ?? null,
-  weight: props.initialValues?.weight ?? 50,
-  minIntervalDays: props.initialValues?.minIntervalDays ?? null,
+  cooldownDays: props.initialValues?.cooldownDays ?? 7,
+  targetIntervalDays: props.initialValues?.targetIntervalDays ?? 14,
+  excludedFromSuggestions: props.initialValues?.excludedFromSuggestions ?? false,
   tagIds: props.initialValues?.tagIds ?? props.initialValues?.tags?.map(t => t.id) ?? [],
 })
 

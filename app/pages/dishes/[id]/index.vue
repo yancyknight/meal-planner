@@ -111,8 +111,9 @@
       <div class="border-t border-gray-100 pt-4">
         <p class="text-xs text-gray-400 uppercase tracking-wide mb-2">Suggestion settings</p>
         <div class="flex gap-6 text-sm text-gray-600">
-          <span>Weight: <strong class="text-gray-900">{{ dish.weight }}</strong></span>
-          <span v-if="dish.minIntervalDays">Min interval: <strong class="text-gray-900">{{ dish.minIntervalDays }} days</strong></span>
+          <span>Cooldown: <strong class="text-gray-900">{{ dish.cooldownDays }} days</strong></span>
+          <span>Target: <strong class="text-gray-900">{{ dish.targetIntervalDays }} days</strong></span>
+          <span v-if="dish.excludedFromSuggestions" class="text-amber-600 font-medium">Excluded from suggestions</span>
         </div>
       </div>
     </template>
