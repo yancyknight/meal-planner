@@ -14,6 +14,7 @@ function rowToDish(row: DishRow, dishTagList: Tag[] = []): Dish {
     difficulty: row.difficulty as Dish['difficulty'],
     allergens: JSON.parse(row.allergens) as string[],
     season: JSON.parse(row.season) as Dish['season'],
+    excludedFromSuggestions: row.excludedFromSuggestions === 1,
     tags: dishTagList,
   }
 }
@@ -77,8 +78,9 @@ export async function createDish(input: CreateDishInput & { tagIds?: number[] })
       allergens: JSON.stringify(input.allergens ?? []),
       season: JSON.stringify(input.season ?? []),
       notes: input.notes ?? null,
-      weight: input.weight ?? 50,
-      minIntervalDays: input.minIntervalDays ?? null,
+      cooldownDays: input.cooldownDays ?? 7,
+      targetIntervalDays: input.targetIntervalDays ?? 14,
+      excludedFromSuggestions: input.excludedFromSuggestions ? 1 : 0,
       archived: input.archived ?? false,
       createdAt: ts,
       updatedAt: ts,
@@ -110,8 +112,9 @@ export async function updateDish(id: number, input: UpdateDishInput & { tagIds?:
   if (input.allergens !== undefined) updates.allergens = JSON.stringify(input.allergens)
   if (input.season !== undefined) updates.season = JSON.stringify(input.season)
   if (input.notes !== undefined) updates.notes = input.notes ?? null
-  if (input.weight !== undefined) updates.weight = input.weight
-  if (input.minIntervalDays !== undefined) updates.minIntervalDays = input.minIntervalDays ?? null
+  if (input.cooldownDays !== undefined) updates.cooldownDays = input.cooldownDays
+  if (input.targetIntervalDays !== undefined) updates.targetIntervalDays = input.targetIntervalDays
+  if (input.excludedFromSuggestions !== undefined) updates.excludedFromSuggestions = input.excludedFromSuggestions ? 1 : 0
   if (input.archived !== undefined) updates.archived = input.archived
 
   const rows = await db.update(dishes).set(updates).where(eq(dishes.id, id)).returning()

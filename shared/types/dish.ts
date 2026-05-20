@@ -13,8 +13,9 @@ export interface Dish {
   allergens: string[]
   season: ('spring' | 'summer' | 'fall' | 'winter')[]
   notes: string | null
-  weight: number
-  minIntervalDays: number | null
+  cooldownDays: number
+  targetIntervalDays: number
+  excludedFromSuggestions: boolean
   archived: boolean
   tags: Tag[]
   createdAt: string

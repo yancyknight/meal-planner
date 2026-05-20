@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { createDishSchema } from '../../shared/schemas/dish'
 
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
@@ -34,7 +35,9 @@ describe('createDish', () => {
     const dish = await createDish({ name: 'Spaghetti' })
     expect(dish.id).toBeTypeOf('number')
     expect(dish.name).toBe('Spaghetti')
-    expect(dish.weight).toBe(50)
+    expect(dish.cooldownDays).toBe(7)
+    expect(dish.targetIntervalDays).toBe(14)
+    expect(dish.excludedFromSuggestions).toBe(false)
     expect(dish.allergens).toEqual([])
     expect(dish.season).toEqual([])
     expect(dish.archived).toBe(false)
@@ -57,14 +60,21 @@ describe('createDish', () => {
       difficulty: 'hard',
       timeEstimateMinutes: 90,
       yieldServings: 6,
-      weight: 80,
+      cooldownDays: 10,
+      targetIntervalDays: 21,
       notes: 'Some notes',
     })
     expect(dish.difficulty).toBe('hard')
     expect(dish.timeEstimateMinutes).toBe(90)
     expect(dish.yieldServings).toBe(6)
-    expect(dish.weight).toBe(80)
+    expect(dish.cooldownDays).toBe(10)
+    expect(dish.targetIntervalDays).toBe(21)
     expect(dish.notes).toBe('Some notes')
+  })
+
+  it('stores excludedFromSuggestions as boolean', async () => {
+    const dish = await createDish({ name: 'Excluded', excludedFromSuggestions: true })
+    expect(dish.excludedFromSuggestions).toBe(true)
   })
 })
 
@@ -114,10 +124,10 @@ describe('listDishes', () => {
 
 describe('updateDish', () => {
   it('updates specified fields only', async () => {
-    const dish = await createDish({ name: 'Old Name', weight: 50 })
+    const dish = await createDish({ name: 'Old Name', cooldownDays: 5 })
     const updated = await updateDish(dish.id, { name: 'New Name' })
     expect(updated?.name).toBe('New Name')
-    expect(updated?.weight).toBe(50)
+    expect(updated?.cooldownDays).toBe(5)
   })
 
   it('updates JSON array fields correctly', async () => {
@@ -168,5 +178,26 @@ describe('archiveDish / unarchiveDish', () => {
     await archiveDish(dish.id)
     expect(await listDishes()).toHaveLength(0)
     expect(await listDishes({ archived: true })).toHaveLength(1)
+  })
+})
+
+describe('createDishSchema frequency field validation', () => {
+  it('accepts cooldownDays equal to targetIntervalDays', () => {
+    const result = createDishSchema.safeParse({ name: 'Dish', cooldownDays: 7, targetIntervalDays: 7 })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts cooldownDays less than targetIntervalDays', () => {
+    const result = createDishSchema.safeParse({ name: 'Dish', cooldownDays: 4, targetIntervalDays: 7 })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects cooldownDays greater than targetIntervalDays', () => {
+    const result = createDishSchema.safeParse({ name: 'Dish', cooldownDays: 10, targetIntervalDays: 7 })
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const paths = result.error.issues.map(i => i.path.join('.'))
+      expect(paths).toContain('cooldownDays')
+    }
   })
 })
