@@ -29,6 +29,12 @@ Follow these steps every session, in order. Do not skip or reorder steps.
   ```
 
 ### 2. Plan
+- **Before writing the plan, checkout main and pull the latest changes** so the plan is made against current code:
+  ```bash
+  git fetch origin
+  git checkout main
+  git pull origin main
+  ```
 - Write a concrete implementation checklist in the Current Sprint section (below)
 - Checklist must cover: schema changes, migrations, API routes, services, components, tests
 - Call out any decisions not already resolved in the spec docs and ask before assuming
@@ -48,6 +54,7 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 ### 5. Close
 - Mark all completed checklist items in Current Sprint
 - Note anything deferred, and why
+- **Update `docs/backlog.md`:** mark all completed items `[x]` and add `✅` to the milestone heading
 - **For any UI changes:** follow `docs/close-protocol.md` to capture and embed screenshots/GIFs in the PR description.
 - Create a PR via `gh pr create` — description must cover: what was built, every judgment call made during implementation, anything deferred and why, any spec divergences that need doc updates, and embedded screenshots/GIFs for all UI changes
 - Send a push notification via the PushNotification tool so the PR is flagged for review
