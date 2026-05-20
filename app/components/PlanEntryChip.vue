@@ -44,10 +44,9 @@
 </template>
 
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query'
 import type { PlanEntry } from '#shared/types/planEntry'
-
-// Hardcoded until M6 (App Settings) provides the real value.
-const HOUSEHOLD_SIZE = 3
+import type { AppSettings } from '#shared/types/settings'
 
 const props = defineProps<{
   entry: PlanEntry
@@ -55,6 +54,12 @@ const props = defineProps<{
 }>()
 
 defineEmits<{ delete: [] }>()
+
+const { data: settings } = useQuery({
+  queryKey: computed(() => queryKeys.settings.all()),
+  queryFn: () => $fetch<AppSettings>('/api/settings'),
+  staleTime: 60_000,
+})
 
 const label = computed(() => {
   if (props.entry.entryKind === 'one-off') return props.entry.oneOffText ?? '—'
@@ -70,7 +75,8 @@ const thumbSrc = computed(() => {
 
 const hasLeftoversAvailable = computed(() => {
   if (props.entry.dishYieldServings == null) return false
-  return props.entry.dishYieldServings > HOUSEHOLD_SIZE + props.entry.guestCount
+  const householdSize = settings.value?.householdSize ?? 3
+  return props.entry.dishYieldServings > householdSize + props.entry.guestCount
 })
 
 const entryClass = computed(() => {
