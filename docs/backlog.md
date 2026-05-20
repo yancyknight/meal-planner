@@ -132,6 +132,46 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
+## Milestone 6.5 — Plan Entry Edit + Settings Cleanup
+*Adds remove/move for planned dishes on the calendar, and strips the now-unused app-name setting. Build with touch in mind — M6.6 will validate everything else on mobile.*
+
+### Plan entry edit
+- `[ ]` Add `planEntryService.update(id, patch)`; allow patching `date`, `mealType`, `guestCount`. Preserve `entryKind`/`dishId`/`oneOffText`.
+- `[ ]` `PATCH /api/plan-entries/[id]` route + Zod schema (partial of the create schema, excluding `entryKind`/`dishId`/`oneOffText`).
+- `[ ]` Make the chip remove button always visible on `PlanEntryChip` (drop the `group-hover:flex` gating) — small `×` corner button with ≥32px touch target.
+- `[ ]` Install `vue-draggable-plus`; wire drag-and-drop in week view so chips can be dragged between (date, mealType) slots. Optimistically update, invalidate on settle.
+- `[ ]` Touch/keyboard fallback: each chip exposes a **Move…** action (chip menu or long-press) that opens a slot picker dialog (date + meal type) to reassign without dragging.
+- `[ ]` Day view: add **Move…** affordance to each chip (single-column drag is unnecessary).
+- `[ ]` Month view: out of scope — tapping drills to day view where edit works.
+- `[ ]` Tests: PATCH zod rejects forbidden field changes; service `update` preserves `entryKind`/`dishId`; cross-slot move invalidates correct query keys.
+
+### App name cleanup
+- `[ ]` Remove the "App name" card from `/settings` and drop `appName` from the form state.
+- `[ ]` Remove `appName` from the `PATCH /api/settings` accepted body (schema-level).
+- `[ ]` Leave the `app_name` column in `app_settings` (avoids a migration); service simply stops reading/writing it.
+- `[ ]` Remove `NUXT_PUBLIC_APP_NAME` from runtime config, `nuxt.config.ts`, `.env.example`, and the env-var table in `CLAUDE.md`.
+- `[ ]` Hardcode `"Meal Planner"` in `app/layouts/default.vue` (the italic *for two* stays).
+- `[ ]` Tests: settings PATCH ignores/rejects an `appName` field; GET still returns persisted values for `householdSize`.
+
+---
+
+## Milestone 6.6 — Mobile-Responsive UI Pass
+*Make every page usable on a phone, including a best-effort responsive layout for planning mode. Acceptance: usable at 375px wide without horizontal scroll except where explicitly intentional.*
+
+- `[ ]` **Nav/header:** collapse links into a hamburger sheet under ~640px; brand mark stays visible; today's date moves into the sheet or is dropped on small screens.
+- `[ ]` **Calendar week view:** the 8-column table doesn't fit phones — switch to a single-column day-stacked layout on small screens (each day shows its meal rows). Re-test DnD/Move in that layout.
+- `[ ]` **Calendar month view:** verify legibility; reduce per-cell entry previews from 3 → 1 on small screens; ensure the day-number bubble still fits.
+- `[ ]` **Calendar day view:** verify; confirm meal cards stack cleanly and **Move…** dialog is reachable.
+- `[ ]` **Dishes list / detail / new / edit:** card grid → single column on small screens; verify ingredient editor input, allergen/season pill wrap, image upload on touch.
+- `[ ]` **Ingredients page:** table → stacked cards on small screens; rename/merge/Walmart-URL controls reachable.
+- `[ ]` **Shopping lists:** not yet built (M8). Add a note to M8 to design responsive from the start instead of retrofitting.
+- `[ ]` **Dialogs** (`AddPlanEntryDialog`, the new slot-picker from M6.5): full-screen sheet on mobile, easy dismiss, no inner scroll traps.
+- `[ ]` **Planning wizard (`/planning/[id]`):** best-effort responsive — step indicator wraps or collapses, each step's controls stack vertically on small screens, draft review's per-slot UI usable on touch. Wizard is not yet built (M9); this is a constraint on M9, not retrofit.
+- `[ ]` **Touch targets:** any interactive control under 32px (chip `×`, calendar arrows, view toggle pills) bumped to ≥40px hit area on small screens.
+- `[ ]` **Verification:** resize browser to 375px and walk every existing page; smoke-test on a real phone against the docker port-3001 dev server; capture before/after screenshots for the PR.
+
+---
+
 ## Milestone 7 — Frequency Controls (Nudge System)
 *Depends on Dish CRUD (M1) + Suggestion Field Refactor (M3.5) + Plan Entries (M5, for the `daysSinceLastServedFresh` helper). Needed before Planning Mode's suggestion engine.*
 
@@ -168,7 +208,7 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 ---
 
 ## Milestone 9 — Planning Mode
-*Most complex feature. Depends on almost everything above. Split into three sessions.*
+*Most complex feature. Depends on almost everything above. Split into three sessions. Build each step's layout responsive from the start per the M6.6 constraint — do not retrofit.*
 
 ### Session A — Session Setup + Steps 1–3
 - `[ ]` Add `planning_sessions` table; migration
@@ -203,7 +243,6 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 - `[ ]` Calendar: navigate to arbitrary date, keyboard shortcuts
 - `[ ]` Prevent dish delete when plan entries exist (should already be in M1 — verify UX is clear)
 - `[ ]` Empty states for all list views
-- `[ ]` Mobile layout review and fixes
 - `[ ]` Error boundary handling (import failures, network errors in shopping list generation)
 - `[ ]` Accessibility pass (keyboard nav, aria labels on interactive components)
 

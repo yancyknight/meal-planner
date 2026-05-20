@@ -126,7 +126,7 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestone 0 complete. All items done and pushed to https://github.com/yancyknight/meal-planner.
+Milestones 0–6 complete. Next up: **Milestone 6.5 — Plan Entry Edit + Settings Cleanup**, followed by **Milestone 6.6 — Mobile-Responsive UI Pass**. See `docs/backlog.md` for the full checklists.
 
 ## Milestone 3 — Canonical Ingredients + Dish Ingredients ✅
 
