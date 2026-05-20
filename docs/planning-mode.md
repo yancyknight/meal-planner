@@ -86,7 +86,8 @@ Optional constraints. Dishes must meet ALL active filters to be eligible for gen
 | Must exclude tags | Tag multi-select (dish must have NONE) | None |
 | Allergen exclusions | Allergen multi-select | None |
 | Season | Multi-select: Spring, Summer, Fall, Winter | Current season pre-selected |
-| Minimum weight | Slider 1–100 | 1 (only excludes weight-0 dishes) |
+
+Dishes with `excludedFromSuggestions = true` are always filtered out regardless of these settings.
 
 Saved to session: `filters`
 
@@ -125,12 +126,12 @@ This step is shown only if any confirmed or already-placed dinner Plan Entries p
 - Prompt: "Add [Dish Name] as leftovers for lunch on [next day]?"
 - Toggle: Yes / No (default No)
 
-If "Yes", a Dish Plan Entry is queued for the next day's lunch slot using the same dish.
-This queued entry is excluded from generation (slot is pre-filled in the draft).
+If "Yes", a Plan Entry with `entryKind = 'leftover'` is queued for the next day's lunch slot using the same dish.
+This queued entry is excluded from generation (slot is pre-filled in the draft) and does **not** reset that dish's cooldown clock — only the originating fresh entry advances the cooldown / overdueness calculation.
 
 If the next day's lunch slot is already filled (confirmed entry or one-off), the suggestion is not shown for that slot.
 
-Saved to session: leftover selections embedded in `draftPlan`
+Saved to session: leftover selections embedded in `draftPlan` (marked with `type: 'leftover'`).
 
 ---
 
@@ -140,23 +141,30 @@ The planning engine generates a Draft Plan for all open slots (not blocked by co
 
 ### Generation Algorithm
 
+Slots are processed in chronological order so that a dish chosen on day N correctly increments `daysSinceLastServedFresh` for day N+1.
+
 For each open slot:
-1. Start with all non-archived dishes with `weight > 0`
+1. Start with all non-archived dishes where `excludedFromSuggestions = false`
 2. Apply session filters (Step 4)
-3. If a composition rule (or rules) exist for this date+meal type, apply them with **best-effort matching**:
+3. **Eligibility (cooldown):** drop any dish whose most recent `entryKind = 'fresh'` Plan Entry (looking at both committed entries and already-placed Fresh slots in the in-progress draft) is within `cooldownDays` of the slot date. Dishes never served fresh are treated as `daysSinceLastServedFresh = 1.5 × targetIntervalDays` for both eligibility and the overdueness math.
+4. If a composition rule (or rules) exist for this date+meal type, apply them with **best-effort matching**:
    - First attempt: filter to dishes matching **all** rules for this slot
    - If no candidates remain: relax rules one at a time (most specific first — ingredient constraints before tag constraints) and retry
    - If a match required relaxing any rule: mark the slot with a warning label listing exactly which constraint(s) were not met (e.g. "⚠ Partial match: no dish has tag [pizza] — constraint relaxed")
    - If no eligible dish remains even after full relaxation: fall through to unruled behavior and mark slot "⚠ Composition rule could not be satisfied"
-4. Compute effective weight for each candidate
-5. Remove dishes already placed elsewhere in this draft from the primary pool
-6. Select by weighted random from the primary pool
+5. **Compute Selection Weight** for each candidate:
+   ```
+   overdueness     = daysSinceLastServedFresh / targetIntervalDays
+   selectionWeight = min(overdueness, 3.0)
+   ```
+6. Remove dishes already placed elsewhere in this draft from the primary pool
+7. Select by weighted random from the primary pool using `selectionWeight`
    - If primary pool is empty (all eligible dishes already used): use the full eligible pool (secondary pool) — flagging that a repeat is being used
-7. Mark selected dish as used; record it in `usedDishIds`
+8. Mark selected dish as used; record it in `usedDishIds` and treat it as a Fresh placement when evaluating later slots in this draft
 
 **If no eligible dishes exist for a slot**, show:
 > "No matching dishes for [date] [meal type]"
-> With a breakdown: e.g. "3 dishes match your filters but were made too recently (within their minimum interval) · 0 dishes remain"
+> With a breakdown: e.g. "3 dishes match your filters but are still within their cooldown period · 0 dishes remain"
 > And an "Override manually" option
 
 ### Draft UI (per slot)
@@ -213,7 +221,6 @@ interface PlanningSession {
     excludedTagIds: number[]
     excludedAllergens: string[]
     seasons: Season[]
-    minWeight: number
   }
   compositionRules: {
     date: string
@@ -224,6 +231,11 @@ interface PlanningSession {
   draftPlan: {
     [slotKey: string]: {           // slotKey = `${date}:${mealType}`
       type: 'dish' | 'one-off' | 'leftover' | 'empty'
+      // On finalize, `type` maps to `plan_entries.entryKind`:
+      //   'dish'     → 'fresh'
+      //   'leftover' → 'leftover'
+      //   'one-off'  → 'one-off'
+      //   'empty'    → not written
       dishId?: number
       oneOffText?: string
       isManualOverride?: boolean
@@ -252,6 +264,7 @@ interface PlanningSession {
 | Scenario | Behavior |
 |---|---|
 | Filters so strict no dishes qualify for any slot | Show warning at top of Step 7; all slots show "No eligible dishes" |
+| All filter-matching dishes are still within their cooldown for a given slot | Slot shows "No eligible dishes — N matching dishes are still in cooldown"; offer manual override |
 | Composition rule references a dish that the filters exclude | Warn in Step 5: "Your filters exclude all dishes with tag [X]" |
 | The same slot has a confirmed entry AND a one-off added in Step 3 | One-off is rejected with an error: "That slot is already occupied" |
 | User rerolls until all eligible dishes shown | Prompt to restart shown-list; confirm before cycling |
