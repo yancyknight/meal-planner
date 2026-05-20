@@ -1,24 +1,33 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <header class="bg-white border-b border-gray-200">
-      <div class="max-w-6xl mx-auto px-4 flex items-center gap-6 h-14">
-        <NuxtLink to="/" class="font-semibold text-gray-900 mr-2">
-          {{ appName }}
+  <div class="min-h-screen bg-bg">
+    <header class="border-b border-border bg-surface">
+      <div class="mx-auto flex max-w-6xl items-center px-6 py-3 lg:px-10">
+        <!-- Brand mark -->
+        <NuxtLink to="/" class="mr-8 flex items-center gap-2 shrink-0">
+          <span class="h-2 w-2 rounded-full bg-accent" aria-hidden="true" />
+          <span class="text-sm font-medium text-text">
+            {{ appName }} <em class="font-serif font-normal italic text-accent-deep">for two</em>
+          </span>
         </NuxtLink>
-        <nav class="flex items-center gap-1">
+
+        <!-- Nav -->
+        <nav class="flex flex-1 items-center gap-1 text-sm">
           <NuxtLink
             v-for="link in navLinks"
             :key="link.to"
             :to="link.to"
-            class="px-3 py-1.5 rounded-md text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
-            active-class="text-gray-900 bg-gray-100 font-medium"
+            class="rounded-full px-4 py-1.5 text-text-muted transition hover:text-text"
+            active-class="bg-accent-soft text-accent-deep font-medium"
           >
             {{ link.label }}
           </NuxtLink>
         </nav>
+
+        <!-- Date -->
+        <time class="shrink-0 font-mono text-xs text-text-subtle">{{ today }}</time>
       </div>
     </header>
-    <main class="max-w-6xl mx-auto px-4 py-6">
+    <main class="mx-auto max-w-6xl px-6 py-8 lg:px-10">
       <slot />
     </main>
   </div>
@@ -35,4 +44,6 @@ const navLinks = [
   { to: '/ingredients', label: 'Ingredients' },
   { to: '/settings', label: 'Settings' },
 ]
+
+const today = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date())
 </script>
