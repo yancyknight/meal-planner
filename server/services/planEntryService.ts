@@ -1,4 +1,4 @@
-import { and, eq, gte, lte, desc, isNull } from 'drizzle-orm'
+import { and, count, eq, gte, lte, desc, isNull } from 'drizzle-orm'
 import { db } from '../database'
 import { planEntries, dishes } from '../database/schema'
 import type { PlanEntry, MealType, EntryKind } from '../../shared/types/planEntry'
@@ -147,4 +147,47 @@ export async function daysSinceLastServedFresh(dishId: number, beforeDate: strin
 export function hasLeftovers(yieldServings: number | null, guestCount: number, householdSize: number): boolean {
   if (yieldServings == null) return false
   return yieldServings > householdSize + guestCount
+}
+
+import type { DishStats } from '../../shared/types/dishStats'
+
+/** Returns planning stats for a dish derived from its fresh plan entries up to today. */
+export async function getDishStats(dishId: number): Promise<DishStats> {
+  const today = new Date().toISOString().slice(0, 10)
+
+  const [countResult] = await db
+    .select({ total: count() })
+    .from(planEntries)
+    .where(
+      and(
+        eq(planEntries.dishId, dishId),
+        eq(planEntries.entryKind, 'fresh'),
+        lte(planEntries.date, today),
+      ),
+    )
+
+  const totalFreshCooks = countResult?.total ?? 0
+
+  const lastRow = await db
+    .select({ date: planEntries.date })
+    .from(planEntries)
+    .where(
+      and(
+        eq(planEntries.dishId, dishId),
+        eq(planEntries.entryKind, 'fresh'),
+        lte(planEntries.date, today),
+      ),
+    )
+    .orderBy(desc(planEntries.date))
+    .limit(1)
+
+  const lastCookedDate = lastRow[0]?.date ?? null
+
+  let daysSinceLastFresh: number | null = null
+  if (lastCookedDate) {
+    const diffMs = new Date(today).getTime() - new Date(lastCookedDate).getTime()
+    daysSinceLastFresh = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+  }
+
+  return { totalFreshCooks, lastCookedDate, daysSinceLastFresh }
 }

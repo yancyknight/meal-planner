@@ -6,6 +6,7 @@ export const queryKeys = {
     all: () => ['dishes'] as const,
     list: (filters?: Record<string, unknown>) => ['dishes', 'list', filters] as const,
     detail: (id: number) => ['dishes', id] as const,
+    stats: (id: number) => ['dishes', id, 'stats'] as const,
   },
   planEntries: {
     all: () => ['plan-entries'] as const,

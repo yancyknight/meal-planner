@@ -98,22 +98,39 @@
             <p v-else class="text-sm text-text">{{ dish.sourceName }}</p>
           </div>
 
-          <!-- Suggestion settings -->
+          <!-- Planning stats -->
           <div class="rounded-lg border border-border p-4">
-            <p class="mb-3 text-xs font-medium uppercase tracking-wider text-text-muted">Frequency</p>
-            <div class="space-y-2 text-sm">
+            <p class="mb-3 text-xs font-medium uppercase tracking-wider text-text-muted">Planning History</p>
+            <div v-if="dishStats" class="space-y-2 text-sm">
               <div class="flex justify-between">
-                <span class="text-text-muted">Cooldown</span>
-                <span class="font-medium text-text">{{ dish.cooldownDays }}d</span>
+                <span class="text-text-muted">Times cooked</span>
+                <span class="font-medium text-text">{{ dishStats.totalFreshCooks }}</span>
               </div>
-              <div class="flex justify-between">
-                <span class="text-text-muted">Target interval</span>
-                <span class="font-medium text-text">{{ dish.targetIntervalDays }}d</span>
+              <div v-if="dishStats.lastCookedDate" class="flex justify-between">
+                <span class="text-text-muted">Last cooked</span>
+                <span class="font-medium text-text">{{ formatDate(dishStats.lastCookedDate) }}</span>
               </div>
-              <div v-if="dish.excludedFromSuggestions" class="mt-2 rounded bg-surface-alt px-2 py-1 text-xs text-warning">
-                Excluded from suggestions
+              <div v-if="dishStats.daysSinceLastFresh !== null" class="flex justify-between">
+                <span class="text-text-muted">Days since fresh</span>
+                <span class="font-medium text-text">{{ dishStats.daysSinceLastFresh }}</span>
               </div>
+              <p v-if="dishStats.totalFreshCooks === 0" class="text-text-subtle">Never planned</p>
             </div>
+            <div v-else class="h-12 animate-pulse rounded bg-surface-alt" />
+          </div>
+
+          <!-- Frequency controls (auto-save on change) -->
+          <div class="rounded-lg border border-border p-4">
+            <div class="mb-3 flex items-center gap-2">
+              <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Frequency</p>
+              <span v-if="frequencySaving" class="text-xs text-text-subtle">Saving…</span>
+              <span v-else-if="frequencySaved" class="text-xs text-accent">Saved</span>
+            </div>
+            <FrequencyControls
+              v-model:cooldown-days="frequencyForm.cooldownDays"
+              v-model:target-interval-days="frequencyForm.targetIntervalDays"
+              v-model:excluded-from-suggestions="frequencyForm.excludedFromSuggestions"
+            />
           </div>
         </aside>
 
@@ -181,6 +198,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { Dish } from '#shared/types/dish'
 import type { DishIngredient } from '#shared/types/ingredient'
+import type { DishStats } from '#shared/types/dishStats'
 
 const route = useRoute()
 const router = useRouter()
@@ -197,6 +215,11 @@ const { data: dishIngredients } = useQuery({
   queryFn: () => $fetch<DishIngredient[]>(`/api/dishes/${id.value}/ingredients`),
 })
 
+const { data: dishStats } = useQuery({
+  queryKey: computed(() => queryKeys.dishes.stats(id.value)),
+  queryFn: () => $fetch<DishStats>(`/api/dishes/${id.value}/stats`),
+})
+
 const imageSrc = computed(() => {
   if (!dish.value) return null
   if (dish.value.imageLocalPath) return `/api/images/${dish.value.imageLocalPath}`
@@ -205,6 +228,68 @@ const imageSrc = computed(() => {
 
 const difficultyLevelMap: Record<string, number> = { easy: 1, medium: 2, hard: 3 }
 const difficultyLevel = computed(() => dish.value?.difficulty ? (difficultyLevelMap[dish.value.difficulty] ?? 0) : 0)
+
+function formatDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-').map(Number)
+  return new Date(year!, month! - 1, day!).toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric', year: 'numeric',
+  })
+}
+
+// ── Frequency controls (auto-save with debounce) ────────────────
+
+interface FrequencyForm {
+  cooldownDays: number
+  targetIntervalDays: number
+  excludedFromSuggestions: boolean
+}
+
+const frequencyForm = reactive<FrequencyForm>({
+  cooldownDays: 7,
+  targetIntervalDays: 14,
+  excludedFromSuggestions: false,
+})
+
+// Sync from loaded dish data (runs once when dish loads)
+watch(dish, (d) => {
+  if (!d) return
+  frequencyForm.cooldownDays = d.cooldownDays
+  frequencyForm.targetIntervalDays = d.targetIntervalDays
+  frequencyForm.excludedFromSuggestions = d.excludedFromSuggestions
+}, { immediate: true })
+
+const frequencySaving = ref(false)
+const frequencySaved = ref(false)
+let saveTimeout: ReturnType<typeof setTimeout> | null = null
+let savedFeedbackTimeout: ReturnType<typeof setTimeout> | null = null
+
+watch(frequencyForm, (form) => {
+  if (!dish.value) return
+  if (saveTimeout) clearTimeout(saveTimeout)
+  frequencySaved.value = false
+  saveTimeout = setTimeout(async () => {
+    frequencySaving.value = true
+    try {
+      await $fetch<Dish>(`/api/dishes/${id.value}`, {
+        method: 'PATCH',
+        body: {
+          cooldownDays: form.cooldownDays,
+          targetIntervalDays: form.targetIntervalDays,
+          excludedFromSuggestions: form.excludedFromSuggestions,
+        },
+      })
+      queryClient.invalidateQueries({ queryKey: queryKeys.dishes.all() })
+      frequencySaved.value = true
+      if (savedFeedbackTimeout) clearTimeout(savedFeedbackTimeout)
+      savedFeedbackTimeout = setTimeout(() => { frequencySaved.value = false }, 2000)
+    }
+    finally {
+      frequencySaving.value = false
+    }
+  }, 800)
+}, { deep: true })
+
+// ── Other mutations ──────────────────────────────────────────────
 
 const { mutate: patchDish } = useMutation({
   mutationFn: (data: Partial<Dish>) =>
