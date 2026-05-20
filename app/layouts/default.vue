@@ -34,7 +34,7 @@
 </template>
 
 <script setup lang="ts">
-const appName = useRuntimeConfig().public.appName ?? 'Meal Planner'
+const appName = 'Meal Planner'
 
 const navLinks = [
   { to: '/dishes', label: 'Dishes' },

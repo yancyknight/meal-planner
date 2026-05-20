@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { updateSettingsSchema } from '../../shared/schemas/settings'
 
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
@@ -25,12 +26,33 @@ beforeEach(async () => {
   await db.delete(appSettings)
 })
 
+describe('updateSettingsSchema', () => {
+  it('accepts householdSize', () => {
+    const r = updateSettingsSchema.safeParse({ householdSize: 4 })
+    expect(r.success).toBe(true)
+  })
+
+  it('accepts an empty object', () => {
+    const r = updateSettingsSchema.safeParse({})
+    expect(r.success).toBe(true)
+  })
+
+  it('rejects appName — removed field', () => {
+    const r = updateSettingsSchema.safeParse({ appName: 'My Kitchen' })
+    expect(r.success).toBe(false)
+  })
+
+  it('rejects unknown fields alongside valid ones', () => {
+    const r = updateSettingsSchema.safeParse({ householdSize: 3, appName: 'test' })
+    expect(r.success).toBe(false)
+  })
+})
+
 describe('seedDefaults', () => {
-  it('inserts householdSize and appName with correct defaults', async () => {
+  it('inserts householdSize with correct default', async () => {
     await seedDefaults()
     const settings = await getSettings()
     expect(settings.householdSize).toBe(3)
-    expect(settings.appName).toBe('Meal Planner')
   })
 
   it('is idempotent — calling twice does not change values', async () => {
@@ -43,40 +65,29 @@ describe('seedDefaults', () => {
 })
 
 describe('getSettings', () => {
-  it('returns defaults when table is empty', async () => {
+  it('returns default householdSize when table is empty', async () => {
     const settings = await getSettings()
     expect(settings.householdSize).toBe(3)
-    expect(settings.appName).toBe('Meal Planner')
   })
 
-  it('returns stored values after seeding', async () => {
+  it('returns stored householdSize after seeding', async () => {
     await seedDefaults()
     const settings = await getSettings()
     expect(typeof settings.householdSize).toBe('number')
-    expect(typeof settings.appName).toBe('string')
+  })
+
+  it('does not include appName in the returned object', async () => {
+    await seedDefaults()
+    const settings = await getSettings()
+    expect('appName' in settings).toBe(false)
   })
 })
 
 describe('updateSettings', () => {
-  it('updates householdSize without affecting appName', async () => {
+  it('updates householdSize', async () => {
     await seedDefaults()
     const result = await updateSettings({ householdSize: 4 })
     expect(result.householdSize).toBe(4)
-    expect(result.appName).toBe('Meal Planner')
-  })
-
-  it('updates appName without affecting householdSize', async () => {
-    await seedDefaults()
-    const result = await updateSettings({ appName: 'Our Kitchen' })
-    expect(result.appName).toBe('Our Kitchen')
-    expect(result.householdSize).toBe(3)
-  })
-
-  it('updates both fields at once', async () => {
-    await seedDefaults()
-    const result = await updateSettings({ householdSize: 2, appName: 'Just Us' })
-    expect(result.householdSize).toBe(2)
-    expect(result.appName).toBe('Just Us')
   })
 
   it('persists changes across subsequent getSettings calls', async () => {

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group relative rounded-lg border p-2.5 transition"
+    class="relative rounded-lg border p-2.5 transition"
     :class="[entryClass, full ? 'flex items-start gap-3' : '']"
   >
     <!-- Thumbnail (full/day view only) -->
@@ -10,7 +10,7 @@
       class="h-10 w-10 rounded object-cover flex-shrink-0"
     />
 
-    <div class="min-w-0 flex-1">
+    <div class="min-w-0 flex-1 pr-12">
       <!-- Entry name -->
       <p class="truncate text-sm font-medium leading-snug text-text">
         {{ label }}
@@ -33,13 +33,21 @@
       </div>
     </div>
 
-    <!-- Delete button -->
-    <button
-      type="button"
-      class="absolute right-1 top-1 hidden rounded p-0.5 text-xs text-text-subtle hover:text-text group-hover:flex items-center"
-      title="Remove"
-      @click.stop="$emit('delete')"
-    >×</button>
+    <!-- Action buttons -->
+    <div class="absolute right-1 top-1 flex items-center gap-0.5">
+      <button
+        type="button"
+        class="flex h-8 w-8 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-alt hover:text-text transition"
+        title="Move to another slot"
+        @click.stop="$emit('move')"
+      >↗</button>
+      <button
+        type="button"
+        class="flex h-8 w-8 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-alt hover:text-text transition"
+        title="Remove"
+        @click.stop="$emit('delete')"
+      >×</button>
+    </div>
   </div>
 </template>
 
@@ -53,7 +61,7 @@ const props = defineProps<{
   full?: boolean
 }>()
 
-defineEmits<{ delete: [] }>()
+defineEmits<{ delete: [], move: [] }>()
 
 const { data: settings } = useQuery({
   queryKey: computed(() => queryKeys.settings.all()),

@@ -16,12 +16,6 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
 
-  runtimeConfig: {
-    public: {
-      appName: process.env.NUXT_PUBLIC_APP_NAME ?? 'Meal Planner',
-    },
-  },
-
   nitro: {
     experimental: { tasks: true },
   },

@@ -64,7 +64,6 @@
         <table class="w-full border-collapse">
           <thead>
             <tr>
-              <!-- Meal label col -->
               <th class="w-24 py-2 pr-3 text-right text-xs font-medium uppercase tracking-wider text-text-subtle" />
               <th
                 v-for="day in weekDays"
@@ -93,19 +92,28 @@
                 class="align-top px-1.5 py-2"
                 style="min-width: 120px; max-width: 160px;"
               >
-                <div class="flex flex-col gap-1.5">
+                <VueDraggable
+                  v-model="weekSlots[slotKey(day.iso, mt)]"
+                  group="plan-entries"
+                  class="flex flex-col gap-1.5"
+                  :data-date="day.iso"
+                  :data-meal-type="mt"
+                  @start="onDragStart($event, day.iso, mt)"
+                  @end="onDragEnd"
+                >
                   <PlanEntryChip
-                    v-for="entry in entriesFor(day.iso, mt)"
-                    :key="entry.id"
-                    :entry="entry"
-                    @delete="deleteEntry(entry.id)"
+                    v-for="element in weekSlots[slotKey(day.iso, mt)]"
+                    :key="element.id"
+                    :entry="element"
+                    @delete="deleteEntry(element.id)"
+                    @move="openMove(element)"
                   />
-                  <button
-                    type="button"
-                    class="flex h-7 w-full items-center justify-center rounded-lg border border-dashed border-border text-text-subtle opacity-40 hover:opacity-100 hover:border-accent hover:text-accent transition text-sm"
-                    @click="openAdd(day.iso, mt)"
-                  >+</button>
-                </div>
+                </VueDraggable>
+                <button
+                  type="button"
+                  class="mt-1.5 flex h-7 w-full items-center justify-center rounded-lg border border-dashed border-border text-text-subtle opacity-40 hover:opacity-100 hover:border-accent hover:text-accent transition text-sm"
+                  @click="openAdd(day.iso, mt)"
+                >+</button>
               </td>
             </tr>
           </tbody>
@@ -115,7 +123,6 @@
 
     <!-- Month view -->
     <template v-else-if="view === 'month'">
-      <!-- Day-of-week headers -->
       <div class="mb-1 grid grid-cols-7 gap-1 text-center">
         <div
           v-for="d in ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']"
@@ -172,6 +179,7 @@
               :entry="entry"
               full
               @delete="deleteEntry(entry.id)"
+              @move="openMove(entry)"
             />
             <button
               type="button"
@@ -185,17 +193,26 @@
 
     <!-- Add dialog -->
     <AddPlanEntryDialog
-      :show="dialogOpen"
+      :show="addDialogOpen"
       :date="dialogDate"
       :meal-type="dialogMealType"
-      @close="dialogOpen = false"
-      @created="dialogOpen = false"
+      @close="addDialogOpen = false"
+      @created="addDialogOpen = false"
+    />
+
+    <!-- Move dialog -->
+    <MovePlanEntryDialog
+      :show="moveDialogOpen"
+      :entry="moveEntry"
+      @close="moveDialogOpen = false"
+      @moved="moveDialogOpen = false"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { VueDraggable } from 'vue-draggable-plus'
 import {
   format,
   startOfWeek,
@@ -245,6 +262,17 @@ const rangeEnd = computed(() => {
   return format(anchor.value, 'yyyy-MM-dd')
 })
 
+// ── Week days (declared early — used by weekSlots sync) ─────────
+const weekDays = computed(() => {
+  const days = eachDayOfInterval({ start: weekStart.value, end: weekEnd.value })
+  return days.map(d => ({
+    iso: format(d, 'yyyy-MM-dd'),
+    label: format(d, 'EEE'),
+    dayNum: format(d, 'd'),
+    isToday: isToday(d),
+  }))
+})
+
 // ── Data ────────────────────────────────────────────────────────
 const { data: entries, isPending } = useQuery({
   queryKey: computed(() => queryKeys.planEntries.range(rangeStart.value, rangeEnd.value)),
@@ -257,6 +285,71 @@ function entriesFor(date: string, mt: MealType): PlanEntry[] {
 
 function allEntriesForDay(date: string): PlanEntry[] {
   return entries.value?.filter(e => e.date === date) ?? []
+}
+
+// Template literal type ensures noUncheckedIndexedAccess treats indexing as non-optional.
+type SlotKey = `${string}__${MealType}`
+
+function slotKey(date: string, mt: MealType): SlotKey {
+  return `${date}__${mt}`
+}
+
+// ── Week view drag-and-drop ──────────────────────────────────────
+// Reactive map of slot arrays bound via v-model to VueDraggable.
+// Synced from query on every entries update; vue-draggable-plus mutates
+// these arrays in place during drag for live visual feedback.
+// Typed as Record<SlotKey, any> so noUncheckedIndexedAccess doesn't add | undefined
+// to the slot index access used in the VueDraggable v-model binding.
+// Runtime values are always PlanEntry[] — set exclusively by syncWeekSlots.
+const weekSlots = reactive({}) as unknown as Record<SlotKey, any>
+
+function syncWeekSlots() {
+  for (const day of weekDays.value) {
+    for (const mt of MEAL_TYPES) {
+      const key = slotKey(day.iso, mt)
+      const fresh = entriesFor(day.iso, mt)
+      if (!weekSlots[key]) {
+        weekSlots[key] = [...fresh]
+      } else {
+        weekSlots[key].splice(0, weekSlots[key].length, ...fresh)
+      }
+    }
+  }
+}
+
+watch(entries, syncWeekSlots, { immediate: true })
+watch(weekDays, syncWeekSlots)
+
+// Track which entry is being dragged so @end can identify it by ID.
+let draggedEntryId: number | null = null
+
+function onDragStart(
+  evt: { oldIndex?: number },
+  fromDate: string,
+  fromMt: MealType,
+) {
+  const sourceList = weekSlots[slotKey(fromDate, fromMt)]
+  draggedEntryId = sourceList[evt.oldIndex ?? 0]?.id ?? null
+}
+
+async function onDragEnd(evt: { to: HTMLElement; from: HTMLElement }) {
+  const id = draggedEntryId
+  draggedEntryId = null
+  if (!id) return
+
+  const toDate = evt.to.dataset.date
+  const toMt = evt.to.dataset.mealType as MealType | undefined
+  const fromDate = evt.from.dataset.date
+  const fromMt = evt.from.dataset.mealType
+
+  if (!toDate || !toMt) return
+  if (toDate === fromDate && toMt === fromMt) return
+
+  await $fetch(`/api/plan-entries/${id}`, {
+    method: 'PATCH',
+    body: { date: toDate, mealType: toMt },
+  })
+  queryClient.invalidateQueries({ queryKey: queryKeys.planEntries.all() })
 }
 
 // ── Delete ───────────────────────────────────────────────────────
@@ -281,17 +374,6 @@ function drillToDay(iso: string) {
   view.value = 'day'
 }
 
-// ── Week days ───────────────────────────────────────────────────
-const weekDays = computed(() => {
-  const days = eachDayOfInterval({ start: weekStart.value, end: weekEnd.value })
-  return days.map(d => ({
-    iso: format(d, 'yyyy-MM-dd'),
-    label: format(d, 'EEE'),
-    dayNum: format(d, 'd'),
-    isToday: isToday(d),
-  }))
-})
-
 // ── Month cells ─────────────────────────────────────────────────
 const monthCells = computed(() => {
   const mStart = startOfMonth(anchor.value)
@@ -308,13 +390,22 @@ const monthCells = computed(() => {
 })
 
 // ── Add dialog ──────────────────────────────────────────────────
-const dialogOpen = ref(false)
+const addDialogOpen = ref(false)
 const dialogDate = ref('')
 const dialogMealType = ref<MealType>('dinner')
 
 function openAdd(date: string, mt: MealType) {
   dialogDate.value = date
   dialogMealType.value = mt
-  dialogOpen.value = true
+  addDialogOpen.value = true
+}
+
+// ── Move dialog ─────────────────────────────────────────────────
+const moveDialogOpen = ref(false)
+const moveEntry = ref<PlanEntry | null>(null)
+
+function openMove(entry: PlanEntry) {
+  moveEntry.value = entry
+  moveDialogOpen.value = true
 }
 </script>

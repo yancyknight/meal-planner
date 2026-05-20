@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { createPlanEntrySchema } from '../../shared/schemas/planEntry'
+import { createPlanEntrySchema, updatePlanEntrySchema } from '../../shared/schemas/planEntry'
 
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
@@ -18,6 +18,7 @@ import { db } from '../../server/database/index'
 import { dishes, planEntries } from '../../server/database/schema'
 import {
   createPlanEntry,
+  updatePlanEntry,
   deletePlanEntry,
   listByDateRange,
   daysSinceLastServedFresh,
@@ -127,6 +128,71 @@ describe('createPlanEntry', () => {
     expect(entry.oneOffText).toBe('Burger King')
     expect(entry.dishId).toBeNull()
     expect(entry.dishName).toBeNull()
+  })
+})
+
+// ── updatePlanEntrySchema ────────────────────────────────────────
+
+describe('updatePlanEntrySchema', () => {
+  it('accepts a partial patch of date + mealType', () => {
+    const r = updatePlanEntrySchema.safeParse({ date: '2025-07-01', mealType: 'lunch' })
+    expect(r.success).toBe(true)
+  })
+
+  it('accepts an empty patch', () => {
+    const r = updatePlanEntrySchema.safeParse({})
+    expect(r.success).toBe(true)
+  })
+
+  it('rejects entryKind — immutable field', () => {
+    const r = updatePlanEntrySchema.safeParse({ entryKind: 'leftover' })
+    expect(r.success).toBe(false)
+  })
+
+  it('rejects dishId — immutable field', () => {
+    const r = updatePlanEntrySchema.safeParse({ dishId: 1 })
+    expect(r.success).toBe(false)
+  })
+
+  it('rejects oneOffText — immutable field', () => {
+    const r = updatePlanEntrySchema.safeParse({ oneOffText: 'Pizza' })
+    expect(r.success).toBe(false)
+  })
+})
+
+// ── updatePlanEntry ──────────────────────────────────────────────
+
+describe('updatePlanEntry', () => {
+  it('updates date and mealType, preserving entryKind/dishId/oneOffText', async () => {
+    const dish = await seedDish()
+    const entry = await createPlanEntry({ date: '2025-06-01', mealType: 'dinner', entryKind: 'fresh', dishId: dish.id, guestCount: 0 })
+    const updated = await updatePlanEntry(entry.id, { date: '2025-06-03', mealType: 'lunch' })
+    expect(updated).not.toBeNull()
+    expect(updated!.date).toBe('2025-06-03')
+    expect(updated!.mealType).toBe('lunch')
+    expect(updated!.entryKind).toBe('fresh')
+    expect(updated!.dishId).toBe(dish.id)
+    expect(updated!.oneOffText).toBeNull()
+  })
+
+  it('updates only guestCount when that is the sole patch field', async () => {
+    const dish = await seedDish()
+    const entry = await createPlanEntry({ date: '2025-06-01', mealType: 'dinner', entryKind: 'fresh', dishId: dish.id, guestCount: 0 })
+    const updated = await updatePlanEntry(entry.id, { guestCount: 4 })
+    expect(updated!.guestCount).toBe(4)
+    expect(updated!.date).toBe('2025-06-01')
+  })
+
+  it('returns null for a non-existent id', async () => {
+    expect(await updatePlanEntry(99999, { mealType: 'breakfast' })).toBeNull()
+  })
+
+  it('preserves entryKind for a one-off entry', async () => {
+    const entry = await createPlanEntry({ date: '2025-06-01', mealType: 'dinner', entryKind: 'one-off', dishId: null, oneOffText: 'Takeout', guestCount: 0 })
+    const updated = await updatePlanEntry(entry.id, { mealType: 'lunch' })
+    expect(updated!.entryKind).toBe('one-off')
+    expect(updated!.oneOffText).toBe('Takeout')
+    expect(updated!.dishId).toBeNull()
   })
 })
 

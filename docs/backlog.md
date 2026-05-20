@@ -132,26 +132,26 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 6.5 — Plan Entry Edit + Settings Cleanup
+## Milestone 6.5 — Plan Entry Edit + Settings Cleanup ✅
 *Adds remove/move for planned dishes on the calendar, and strips the now-unused app-name setting. Build with touch in mind — M6.6 will validate everything else on mobile.*
 
 ### Plan entry edit
-- `[ ]` Add `planEntryService.update(id, patch)`; allow patching `date`, `mealType`, `guestCount`. Preserve `entryKind`/`dishId`/`oneOffText`.
-- `[ ]` `PATCH /api/plan-entries/[id]` route + Zod schema (partial of the create schema, excluding `entryKind`/`dishId`/`oneOffText`).
-- `[ ]` Make the chip remove button always visible on `PlanEntryChip` (drop the `group-hover:flex` gating) — small `×` corner button with ≥32px touch target.
-- `[ ]` Install `vue-draggable-plus`; wire drag-and-drop in week view so chips can be dragged between (date, mealType) slots. Optimistically update, invalidate on settle.
-- `[ ]` Touch/keyboard fallback: each chip exposes a **Move…** action (chip menu or long-press) that opens a slot picker dialog (date + meal type) to reassign without dragging.
-- `[ ]` Day view: add **Move…** affordance to each chip (single-column drag is unnecessary).
-- `[ ]` Month view: out of scope — tapping drills to day view where edit works.
-- `[ ]` Tests: PATCH zod rejects forbidden field changes; service `update` preserves `entryKind`/`dishId`; cross-slot move invalidates correct query keys.
+- `[x]` Add `planEntryService.update(id, patch)`; allow patching `date`, `mealType`, `guestCount`. Preserve `entryKind`/`dishId`/`oneOffText`.
+- `[x]` `PATCH /api/plan-entries/[id]` route + Zod schema (partial of the create schema, excluding `entryKind`/`dishId`/`oneOffText`).
+- `[x]` Make the chip remove button always visible on `PlanEntryChip` (drop the `group-hover:flex` gating) — small `×` corner button with ≥32px touch target.
+- `[x]` Install `vue-draggable-plus`; wire drag-and-drop in week view so chips can be dragged between (date, mealType) slots. Optimistically update, invalidate on settle.
+- `[x]` Touch/keyboard fallback: each chip exposes a **Move…** action (chip menu or long-press) that opens a slot picker dialog (date + meal type) to reassign without dragging.
+- `[x]` Day view: add **Move…** affordance to each chip (single-column drag is unnecessary).
+- `[x]` Month view: out of scope — tapping drills to day view where edit works.
+- `[x]` Tests: PATCH zod rejects forbidden field changes; service `update` preserves `entryKind`/`dishId`; cross-slot move invalidates correct query keys.
 
 ### App name cleanup
-- `[ ]` Remove the "App name" card from `/settings` and drop `appName` from the form state.
-- `[ ]` Remove `appName` from the `PATCH /api/settings` accepted body (schema-level).
-- `[ ]` Leave the `app_name` column in `app_settings` (avoids a migration); service simply stops reading/writing it.
-- `[ ]` Remove `NUXT_PUBLIC_APP_NAME` from runtime config, `nuxt.config.ts`, `.env.example`, and the env-var table in `CLAUDE.md`.
-- `[ ]` Hardcode `"Meal Planner"` in `app/layouts/default.vue` (the italic *for two* stays).
-- `[ ]` Tests: settings PATCH ignores/rejects an `appName` field; GET still returns persisted values for `householdSize`.
+- `[x]` Remove the "App name" card from `/settings` and drop `appName` from the form state.
+- `[x]` Remove `appName` from the `PATCH /api/settings` accepted body (schema-level).
+- `[x]` Leave the `app_name` column in `app_settings` (avoids a migration); service simply stops reading/writing it.
+- `[x]` Remove `NUXT_PUBLIC_APP_NAME` from runtime config, `nuxt.config.ts`, `.env.example`, and the env-var table in `CLAUDE.md`.
+- `[x]` Hardcode `"Meal Planner"` in `app/layouts/default.vue` (the italic *for two* stays).
+- `[x]` Tests: settings PATCH ignores/rejects an `appName` field; GET still returns persisted values for `householdSize`.
 
 ---
 
