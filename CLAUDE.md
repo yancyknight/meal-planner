@@ -56,6 +56,7 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 - Note anything deferred, and why
 - **Update `docs/backlog.md`:** mark all completed items `[x]` and add `✅` to the milestone heading
 - **For any UI changes:** follow `docs/close-protocol.md` to capture and embed screenshots/GIFs in the PR description.
+- **🔴 SCREENSHOTS MANDATORY CHECK:** Before writing any `![...]()` image in the PR body, re-read `docs/close-protocol.md`. Screenshots MUST use absolute `raw.githubusercontent.com` URLs with a commit hash — never relative paths. Relative paths (`docs/screenshots/...`) will be broken on GitHub until the branch is merged. Generate the URLs with the script in Step 3 of that doc.
 - Create a PR via `gh pr create` — description must cover: what was built, every judgment call made during implementation, anything deferred and why, any spec divergences that need doc updates, and embedded screenshots/GIFs for all UI changes
 - Send a push notification via the PushNotification tool so the PR is flagged for review
 - Stop — do not wait for user confirmation; the PR is the handoff point
@@ -125,7 +126,7 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestones 0–7 complete. Next up: **Milestone 8 — Shopping Lists**. See `docs/backlog.md` for the full checklists.
+Milestones 0–8 complete. Next up: **Milestone 9 — Planning Mode**. See `docs/backlog.md` for the full checklists.
 
 ## Milestone 3 — Canonical Ingredients + Dish Ingredients ✅
 

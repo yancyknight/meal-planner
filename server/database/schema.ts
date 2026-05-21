@@ -1,6 +1,27 @@
 import { integer, sqliteTable, text, index, primaryKey } from 'drizzle-orm/sqlite-core'
 import { sql } from 'drizzle-orm'
 
+export const shoppingLists = sqliteTable('shopping_lists', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  dateRangeStart: text('dateRangeStart').notNull(),
+  dateRangeEnd: text('dateRangeEnd').notNull(),
+  isDone: integer('isDone').notNull().default(0),
+  doneAt: text('doneAt'),
+  createdAt: text('createdAt').notNull(),
+})
+
+export const shoppingListItems = sqliteTable('shopping_list_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  shoppingListId: integer('shoppingListId').notNull().references(() => shoppingLists.id, { onDelete: 'cascade' }),
+  canonicalIngredientId: integer('canonicalIngredientId').notNull().references(() => canonicalIngredients.id),
+  sourceDishIds: text('sourceDishIds').notNull().default('[]'),
+  rawTexts: text('rawTexts').notNull().default('[]'),
+  checked: integer('checked').notNull().default(0),
+}, (table) => [
+  index('idx_shopping_list_items_list_id').on(table.shoppingListId),
+])
+
 export const canonicalIngredients = sqliteTable('canonical_ingredients', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull().unique(),
