@@ -26,11 +26,8 @@
         <div class="flex flex-wrap items-start gap-3 justify-between">
           <div>
             <h1 class="font-serif text-3xl sm:text-4xl font-semibold text-text">
-              {{ list.name }}
+              {{ formatDateRange(list.dateRangeStart, list.dateRangeEnd) }}
             </h1>
-            <p class="mt-1 font-mono text-sm text-text-muted">
-              {{ list.dateRangeStart }} – {{ list.dateRangeEnd }}
-            </p>
           </div>
           <!-- Status + actions -->
           <div class="flex flex-wrap items-center gap-2 shrink-0">
@@ -117,7 +114,10 @@
         >
           <div class="border-b border-border bg-surface-alt px-5 py-3">
             <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Dish</p>
-            <p class="font-serif text-lg font-semibold text-text">{{ dish.name }}</p>
+            <NuxtLink
+              :to="`/dishes/${dish.id}`"
+              class="font-serif text-lg font-semibold text-text hover:text-accent-deep transition"
+            >{{ dish.name }}</NuxtLink>
           </div>
           <div class="divide-y divide-border">
             <ShoppingListItemRow
@@ -136,6 +136,7 @@
 
 <script setup lang="ts">
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { format, parseISO } from 'date-fns'
 import type { ShoppingListDetail, ShoppingListItem } from '#server/services/shoppingListService'
 
 const route = useRoute()
@@ -149,6 +150,12 @@ const { data: list, isPending } = useQuery({
 })
 
 const view = ref<'combined' | 'by-dish'>('combined')
+
+function formatDateRange(start: string, end: string): string {
+  const s = parseISO(start)
+  const e = parseISO(end)
+  return `${format(s, 'MMM d')} – ${format(e, 'MMM d')}`
+}
 
 function formatCountdown(deletesAt: string): string {
   const diff = new Date(deletesAt).getTime() - Date.now()

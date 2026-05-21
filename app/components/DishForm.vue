@@ -195,7 +195,7 @@
 import type { CreateDishInput } from '#shared/schemas/dish'
 import { ALLERGEN_PRESETS, SEASON_OPTIONS } from '#shared/schemas/dish'
 import type { Tag } from '#shared/types/tag'
-import type { DishIngredient } from '#shared/types/ingredient'
+import type { DishIngredient, IngredientRowValue } from '#shared/types/ingredient'
 
 interface Props {
   initialValues?: Partial<CreateDishInput> & { imageLocalPath?: string | null; tags?: Tag[] }
@@ -211,7 +211,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-  submit: [data: CreateDishInput & { tagIds: number[]; pendingImageFile?: File; ingredients: DishIngredient[] }]
+  submit: [data: CreateDishInput & { tagIds: number[]; pendingImageFile?: File; ingredients: IngredientRowValue[] }]
 }>()
 
 const difficultyOptions = [
@@ -225,11 +225,21 @@ const difficultyLevelMap = { easy: 1, medium: 2, hard: 3 } as const
 const fileInputRef = ref<HTMLInputElement>()
 const pendingImageFile = ref<File>()
 const imagePreview = ref<string>()
-const ingredients = ref<DishIngredient[]>(props.initialIngredients ?? [])
+const ingredients = ref<IngredientRowValue[]>(
+  props.initialIngredients?.map(i => ({
+    rawText: i.rawText,
+    canonicalIngredientId: i.canonicalIngredientId,
+    canonicalName: i.canonical.name,
+  })) ?? [],
+)
 
 watch(() => props.initialIngredients, (val) => {
   if (val && val.length > 0 && ingredients.value.length === 0) {
-    ingredients.value = val
+    ingredients.value = val.map(i => ({
+      rawText: i.rawText,
+      canonicalIngredientId: i.canonicalIngredientId,
+      canonicalName: i.canonical.name,
+    }))
   }
 })
 

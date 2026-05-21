@@ -38,6 +38,33 @@
         </div>
       </div>
 
+      <!-- Allergen visibility -->
+      <div class="rounded-lg border border-border bg-surface p-6">
+        <p class="mb-1 text-xs font-medium uppercase tracking-wider text-text-muted">Display</p>
+        <h2 class="mb-4 font-serif text-xl font-semibold text-text">
+          Allergen <em class="font-normal italic text-accent-deep">labels</em>
+        </h2>
+        <p class="mb-4 text-sm text-text-muted">
+          Show allergen badges on dish cards and detail pages.
+        </p>
+        <label class="flex cursor-pointer items-center gap-3 select-none">
+          <button
+            type="button"
+            role="switch"
+            :aria-checked="form.showAllergens"
+            class="relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent/40"
+            :class="form.showAllergens ? 'bg-accent' : 'bg-border'"
+            @click="form.showAllergens = !form.showAllergens"
+          >
+            <span
+              class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+              :class="form.showAllergens ? 'translate-x-4' : 'translate-x-0'"
+            />
+          </button>
+          <span class="text-sm text-text">Show allergens</span>
+        </label>
+      </div>
+
       <!-- Save -->
       <div class="flex items-center gap-4">
         <button
@@ -64,7 +91,7 @@ const { data: settings, isPending } = useQuery({
   queryFn: () => $fetch<AppSettings>('/api/settings'),
 })
 
-const form = reactive({ householdSize: 3 })
+const form = reactive({ householdSize: 3, showAllergens: false })
 const saving = ref(false)
 const saved = ref(false)
 const saveError = ref('')
@@ -72,12 +99,15 @@ const saveError = ref('')
 watch(settings, (s) => {
   if (s) {
     form.householdSize = s.householdSize
+    form.showAllergens = s.showAllergens
   }
 }, { immediate: true })
 
-const isDirty = computed(() =>
-  settings.value ? form.householdSize !== settings.value.householdSize : false,
-)
+const isDirty = computed(() => {
+  if (!settings.value) return false
+  return form.householdSize !== settings.value.householdSize
+    || form.showAllergens !== settings.value.showAllergens
+})
 
 const { mutateAsync } = useMutation({
   mutationFn: (body: Partial<AppSettings>) =>
@@ -90,7 +120,7 @@ async function save() {
   saved.value = false
   saveError.value = ''
   try {
-    await mutateAsync({ householdSize: form.householdSize })
+    await mutateAsync({ householdSize: form.householdSize, showAllergens: form.showAllergens })
     saved.value = true
     setTimeout(() => { saved.value = false }, 3000)
   }

@@ -80,8 +80,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="mt in MEAL_TYPES" :key="mt">
-              <td class="py-2 pr-3 text-right align-top">
+            <tr
+              v-for="(mt, mtIdx) in MEAL_TYPES"
+              :key="mt"
+              :class="mtIdx % 2 === 1 ? 'bg-surface-alt/40' : ''"
+            >
+              <td class="py-2 pr-3 text-right align-top border-r border-border">
                 <div class="flex items-center justify-end gap-1.5">
                   <span class="h-2 w-2 rounded-full flex-shrink-0" :style="{ backgroundColor: MEAL_COLORS[mt] }" />
                   <span class="text-xs font-medium capitalize text-text-muted">{{ mt }}</span>
@@ -90,13 +94,15 @@
               <td
                 v-for="day in weekDays"
                 :key="day.iso"
-                class="align-top px-1.5 py-2"
+                class="align-top px-1.5 py-2 border border-border transition"
                 style="min-width: 120px; max-width: 160px;"
+                :class="isDragging ? 'bg-accent/5' : ''"
               >
                 <VueDraggable
                   v-model="weekSlots[slotKey(day.iso, mt)]"
                   group="plan-entries"
-                  class="flex flex-col gap-1.5"
+                  class="flex flex-col gap-1.5 min-h-[28px]"
+                  :class="isDragging ? '[&_a]:pointer-events-none' : ''"
                   :data-date="day.iso"
                   :data-meal-type="mt"
                   @start="onDragStart($event, day.iso, mt)"
@@ -106,6 +112,7 @@
                     v-for="element in weekSlots[slotKey(day.iso, mt)]"
                     :key="element.id"
                     :entry="element"
+                    :highlighted="recentlyMovedId === element.id"
                     @delete="deleteEntry(element.id)"
                     @move="openMove(element)"
                   />
@@ -196,14 +203,21 @@
               : cell.inMonth ? 'text-text' : 'text-text-subtle'"
           >{{ cell.dayNum }}</div>
           <div v-if="cell.inMonth" class="space-y-0.5">
-            <div
+            <component
+              :is="entry.dishId != null ? 'NuxtLink' : 'div'"
               v-for="entry in allEntriesForDay(cell.iso).slice(0, monthPreviewCount)"
               :key="entry.id"
-              class="truncate rounded px-1.5 py-0.5 text-xs"
+              :to="entry.dishId != null ? `/dishes/${entry.dishId}` : undefined"
+              class="block truncate rounded px-1.5 py-0.5 text-xs"
               :class="entry.entryKind === 'leftover'
                 ? 'bg-leftover/10 text-leftover'
                 : 'bg-surface-alt text-text-muted'"
-            >{{ entry.dishName ?? entry.oneOffText }}</div>
+              :title="entry.dishName ?? entry.oneOffText ?? undefined"
+              @click.stop
+            >
+              <span class="hidden sm:inline">{{ entry.dishName ?? entry.oneOffText }}</span>
+              <span class="sm:hidden">{{ (entry.dishName ?? entry.oneOffText ?? '').slice(0, 3) }}</span>
+            </component>
             <div
               v-if="allEntriesForDay(cell.iso).length > monthPreviewCount"
               class="text-xs text-text-subtle"
@@ -379,17 +393,21 @@ watch(weekDays, syncWeekSlots)
 
 // Track which entry is being dragged so @end can identify it by ID.
 let draggedEntryId: number | null = null
+const isDragging = ref(false)
+const recentlyMovedId = ref<number | null>(null)
 
 function onDragStart(
   evt: { oldIndex?: number },
   fromDate: string,
   fromMt: MealType,
 ) {
+  isDragging.value = true
   const sourceList = weekSlots[slotKey(fromDate, fromMt)]
   draggedEntryId = sourceList[evt.oldIndex ?? 0]?.id ?? null
 }
 
 async function onDragEnd(evt: { to: HTMLElement; from: HTMLElement }) {
+  isDragging.value = false
   const id = draggedEntryId
   draggedEntryId = null
   if (!id) return
@@ -407,6 +425,9 @@ async function onDragEnd(evt: { to: HTMLElement; from: HTMLElement }) {
     body: { date: toDate, mealType: toMt },
   })
   queryClient.invalidateQueries({ queryKey: queryKeys.planEntries.all() })
+
+  recentlyMovedId.value = id
+  setTimeout(() => { recentlyMovedId.value = null }, 800)
 }
 
 // ── Delete ───────────────────────────────────────────────────────

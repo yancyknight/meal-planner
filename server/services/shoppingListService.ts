@@ -5,7 +5,7 @@ import type { CreateShoppingListInput } from '../../shared/schemas/shoppingList'
 
 export interface ShoppingListSummary {
   id: number
-  name: string
+  name: string | null
   dateRangeStart: string
   dateRangeEnd: string
   isDone: boolean
@@ -29,7 +29,7 @@ export interface ShoppingListItem {
 
 export interface ShoppingListDetail {
   id: number
-  name: string
+  name: string | null
   dateRangeStart: string
   dateRangeEnd: string
   isDone: boolean
@@ -52,7 +52,7 @@ export async function createShoppingList(input: CreateShoppingListInput): Promis
   const [list] = await db
     .insert(shoppingLists)
     .values({
-      name: input.name,
+      name: input.name ?? '',
       dateRangeStart: input.dateRangeStart,
       dateRangeEnd: input.dateRangeEnd,
       isDone: 0,

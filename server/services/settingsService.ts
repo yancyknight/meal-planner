@@ -6,6 +6,7 @@ import type { UpdateSettingsInput } from '../../shared/schemas/settings'
 
 const DEFAULTS: AppSettings = {
   householdSize: 3,
+  showAllergens: false,
 }
 
 export async function seedDefaults(): Promise<void> {
@@ -22,6 +23,7 @@ export async function getSettings(): Promise<AppSettings> {
   const map = Object.fromEntries(rows.map(r => [r.key, JSON.parse(r.value)]))
   return {
     householdSize: typeof map.householdSize === 'number' ? map.householdSize : DEFAULTS.householdSize,
+    showAllergens: typeof map.showAllergens === 'boolean' ? map.showAllergens : DEFAULTS.showAllergens,
   }
 }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { DishIngredient } from '../../shared/types/ingredient'
+import type { DishIngredient, IngredientRowValue } from '../../shared/types/ingredient'
 
 interface IngredientRow {
   key: number
@@ -10,22 +10,22 @@ interface IngredientRow {
 }
 
 const props = defineProps<{
-  modelValue: DishIngredient[]
+  modelValue: IngredientRowValue[]
   pendingTexts?: string[]
 }>()
 
 const emit = defineEmits<{
-  'update:modelValue': [DishIngredient[]]
+  'update:modelValue': [IngredientRowValue[]]
 }>()
 
 let nextKey = 0
 
-function toRows(ingredients: DishIngredient[]): IngredientRow[] {
+function toRows(ingredients: (DishIngredient | IngredientRowValue)[]): IngredientRow[] {
   return ingredients.map(i => ({
     key: nextKey++,
     rawText: i.rawText,
     canonicalIngredientId: i.canonicalIngredientId,
-    canonicalName: i.canonical.name,
+    canonicalName: 'canonical' in i ? i.canonical.name : (i as IngredientRowValue).canonicalName,
   }))
 }
 
@@ -35,7 +35,12 @@ const rows = ref<IngredientRow[]>(
     : toRows(props.modelValue),
 )
 
+// Suppresses the modelValue watcher while we are the ones emitting the change,
+// preventing a round-trip that would wipe unlinked rows from local state.
+let isEmitting = false
+
 watch(() => props.modelValue, (val) => {
+  if (isEmitting) return
   if (val.length === 0 && rows.value.length === 0) return
   rows.value = toRows(val)
 }, { deep: false })
@@ -49,23 +54,22 @@ function removeRow(index: number) {
   emitUpdate()
 }
 
-function updateRow(index: number, data: { rawText: string; canonicalIngredientId: number | null }) {
+function updateRow(index: number, data: { rawText: string; canonicalIngredientId: number | null; canonicalName?: string }) {
   rows.value[index] = { ...rows.value[index]!, ...data }
   emitUpdate()
 }
 
 function emitUpdate() {
-  const result = rows.value
-    .filter(r => r.rawText.trim() && r.canonicalIngredientId !== null)
-    .map((r, idx) => ({
-      id: 0,
-      dishId: 0,
-      canonicalIngredientId: r.canonicalIngredientId!,
+  isEmitting = true
+  const result: IngredientRowValue[] = rows.value
+    .filter(r => r.rawText.trim())
+    .map(r => ({
       rawText: r.rawText,
-      sortOrder: idx,
-      canonical: { id: r.canonicalIngredientId!, name: r.canonicalName ?? '', walmartUrl: null, createdAt: '', updatedAt: '' },
+      canonicalIngredientId: r.canonicalIngredientId,
+      canonicalName: r.canonicalName,
     }))
   emit('update:modelValue', result)
+  nextTick(() => { isEmitting = false })
 }
 </script>
 
