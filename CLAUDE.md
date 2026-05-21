@@ -6,9 +6,10 @@ A self-hosted meal planning web app for household use (2 users, no auth, all dat
 
 @import docs/vocabulary.md
 @import docs/architecture.md
-@import docs/design-system.md
 
 Detailed specs: `docs/spec.md` · `docs/data-model.md` · `docs/planning-mode.md` · `docs/testing.md`
+
+UI reference: `docs/design-system.md` — import only when working on frontend or visual changes.
 
 Backlog & build order: `docs/backlog.md`
 
@@ -20,21 +21,9 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 - Re-read this file and any spec docs relevant to the feature being worked on
 - Review the Current Sprint section to see if anything is already in progress
 - If resuming an interrupted session, assess the current state before planning
-- **Before creating any new feature branch:** sync from remote to avoid merge conflicts:
-  ```bash
-  git fetch origin
-  git checkout main
-  git pull origin main
-  git checkout -b <new-branch-name>
-  ```
+- **Before creating any new feature branch:** run `/reset-git` to sync from remote
 
 ### 2. Plan
-- **Before writing the plan, checkout main and pull the latest changes** so the plan is made against current code:
-  ```bash
-  git fetch origin
-  git checkout main
-  git pull origin main
-  ```
 - Write a concrete implementation checklist in the Current Sprint section (below)
 - Checklist must cover: schema changes, migrations, API routes, services, components, tests
 - Call out any decisions not already resolved in the spec docs and ask before assuming
@@ -47,21 +36,12 @@ Follow these steps every session, in order. Do not skip or reorder steps.
 - Keep changes focused on the current feature; note any scope creep opportunities for the backlog instead
 
 ### 4. Verify
-- Run the relevant tests: `pnpm test` for unit/integration, `pnpm test:e2e` for e2e
+- Run `/test` — all tests must run inside the Docker container; never run `pnpm test` or `pnpm test:e2e` directly on the host
 - Show the actual test output — do not describe tests as passing without running them
 - Fix all failures before proceeding; do not defer failing tests
 
 ### 5. Close
-- Mark all completed checklist items in Current Sprint
-- Note anything deferred, and why
-- **Update `docs/backlog.md`:** mark all completed items `[x]` and add `✅` to the milestone heading
-- **For any UI changes:** follow `docs/close-protocol.md` to capture and embed screenshots/GIFs in the PR description.
-- **🔴 SCREENSHOTS MANDATORY CHECK:** Before writing any `![...]()` image in the PR body, re-read `docs/close-protocol.md`. Screenshots MUST use absolute `raw.githubusercontent.com` URLs with a commit hash — never relative paths. Relative paths (`docs/screenshots/...`) will be broken on GitHub until the branch is merged. Generate the URLs with the script in Step 3 of that doc.
-- Create a PR via `gh pr create` — description must cover: what was built, every judgment call made during implementation, anything deferred and why, any spec divergences that need doc updates, and embedded screenshots/GIFs for all UI changes
-- Send a push notification via the PushNotification tool so the PR is flagged for review
-- Stop — do not wait for user confirmation; the PR is the handoff point
-
-@import docs/close-protocol.md
+- Before starting this step, read `.claude/skills/close-sprint.md`
 
 ## Commands
 
@@ -115,10 +95,10 @@ data/                      # Docker volume mount point
 
 ## Environment Variables
 
-| Variable                 | Default              | Description                              |
-|--------------------------|----------------------|------------------------------------------|
-| `DATABASE_URL`           | `/data/app.db`       | SQLite file path                         |
-| `IMAGE_DIR`              | `/data/images`       | Image upload directory                   |
+| Variable        | Default        | Description             |
+|-----------------|----------------|-------------------------|
+| `DATABASE_URL`  | `/data/app.db` | SQLite file path        |
+| `IMAGE_DIR`     | `/data/images` | Image upload directory  |
 
 ## Docker
 
@@ -127,72 +107,3 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 ## Current Sprint
 
 Milestones 0–8.5 complete. Next up: **Milestone 9 — Planning Mode** (Session A). See `docs/backlog.md` for the full checklists.
-
-## Milestone 3 — Canonical Ingredients + Dish Ingredients ✅
-
-- [x] Add `canonical_ingredients` and `dish_ingredients` tables; migration
-- [x] Install fuse.js; implement fuzzy match suggestion in `ingredientService`
-- [x] Dish ingredient editor on dish create/edit form: raw text input → fuzzy suggestion → canonical link or create new
-- [x] Ingredient management page (`/ingredients`): list all canonicals, rename, merge, set Walmart URL, view linked dishes
-- [x] API routes for canonical ingredients and dish ingredients
-- [x] Tests: fuzzy match threshold behavior, merge logic, cascade behavior
-
-**Implementation note:** Tailwind CSS v4 is configured via `@tailwindcss/vite` (Vite plugin) rather than `@nuxtjs/tailwindcss`, because the Nuxt module only supports Tailwind v3 as of this writing. Update `docs/architecture.md` if this is worth documenting.
-
-<!-- NUXT-DEVTOOLS:CRITICAL-FILES -->
-## ⚠️ Critical Configuration Files
-
-The following files trigger a full Nuxt restart when modified:
-- `nuxt.config.ts`
-- `nuxt.config.js`
-- `app.config.ts`
-- `app.config.js`
-- `.nuxtrc`
-- `tsconfig.json`
-
-### 🔴 MANDATORY CHECK (EVERY TIME, NO EXCEPTIONS)
-
-**BEFORE modifying ANY of these files, you MUST:**
-
-```
-1. READ .claude-devtools/settings.json
-2. CHECK criticalFiles.autoConfirm value
-3. IF false OR file missing → STOP and ASK user
-4. IF true → inform user, then proceed
-```
-
-**This check is REQUIRED every single time, even if you checked before in this session.**
-
-### Order of Operations
-
-1. **Complete ALL prerequisite tasks FIRST**
-   - Create all new files that will be referenced
-   - Install all dependencies
-   - Write all related code
-
-2. **Verify prerequisites exist**
-   - All files referenced in config change must exist
-   - All imports must be valid
-
-3. **Check settings file** (read `.claude-devtools/settings.json`)
-
-4. **Act based on autoConfirm setting**
-
-### Example: Adding i18n locale
-
-```
-Step 1: Create locales/es.json           ✓ prerequisite
-Step 2: Read .claude-devtools/settings.json  ✓ check flag
-Step 3: If autoConfirm=false → ask user
-Step 4: Update nuxt.config.ts            ✓ only after confirmation
-```
-
-### Current Setting
-
-**autoConfirm: DISABLED**
-
-→ MUST ask user and WAIT for explicit "yes" before proceeding.
-
----
-After restart, conversation history is preserved. User can send "continue" to resume.
-<!-- /NUXT-DEVTOOLS:CRITICAL-FILES -->
