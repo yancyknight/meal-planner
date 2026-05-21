@@ -104,6 +104,7 @@
           :key="item.id"
           :item="item"
           @toggle="toggleItem(item.id, $event)"
+          @set-walmart-url="setWalmartUrl(item.canonicalIngredientId, $event)"
         />
       </div>
 
@@ -124,6 +125,7 @@
               :key="item.id"
               :item="item"
               @toggle="toggleItem(item.id, $event)"
+              @set-walmart-url="setWalmartUrl(item.canonicalIngredientId, $event)"
             />
           </div>
         </div>
@@ -181,6 +183,17 @@ const { mutate: patchItem } = useMutation({
 
 function toggleItem(itemId: number, checked: boolean) {
   patchItem({ itemId, checked })
+}
+
+// Set Walmart URL on a canonical ingredient
+const { mutate: patchWalmartUrl } = useMutation({
+  mutationFn: ({ canonicalId, url }: { canonicalId: number; url: string }) =>
+    $fetch(`/api/canonical-ingredients/${canonicalId}`, { method: 'PATCH', body: { walmartUrl: url } }),
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.shoppingLists.detail(id.value) }),
+})
+
+function setWalmartUrl(canonicalId: number, url: string) {
+  patchWalmartUrl({ canonicalId, url })
 }
 
 // Mark done / undo done

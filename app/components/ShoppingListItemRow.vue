@@ -36,7 +36,44 @@
         >
           Walmart ↗
         </a>
+        <button
+          v-else-if="!addingUrl"
+          type="button"
+          class="rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-text-subtle hover:border-accent hover:text-accent transition shrink-0"
+          @click="addingUrl = true"
+        >
+          + Walmart link
+        </button>
       </div>
+
+      <!-- Inline Walmart URL input -->
+      <form
+        v-if="addingUrl"
+        class="mt-2 flex items-center gap-2"
+        @submit.prevent="submitUrl"
+      >
+        <input
+          ref="urlInput"
+          v-model="urlDraft"
+          type="url"
+          placeholder="https://www.walmart.com/ip/..."
+          class="min-w-0 flex-1 rounded border border-border bg-surface px-2 py-1 text-xs text-text placeholder:text-text-subtle focus:border-accent focus:outline-none"
+        />
+        <button
+          type="submit"
+          :disabled="!urlDraft.trim()"
+          class="rounded px-2 py-1 text-xs font-medium bg-accent text-white hover:bg-accent-hover transition disabled:opacity-40 shrink-0"
+        >
+          Save
+        </button>
+        <button
+          type="button"
+          class="rounded px-2 py-1 text-xs text-text-muted hover:bg-surface-alt transition shrink-0"
+          @click="cancelUrl"
+        >
+          Cancel
+        </button>
+      </form>
 
       <!-- Raw texts -->
       <p class="mt-0.5 text-xs text-text-subtle leading-relaxed">
@@ -64,7 +101,29 @@ defineProps<{
   item: ShoppingListItem
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   toggle: [checked: boolean]
+  setWalmartUrl: [url: string]
 }>()
+
+const addingUrl = ref(false)
+const urlDraft = ref('')
+const urlInput = ref<HTMLInputElement | null>(null)
+
+watch(addingUrl, (val) => {
+  if (val) nextTick(() => urlInput.value?.focus())
+})
+
+function submitUrl() {
+  const url = urlDraft.value.trim()
+  if (!url) return
+  emit('setWalmartUrl', url)
+  addingUrl.value = false
+  urlDraft.value = ''
+}
+
+function cancelUrl() {
+  addingUrl.value = false
+  urlDraft.value = ''
+}
 </script>
