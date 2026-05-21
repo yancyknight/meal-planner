@@ -83,18 +83,16 @@ describe('createShoppingListSchema', () => {
     expect(r.success).toBe(true)
   })
 
-  it('rejects empty name', () => {
+  it('accepts omitted name (name is now optional)', () => {
     const r = createShoppingListSchema.safeParse({
-      name: '',
       dateRangeStart: '2025-05-19',
       dateRangeEnd: '2025-05-25',
     })
-    expect(r.success).toBe(false)
+    expect(r.success).toBe(true)
   })
 
   it('rejects invalid date format', () => {
     const r = createShoppingListSchema.safeParse({
-      name: 'Test',
       dateRangeStart: '05/19/2025',
       dateRangeEnd: '2025-05-25',
     })

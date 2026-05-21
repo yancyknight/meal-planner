@@ -12,7 +12,7 @@ interface Props {
 
 const props = defineProps<Props>()
 const emit = defineEmits<{
-  update: [{ rawText: string; canonicalIngredientId: number | null }]
+  update: [{ rawText: string; canonicalIngredientId: number | null; canonicalName?: string }]
   remove: []
 }>()
 
@@ -67,7 +67,7 @@ function acceptSuggestion(canonical: CanonicalIngredient) {
   linkedCanonical.value = canonical
   showSuggestions.value = false
   showManualSearch.value = false
-  emit('update', { rawText: rawText.value, canonicalIngredientId: canonical.id })
+  emit('update', { rawText: rawText.value, canonicalIngredientId: canonical.id, canonicalName: canonical.name })
 }
 
 function rejectSuggestion() {

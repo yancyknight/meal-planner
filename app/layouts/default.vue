@@ -66,10 +66,10 @@
 const appName = 'Meal Planner'
 
 const navLinks = [
-  { to: '/dishes', label: 'Dishes' },
   { to: '/calendar', label: 'Calendar' },
   { to: '/planning', label: 'Planning' },
   { to: '/shopping-lists', label: 'Shopping Lists' },
+  { to: '/dishes', label: 'Dishes' },
   { to: '/ingredients', label: 'Ingredients' },
   { to: '/settings', label: 'Settings' },
 ]

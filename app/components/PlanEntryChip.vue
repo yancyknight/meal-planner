@@ -1,7 +1,7 @@
 <template>
   <div
     class="relative rounded-lg border p-2.5 transition"
-    :class="[entryClass, full ? 'flex items-start gap-3' : '']"
+    :class="[entryClass, full ? 'flex items-start gap-3' : '', highlighted ? 'ring-2 ring-accent' : '']"
   >
     <!-- Thumbnail (full/day view only) -->
     <img
@@ -11,8 +11,15 @@
     />
 
     <div class="min-w-0 flex-1 pr-12">
-      <!-- Entry name -->
-      <p class="truncate text-sm font-medium leading-snug text-text">
+      <!-- Entry name — links to dish detail when a dish is attached -->
+      <NuxtLink
+        v-if="entry.dishId != null"
+        :to="`/dishes/${entry.dishId}`"
+        :title="label"
+        class="line-clamp-2 text-sm font-medium leading-snug text-text hover:text-accent transition"
+        @click.stop
+      >{{ label }}</NuxtLink>
+      <p v-else class="line-clamp-2 text-sm font-medium leading-snug text-text" :title="label">
         {{ label }}
       </p>
 
@@ -37,7 +44,7 @@
     <div class="absolute right-1 top-1 flex items-center gap-0.5">
       <button
         type="button"
-        class="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-alt hover:text-text transition"
+        class="md:hidden flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-alt hover:text-text transition"
         title="Move to another slot"
         @click.stop="$emit('move')"
       >↗</button>
@@ -59,6 +66,7 @@ import type { AppSettings } from '#shared/types/settings'
 const props = defineProps<{
   entry: PlanEntry
   full?: boolean
+  highlighted?: boolean
 }>()
 
 defineEmits<{ delete: [], move: [] }>()

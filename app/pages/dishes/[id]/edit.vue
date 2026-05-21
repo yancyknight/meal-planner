@@ -38,7 +38,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { CreateDishInput } from '#shared/schemas/dish'
 import type { Dish } from '#shared/types/dish'
-import type { DishIngredient } from '#shared/types/ingredient'
+import type { CanonicalIngredient, DishIngredient, IngredientRowValue } from '#shared/types/ingredient'
 
 const route = useRoute()
 const router = useRouter()
@@ -56,8 +56,23 @@ const { data: existingIngredients } = useQuery({
   queryFn: () => $fetch<DishIngredient[]>(`/api/dishes/${id.value}/ingredients`),
 })
 
+async function resolveIngredients(rows: IngredientRowValue[]) {
+  return Promise.all(
+    rows
+      .filter(r => r.rawText.trim())
+      .map(async (r) => {
+        if (r.canonicalIngredientId !== null) return r
+        const canonical = await $fetch<CanonicalIngredient>('/api/canonical-ingredients', {
+          method: 'POST',
+          body: { name: r.rawText.trim() },
+        })
+        return { ...r, canonicalIngredientId: canonical.id }
+      }),
+  )
+}
+
 const { mutateAsync, isPending: savePending } = useMutation({
-  mutationFn: async (data: CreateDishInput & { pendingImageFile?: File; ingredients: DishIngredient[] }) => {
+  mutationFn: async (data: CreateDishInput & { pendingImageFile?: File; ingredients: IngredientRowValue[] }) => {
     let imageLocalPath = data.imageLocalPath ?? null
 
     if (data.pendingImageFile) {
@@ -75,9 +90,10 @@ const { mutateAsync, isPending: savePending } = useMutation({
       body: { ...data, pendingImageFile: undefined, ingredients: undefined, imageLocalPath },
     })
 
+    const resolved = await resolveIngredients(data.ingredients)
     await $fetch(`/api/dishes/${id.value}/ingredients`, {
       method: 'PUT',
-      body: data.ingredients.map((i, idx) => ({
+      body: resolved.map((i, idx) => ({
         rawText: i.rawText,
         canonicalIngredientId: i.canonicalIngredientId,
         sortOrder: idx,
@@ -91,7 +107,7 @@ const { mutateAsync, isPending: savePending } = useMutation({
   },
 })
 
-async function handleSubmit(data: CreateDishInput & { pendingImageFile?: File; ingredients: DishIngredient[] }) {
+async function handleSubmit(data: CreateDishInput & { pendingImageFile?: File; ingredients: IngredientRowValue[] }) {
   saveError.value = undefined
   try {
     await mutateAsync(data)

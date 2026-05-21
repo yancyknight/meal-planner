@@ -105,7 +105,13 @@ const PRESETS = [
 
 type PresetKey = (typeof PRESETS)[number]['key']
 
+// Tracks whether the user explicitly clicked "Custom". Needed because activePreset is
+// computed from prop values — clicking Custom from a named preset may emit no value
+// changes, so the computed would still return the named preset without this flag.
+const explicitlyCustom = ref(false)
+
 const activePreset = computed<PresetKey>(() => {
+  if (explicitlyCustom.value) return 'custom'
   const match = PRESETS.find(
     p => p.key !== 'custom' && p.target === props.targetIntervalDays && p.cooldown === props.cooldownDays,
   )
@@ -114,12 +120,13 @@ const activePreset = computed<PresetKey>(() => {
 
 function applyPreset(key: PresetKey) {
   if (key === 'custom') {
-    // Keep current target; reset cooldown to ceil(target / 2) only if switching from a named preset
-    if (activePreset.value !== 'custom') {
+    if (!explicitlyCustom.value) {
+      explicitlyCustom.value = true
       emit('update:cooldownDays', Math.ceil(props.targetIntervalDays / 2))
     }
     return
   }
+  explicitlyCustom.value = false
   const preset = PRESETS.find(p => p.key === key)!
   emit('update:targetIntervalDays', preset.target)
   emit('update:cooldownDays', preset.cooldown)

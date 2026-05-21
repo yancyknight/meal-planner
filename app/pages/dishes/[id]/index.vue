@@ -32,6 +32,12 @@
         >Delete</button>
       </div>
 
+      <!-- Title — shown at top on mobile, hidden on lg (rendered again in right column) -->
+      <div class="mb-6 lg:hidden">
+        <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Dish</p>
+        <h1 class="font-serif text-3xl font-semibold leading-tight text-text">{{ dish.name }}</h1>
+      </div>
+
       <!-- Two-column layout -->
       <div class="grid gap-8 lg:grid-cols-[280px_1fr]">
 
@@ -136,14 +142,14 @@
 
         <!-- Right column: main content -->
         <div class="space-y-8">
-          <!-- Headline -->
-          <div>
+          <!-- Headline (hidden on mobile — rendered above the grid instead) -->
+          <div class="hidden lg:block">
             <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Dish</p>
             <h1 class="font-serif text-3xl sm:text-4xl font-semibold leading-tight text-text">{{ dish.name }}</h1>
           </div>
 
-          <!-- Allergens -->
-          <div v-if="dish.allergens.length">
+          <!-- Allergens (gated by showAllergens setting) -->
+          <div v-if="settings?.showAllergens && dish.allergens.length">
             <p class="mb-2 text-xs font-medium uppercase tracking-wider text-text-muted">Allergens</p>
             <div class="flex flex-wrap gap-1.5">
               <span
@@ -199,6 +205,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { Dish } from '#shared/types/dish'
 import type { DishIngredient } from '#shared/types/ingredient'
 import type { DishStats } from '#shared/types/dishStats'
+import type { AppSettings } from '#shared/types/settings'
 
 const route = useRoute()
 const router = useRouter()
@@ -218,6 +225,12 @@ const { data: dishIngredients } = useQuery({
 const { data: dishStats } = useQuery({
   queryKey: computed(() => queryKeys.dishes.stats(id.value)),
   queryFn: () => $fetch<DishStats>(`/api/dishes/${id.value}/stats`),
+})
+
+const { data: settings } = useQuery({
+  queryKey: computed(() => queryKeys.settings.all()),
+  queryFn: () => $fetch<AppSettings>('/api/settings'),
+  staleTime: 60_000,
 })
 
 const imageSrc = computed(() => {
