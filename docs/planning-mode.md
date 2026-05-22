@@ -76,7 +76,7 @@ Multi-select of **virtual tags only**. Tags ticked here apply to every slot in `
 [⚡ quick]  [🟢 easy]  [🥛 dairy-free]  [🌾 gluten-free]  [🥜 nut-free]  ...
 ```
 
-Virtual tags are derived from dish fields at query time (see **Virtual Tags** below). Real tags are not offered here because session-wide thematic constraints ("every dinner must be pizza") are not a real use case — that intent is served by per-slot pins.
+Virtual tags are derived from dish fields at query time — see [`spec.md` §3 Virtual Tags](./spec.md#virtual-tags) for the full list and rules. Real tags are not offered here because session-wide thematic constraints ("every dinner must be pizza") are not a real use case — that intent is served by per-slot pins.
 
 ### Pin tag to slot
 
@@ -150,32 +150,6 @@ On Confirm:
 5. User is redirected to the Calendar view at the session's start date.
 
 **Cancel** at any point prompts ("This will discard your planning session. Continue?") and deletes the session.
-
----
-
-## Virtual Tags
-
-Virtual tags are filter tokens computed from dish fields at query time. They are not stored in the `tags` table and cannot be assigned manually on a dish form.
-
-| ID | Display | Rule |
-|---|---|---|
-| `v:quick` | ⚡ quick | `dish.timeEstimateMinutes ≤ 20` |
-| `v:easy` | 🟢 easy | `dish.difficulty = 'easy'` |
-| `v:dairy-free` | 🥛 dairy-free | `'dairy-free' ∈ dish.freeFrom` |
-| `v:gluten-free` | 🌾 gluten-free | `'gluten-free' ∈ dish.freeFrom` |
-| `v:nut-free` | 🥜 nut-free | `'nut-free' ∈ dish.freeFrom` |
-| `v:shellfish-free` | 🦐 shellfish-free | `'shellfish-free' ∈ dish.freeFrom` |
-| `v:egg-free` | 🥚 egg-free | `'egg-free' ∈ dish.freeFrom` |
-| `v:soy-free` | 🫘 soy-free | `'soy-free' ∈ dish.freeFrom` |
-| `v:peanut-free` | 🥜 peanut-free | `'peanut-free' ∈ dish.freeFrom` |
-
-Implementation notes:
-
-- Virtual tag IDs use a `v:` prefix so they're trivially distinguishable from real tag IDs (which are numeric).
-- The matching code in the planning engine and library filters detects `v:` prefixes and substitutes the corresponding SQL predicate instead of a join on `dish_tags`.
-- Dishes with a `null` field that a virtual tag references are simply not in that tag's set. No "unknown = maybe" ambiguity.
-- The `quick` threshold (20 min) is hardcoded in v1.
-- Dietary virtual tags respect the `showAllergens` setting from M8.5: when `showAllergens` is false, dietary virtual tags are hidden from all pickers but still functional if previously selected.
 
 ---
 

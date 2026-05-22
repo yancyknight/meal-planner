@@ -138,52 +138,14 @@ When a user types a new raw ingredient text on a Dish:
 
 ## Planning Engine
 
-Stateless function in `planningEngineService.ts`. Inputs:
+Stateless functions in `planningEngineService.ts`:
 
-```typescript
-{
-  slots: { date: string, mealType: MealType, state: 'plan' | 'skip' | 'one-off' | 'keep' }[]
-  sessionVirtualTags: string[]                  // virtual tag IDs (e.g. 'v:quick', 'v:dairy-free')
-  pinnedTags: { date, mealType, tagRef }[]      // tagRef: real tag ID or virtual tag ID
-  wishlistTags: number[]                        // real tag IDs only
-  committedEntries: PlanEntry[]                 // pre-existing Fresh/Leftover entries
-  shownDishIdsBySlot: Record<string, number[]>  // for reroll depletion tracking
-  householdSize: number
-}
-```
+- `generateDraft(input) → draftPlan` — builds a full draft for a session.
+- `reroll(input, slotKey) → dishId` — replaces a single slot, honoring its stored constraints.
 
-### Per-slot eligibility
+The engine never mutates state; callers persist results to `planning_sessions`. Virtual tag IDs (prefixed `v:`) are detected at predicate-build time and substituted with their SQL filter instead of a `dish_tags` join.
 
-A candidate dish is eligible for a slot iff:
-
-1. `dish.archived = false` and `dish.excludedFromSuggestions = false`
-2. **Session virtual tags** — dish satisfies every selected virtual tag (hard filter)
-3. **Pinned tags** — for the specific slot, dish satisfies every pin on that slot (hard filter, with best-effort relaxation if no candidate survives)
-4. **Cooldown** — `daysSinceLastServedFresh(dish, slotDate) ≥ dish.cooldownDays`. The lookup considers both committed Fresh entries and already-placed Fresh slots earlier in this draft. Never-served dishes use `daysSinceFresh = 1.5 × targetIntervalDays`.
-
-### Selection score
-
-```
-overdueness       = daysSinceFresh / dish.targetIntervalDays
-selectionWeight   = min(overdueness, 3.0)
-seasonMultiplier  = 1.0 if dish.season is empty (year-round)
-                    1.0 if seasonOf(slot.date) ∈ dish.season
-                    0.5 otherwise
-diversityFactor   = 1 / (1 + tagOverlapCount)   // overlap with dishes already placed this draft
-score             = selectionWeight × seasonMultiplier × diversityFactor
-```
-
-`seasonOf` always uses the slot's date, not today.
-
-### Generation order
-
-1. **Pinned slots first.** Process pinned slots in date order. For each: build eligible pool with the pin, weighted-random by `score`. If empty, relax pin constraints one at a time and mark the slot with a warning label.
-2. **Wishlist tags.** For each wishlist tag (in user-entered order): pick one unfilled `Plan` slot uniformly at random; filter eligibility by the wishlist tag; weighted-random by `score`. Store the wishlist tag on the slot so reroll preserves it. If no eligible dish carries the tag anywhere, skip and warn at the session level.
-3. **Remaining `Plan` slots.** Iterate chronologically. Build eligible pool (no pin), exclude already-used dishes from primary pool, weighted-random by `score`. Fall back to allowing repeats if the primary pool is empty. If no eligible dish at all: return `{ noEligible: true, reason }` distinguishing "no filter matches" from "all matches in cooldown."
-
-`Skip`, `Keep`, and `One-off` slots are never touched by the engine.
-
-Virtual tag matching: tag IDs prefixed `v:` are detected at predicate-build time and substituted with the corresponding SQL filter (e.g. `timeEstimateMinutes <= 20`) instead of a `dish_tags` join.
+Inputs, per-slot eligibility, selection scoring, and generation order live in **[`planning-mode.md`](./planning-mode.md#algorithm)** — that document is canonical.
 
 ## Shopping List Generation
 
