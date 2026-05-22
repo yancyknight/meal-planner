@@ -48,5 +48,14 @@ export const patchPlanningSessionSchema = z.object({
   status: z.enum(['in_progress', 'finalizing']).optional(),
 })
 
+export const rerollSchema = z.object({
+  slotKey: z.string().min(1),
+})
+
+export const generateDraftSchema = z.object({})
+
+export const finalizeSchema = z.object({})
+
 export type CreatePlanningSessionInput = z.infer<typeof createPlanningSessionSchema>
 export type PatchPlanningSessionInput = z.infer<typeof patchPlanningSessionSchema>
+export type RerollInput = z.infer<typeof rerollSchema>

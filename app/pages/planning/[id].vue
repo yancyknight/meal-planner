@@ -94,11 +94,13 @@
           @update="handleUpdate"
         />
 
-        <!-- Step 4 (future session) -->
-        <div v-else class="text-center py-16">
-          <p class="font-serif text-xl text-text mb-2">Step {{ session.currentStep }}</p>
-          <p class="text-sm text-text-muted">Coming in the next session.</p>
-        </div>
+        <!-- Step 4: Draft & Finalize -->
+        <WizardStep4
+          v-else-if="session.currentStep === 4"
+          :session="session"
+          @update="handleUpdate"
+          @generated="onGenerated"
+        />
       </main>
     </div>
 
@@ -211,8 +213,33 @@ async function handleUpdate(patch: Partial<PlanningSession>) {
 
 async function goForward() {
   if (!session.value || !canContinue.value) return
-  if (session.value.currentStep >= 4) return
+  if (session.value.currentStep === 4) {
+    await finalize()
+    return
+  }
   await handleUpdate({ currentStep: (session.value.currentStep + 1) as 1 | 2 | 3 | 4 })
+}
+
+async function finalize() {
+  if (!session.value) return
+  if (!confirm('Confirm and save this plan to the calendar?')) return
+  isSaving.value = true
+  try {
+    const result = await $fetch<{ weekStart: string }>(
+      `/api/planning-sessions/${id.value}/finalize`,
+      { method: 'POST' },
+    )
+    queryClient.invalidateQueries({ queryKey: queryKeys.planningSessions.all() })
+    queryClient.invalidateQueries({ queryKey: queryKeys.planEntries.all() })
+    router.push(`/calendar?week=${result.weekStart}`)
+  }
+  finally {
+    isSaving.value = false
+  }
+}
+
+function onGenerated(_warnings: string[]) {
+  // warnings are displayed inside WizardStep4 itself
 }
 
 async function goBack() {

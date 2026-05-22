@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { selectionWeight, isEligibleForSlot } from '../../server/services/planningEngineService'
+import { selectionWeight, isEligibleForSlot, seasonOf, weightedRandom, generateDraft, reroll } from '../../server/services/planningEngineService'
+import type { Dish } from '../../shared/types/dish'
 
 // ── Pure function unit tests ──────────────────────────────────────────────────
 
@@ -66,6 +67,270 @@ describe('isEligibleForSlot', () => {
 
   it('never-served dish is eligible (effective daysSince = 1.5 × target ≥ cooldown)', () => {
     expect(isEligibleForSlot(base, null)).toBe(true)
+  })
+})
+
+// ── seasonOf ─────────────────────────────────────────────────────────────────
+
+describe('seasonOf', () => {
+  it('March is spring', () => expect(seasonOf('2026-03-15')).toBe('spring'))
+  it('May is spring', () => expect(seasonOf('2026-05-31')).toBe('spring'))
+  it('June is summer', () => expect(seasonOf('2026-06-01')).toBe('summer'))
+  it('August is summer', () => expect(seasonOf('2026-08-31')).toBe('summer'))
+  it('September is fall', () => expect(seasonOf('2026-09-01')).toBe('fall'))
+  it('November is fall', () => expect(seasonOf('2026-11-30')).toBe('fall'))
+  it('December is winter', () => expect(seasonOf('2026-12-01')).toBe('winter'))
+  it('February is winter', () => expect(seasonOf('2026-02-28')).toBe('winter'))
+})
+
+// ── weightedRandom ────────────────────────────────────────────────────────────
+
+describe('weightedRandom', () => {
+  it('returns null on empty array', () => expect(weightedRandom([])).toBeNull())
+  it('returns the single item when only one', () => {
+    const item = { id: 1 }
+    expect(weightedRandom([{ item, weight: 1 }])).toBe(item)
+  })
+  it('always returns the item with all the weight', () => {
+    const a = { id: 1 }
+    const b = { id: 2 }
+    const result = weightedRandom([{ item: a, weight: 0 }, { item: b, weight: 100 }])
+    expect(result).toBe(b)
+  })
+})
+
+// ── generateDraft ─────────────────────────────────────────────────────────────
+
+function makeDish(overrides: Partial<Dish> & { id: number; name: string }): Dish {
+  return {
+    imageUrl: null,
+    imageLocalPath: null,
+    timeEstimateMinutes: null,
+    yieldServings: null,
+    sourceUrl: null,
+    sourceName: null,
+    difficulty: null,
+    freeFrom: [],
+    season: [],
+    notes: null,
+    cooldownDays: 7,
+    targetIntervalDays: 14,
+    excludedFromSuggestions: false,
+    archived: false,
+    tags: [],
+    createdAt: '2026-01-01T00:00:00.000Z',
+    updatedAt: '2026-01-01T00:00:00.000Z',
+    ...overrides,
+  }
+}
+
+const baseDishes = [
+  makeDish({ id: 1, name: 'Pasta' }),
+  makeDish({ id: 2, name: 'Soup' }),
+  makeDish({ id: 3, name: 'Salad' }),
+]
+
+const weekSlots = ['2026-06-01', '2026-06-02', '2026-06-03'].map((date) => ({
+  date,
+  mealType: 'dinner',
+  state: 'plan' as const,
+}))
+
+const baseInput = {
+  slots: weekSlots,
+  dishes: baseDishes,
+  committedEntries: [],
+  sessionVirtualTags: [],
+  pinnedTags: [],
+  wishlistTags: [],
+  householdSize: 3,
+}
+
+describe('generateDraft — basic fill', () => {
+  it('fills all plan slots', () => {
+    const { draftPlan, warnings } = generateDraft(baseInput)
+    expect(Object.keys(draftPlan)).toHaveLength(3)
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('only uses valid dishIds', () => {
+    const { draftPlan } = generateDraft(baseInput)
+    for (const slot of Object.values(draftPlan)) {
+      expect(slot.dishId).toBeGreaterThan(0)
+    }
+  })
+
+  it('skips archived dishes', () => {
+    const input = { ...baseInput, dishes: [makeDish({ id: 1, name: 'Pasta', archived: true }), makeDish({ id: 2, name: 'Soup' }), makeDish({ id: 3, name: 'Salad' })] }
+    const { draftPlan } = generateDraft(input)
+    for (const slot of Object.values(draftPlan)) {
+      expect(slot.dishId).not.toBe(1)
+    }
+  })
+
+  it('skips excluded dishes', () => {
+    const input = { ...baseInput, dishes: [makeDish({ id: 1, name: 'Pasta', excludedFromSuggestions: true }), makeDish({ id: 2, name: 'Soup' }), makeDish({ id: 3, name: 'Salad' })] }
+    const { draftPlan } = generateDraft(input)
+    for (const slot of Object.values(draftPlan)) {
+      expect(slot.dishId).not.toBe(1)
+    }
+  })
+
+  it('skip-state slots are not filled', () => {
+    const input = {
+      ...baseInput,
+      slots: [
+        { date: '2026-06-01', mealType: 'dinner', state: 'skip' as const },
+        { date: '2026-06-02', mealType: 'dinner', state: 'plan' as const },
+      ],
+    }
+    const { draftPlan } = generateDraft(input)
+    expect(draftPlan['2026-06-01:dinner']).toBeUndefined()
+    expect(draftPlan['2026-06-02:dinner']).toBeDefined()
+  })
+})
+
+describe('generateDraft — pinned slots', () => {
+  it('resolves pinned slot first with matching dish', () => {
+    const taggedDish = makeDish({ id: 4, name: 'Pizza', tags: [{ id: 10, name: 'pizza', color: null }] })
+    const input = {
+      ...baseInput,
+      dishes: [...baseDishes, taggedDish],
+      pinnedTags: [{ date: '2026-06-01', mealType: 'dinner', tagRef: { kind: 'real' as const, tagId: 10 } }],
+    }
+    const { draftPlan, warnings } = generateDraft(input)
+    // The pinned slot must use taggedDish (id 4)
+    expect(draftPlan['2026-06-01:dinner']?.dishId).toBe(4)
+    expect(warnings).toHaveLength(0)
+  })
+
+  it('relaxes pin when no matching dish and attaches warning label', () => {
+    const input = {
+      ...baseInput,
+      slots: [{ date: '2026-06-01', mealType: 'dinner', state: 'plan' as const }],
+      pinnedTags: [{ date: '2026-06-01', mealType: 'dinner', tagRef: { kind: 'real' as const, tagId: 999 } }],
+    }
+    const { draftPlan } = generateDraft(input)
+    const slot = draftPlan['2026-06-01:dinner']!
+    expect(slot.dishId).toBeGreaterThan(0) // best-effort fill
+    expect(slot.warningLabels?.some((w) => w.includes('relaxed'))).toBe(true)
+  })
+
+  it('marks no-match with dishId -1 when no dishes at all are eligible', () => {
+    const input = {
+      ...baseInput,
+      dishes: [],
+      slots: [{ date: '2026-06-01', mealType: 'dinner', state: 'plan' as const }],
+      pinnedTags: [{ date: '2026-06-01', mealType: 'dinner', tagRef: { kind: 'real' as const, tagId: 10 } }],
+    }
+    const { draftPlan, warnings } = generateDraft(input)
+    expect(draftPlan['2026-06-01:dinner']?.dishId).toBe(-1)
+    expect(warnings.length).toBeGreaterThan(0)
+  })
+})
+
+describe('generateDraft — wishlist tags', () => {
+  it('places a wishlist-tagged dish in an unfilled slot', () => {
+    const taggedDish = makeDish({ id: 5, name: 'Rice Bowl', tags: [{ id: 20, name: 'rice', color: null }] })
+    const input = {
+      ...baseInput,
+      dishes: [...baseDishes, taggedDish],
+      slots: [{ date: '2026-06-01', mealType: 'dinner', state: 'plan' as const }],
+      wishlistTags: [20],
+    }
+    const { draftPlan } = generateDraft(input)
+    const slot = draftPlan['2026-06-01:dinner']!
+    expect(slot.dishId).toBe(5)
+    expect(slot.wishlistTag).toBe(20)
+  })
+
+  it('skips wishlist tag and warns when no eligible dish carries it', () => {
+    const input = { ...baseInput, wishlistTags: [999] }
+    const { warnings } = generateDraft(input)
+    expect(warnings.some((w) => w.includes('999'))).toBe(true)
+  })
+})
+
+describe('generateDraft — cooldown enforcement', () => {
+  it('does not place a dish within its cooldown window from committed entries', () => {
+    const dish = makeDish({ id: 1, name: 'Pasta', cooldownDays: 14, targetIntervalDays: 14 })
+    const input = {
+      ...baseInput,
+      dishes: [dish, makeDish({ id: 2, name: 'Soup' })],
+      slots: [{ date: '2026-06-01', mealType: 'dinner', state: 'plan' as const }],
+      committedEntries: [{
+        id: 100, date: '2026-05-30', mealType: 'dinner', entryKind: 'fresh', dishId: 1,
+        oneOffText: null, guestCount: 0, createdAt: '2026-01-01T00:00:00.000Z',
+      }],
+    }
+    // dish 1 was served 2 days ago, cooldown 14 — must not be placed
+    const { draftPlan } = generateDraft(input)
+    expect(draftPlan['2026-06-01:dinner']?.dishId).not.toBe(1)
+  })
+})
+
+describe('generateDraft — no eligible dishes', () => {
+  it('marks slot as no-match when no dishes available', () => {
+    const input = {
+      ...baseInput,
+      dishes: [],
+      slots: [{ date: '2026-06-01', mealType: 'dinner', state: 'plan' as const }],
+    }
+    const { draftPlan, warnings } = generateDraft(input)
+    expect(draftPlan['2026-06-01:dinner']?.dishId).toBe(-1)
+    expect(warnings.length).toBeGreaterThan(0)
+  })
+})
+
+// ── reroll ────────────────────────────────────────────────────────────────────
+
+describe('reroll', () => {
+  it('returns a dish not in the shown list', () => {
+    const result = reroll({
+      slotKey: '2026-06-01:dinner',
+      dishes: baseDishes,
+      committedEntries: [],
+      currentDraftHistory: [],
+      shownDishIds: [1],
+      sessionVirtualTags: [],
+      pinTagRefs: [],
+    })
+    expect(result).not.toBe('exhausted')
+    if (result !== 'exhausted') {
+      expect(result.dishId).not.toBe(1)
+      expect(result.shownDishIds).toContain(result.dishId)
+    }
+  })
+
+  it('returns exhausted when all dishes already shown', () => {
+    const result = reroll({
+      slotKey: '2026-06-01:dinner',
+      dishes: baseDishes,
+      committedEntries: [],
+      currentDraftHistory: [],
+      shownDishIds: [1, 2, 3],
+      sessionVirtualTags: [],
+      pinTagRefs: [],
+    })
+    expect(result).toBe('exhausted')
+  })
+
+  it('respects wishlistTagId constraint', () => {
+    const taggedDish = makeDish({ id: 6, name: 'Noodles', tags: [{ id: 30, name: 'noodles', color: null }] })
+    const result = reroll({
+      slotKey: '2026-06-01:dinner',
+      dishes: [...baseDishes, taggedDish],
+      committedEntries: [],
+      currentDraftHistory: [],
+      shownDishIds: [],
+      sessionVirtualTags: [],
+      pinTagRefs: [],
+      wishlistTagId: 30,
+    })
+    expect(result).not.toBe('exhausted')
+    if (result !== 'exhausted') {
+      expect(result.dishId).toBe(6)
+    }
   })
 })
 
