@@ -173,6 +173,82 @@ describe('patchPlanningSession', () => {
     const patched = await patchPlanningSession(session.id, { currentStep: 2 })
     expect(patched!.updatedAt > session.updatedAt).toBe(true)
   })
+
+  // ── Step 3 field round-trips ──────────────────────────────────
+
+  it('persists sessionVirtualTags', async () => {
+    const session = await createPlanningSession({ weekStart: '2026-05-25', mealTypes: ['dinner'] })
+    const patched = await patchPlanningSession(session.id, { sessionVirtualTags: ['v:quick', 'v:easy'] })
+    expect(patched!.sessionVirtualTags).toEqual(['v:quick', 'v:easy'])
+    // Second read confirms persistence
+    const fetched = await getPlanningSession(session.id)
+    expect(fetched!.sessionVirtualTags).toEqual(['v:quick', 'v:easy'])
+  })
+
+  it('replaces sessionVirtualTags on subsequent patch', async () => {
+    const session = await createPlanningSession({ weekStart: '2026-05-25', mealTypes: ['dinner'] })
+    await patchPlanningSession(session.id, { sessionVirtualTags: ['v:quick'] })
+    const patched = await patchPlanningSession(session.id, { sessionVirtualTags: ['v:easy', 'v:dairy-free'] })
+    expect(patched!.sessionVirtualTags).toEqual(['v:easy', 'v:dairy-free'])
+  })
+
+  it('persists pinnedTags round-trip', async () => {
+    const session = await createPlanningSession({ weekStart: '2026-05-25', mealTypes: ['dinner'] })
+    const pins = [
+      { date: '2026-05-25', mealType: 'dinner' as const, tagRef: { kind: 'virtual' as const, id: 'v:quick' } },
+      { date: '2026-05-26', mealType: 'dinner' as const, tagRef: { kind: 'real' as const, tagId: 42 } },
+    ]
+    const patched = await patchPlanningSession(session.id, { pinnedTags: pins })
+    expect(patched!.pinnedTags).toEqual(pins)
+    const fetched = await getPlanningSession(session.id)
+    expect(fetched!.pinnedTags).toEqual(pins)
+  })
+
+  it('clears pinnedTags when patched with empty array', async () => {
+    const session = await createPlanningSession({ weekStart: '2026-05-25', mealTypes: ['dinner'] })
+    await patchPlanningSession(session.id, {
+      pinnedTags: [{ date: '2026-05-25', mealType: 'dinner', tagRef: { kind: 'virtual', id: 'v:easy' } }],
+    })
+    const cleared = await patchPlanningSession(session.id, { pinnedTags: [] })
+    expect(cleared!.pinnedTags).toEqual([])
+  })
+
+  it('persists wishlistTags round-trip', async () => {
+    const session = await createPlanningSession({ weekStart: '2026-05-25', mealTypes: ['dinner'] })
+    const patched = await patchPlanningSession(session.id, { wishlistTags: [7, 13] })
+    expect(patched!.wishlistTags).toEqual([7, 13])
+    const fetched = await getPlanningSession(session.id)
+    expect(fetched!.wishlistTags).toEqual([7, 13])
+  })
+
+  it('clears wishlistTags when patched with empty array', async () => {
+    const session = await createPlanningSession({ weekStart: '2026-05-25', mealTypes: ['dinner'] })
+    await patchPlanningSession(session.id, { wishlistTags: [5] })
+    const cleared = await patchPlanningSession(session.id, { wishlistTags: [] })
+    expect(cleared!.wishlistTags).toEqual([])
+  })
+
+  it('patchPlanningSessionSchema accepts valid pinnedTags', () => {
+    const r = patchPlanningSessionSchema.safeParse({
+      pinnedTags: [
+        { date: '2026-05-25', mealType: 'dinner', tagRef: { kind: 'virtual', id: 'v:quick' } },
+        { date: '2026-05-26', mealType: 'lunch', tagRef: { kind: 'real', tagId: 3 } },
+      ],
+    })
+    expect(r.success).toBe(true)
+  })
+
+  it('patchPlanningSessionSchema rejects pinnedTag with invalid tagRef kind', () => {
+    const r = patchPlanningSessionSchema.safeParse({
+      pinnedTags: [{ date: '2026-05-25', mealType: 'dinner', tagRef: { kind: 'other', id: 5 } }],
+    })
+    expect(r.success).toBe(false)
+  })
+
+  it('patchPlanningSessionSchema accepts wishlistTags', () => {
+    const r = patchPlanningSessionSchema.safeParse({ wishlistTags: [1, 2, 3] })
+    expect(r.success).toBe(true)
+  })
 })
 
 describe('deletePlanningSession', () => {

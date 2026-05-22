@@ -273,16 +273,16 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 - `[x]` **Step 2 — Slot Setup:** one card per day in a two-column grid (single column on mobile); per-slot state pills (`plan` / `skip` / `one-off` (+ text) / `keep` (existing entries)); bulk actions (*Skip all Plan*, *Plan all Skip*, *Keep all existing*); live state-count summary.
 - `[x]` Tests: session CRUD, step state serialization, slot state transitions, removedPlanEntryIds and pendingOneOffEntries accumulation.
 
-### Session B — Step 3 (Anchors) + Virtual Tag Scaffolding
-- `[ ]` Implement virtual tag registry (server-side): tag IDs `v:quick`, `v:easy`, `v:dairy-free`, `v:gluten-free`, `v:nut-free`, `v:shellfish-free`, `v:egg-free`, `v:soy-free`, `v:peanut-free`. Each maps to a SQL predicate.
-- `[ ]` Tag-matching helper `matchesTag(dish, tagRef)`: detects `v:` prefix and applies predicate; otherwise joins on `dish_tags`.
-- `[ ]` Tag picker component that surfaces real + virtual tags with visual distinction (virtual chips carry a primary label + italic sub-label like `quick · ≤ 20 min`; respect `showAllergens` for dietary virtual tags).
-- `[ ]` **Step 3 — Anchors UI:** three optional sections:
+### Session B — Step 3 (Anchors) + Virtual Tag Scaffolding ✅
+- `[x]` Implement virtual tag registry (server-side): tag IDs `v:quick`, `v:easy`, `v:dairy-free`, `v:gluten-free`, `v:nut-free`, `v:shellfish-free`, `v:egg-free`, `v:soy-free`, `v:peanut-free`. Each maps to a SQL predicate.
+- `[x]` Tag-matching helper `matchesTag(dish, tagRef)`: detects `v:` prefix and applies predicate; otherwise joins on `dish_tags`.
+- `[x]` Tag picker component that surfaces real + virtual tags with visual distinction (virtual chips carry a primary label + italic sub-label like `quick · ≤ 20 min`; respect `showAllergens` for dietary virtual tags).
+- `[x]` **Step 3 — Anchors UI:** three optional sections:
   - Session-wide constraints (virtual tags only)
   - Pin tag to slot (date + mealType + tag, real or virtual; multiple pins allowed; AND-combined per slot)
   - Wishlist tags (real tags only)
-- `[ ]` Pinned-tag conflict detection: warn if a session-wide virtual tag excludes all dishes carrying a pinned/wishlist tag.
-- `[ ]` Tests: virtual tag predicate correctness, tag matching across real/virtual, pinned tag CRUD, wishlist tag CRUD, conflict detection.
+- `[x]` Pinned-tag conflict detection: warn if a session-wide virtual tag excludes all dishes carrying a pinned/wishlist tag.
+- `[x]` Tests: virtual tag predicate correctness, tag matching across real/virtual, pinned tag CRUD, wishlist tag CRUD, conflict detection.
 
 ### Session C — Step 4 (Draft, Reroll, Finalize) + Engine
 - `[ ]` Implement full Draft Plan generation in `planningEngineService` per `docs/planning-mode.md` Algorithm: virtual-tag prefilter, pinned-slot pass first (with best-effort relaxation + warning labels), wishlist pass (uniform-random slot, weighted by `score` within tag), chronological remaining pass; weighted-random by `selectionWeight × seasonMultiplier × diversityFactor`. Honor in-draft Fresh history for cooldown.

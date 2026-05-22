@@ -106,4 +106,33 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestones 0–8.6 complete. **Milestone 9-A — Planning Mode Session A** is complete (on `milestone-9a-planning-session-setup`, pending PR merge). Next up: **Milestone 9-B — Step 3 (Anchors) + Virtual Tag Scaffolding**. See `docs/backlog.md` for the full checklists and `docs/planning-mode.md` for the M9 design.
+Milestones 0–9-A complete. **Milestone 9-B — Step 3 (Anchors) + Virtual Tag Scaffolding** is in progress on `milestone-9b-step3-anchors`.
+
+### Milestone 9-B Checklist
+
+No DB schema changes or new API routes needed — existing PATCH schema already handles all Step 3 fields.
+
+**Shared infrastructure**
+- [x] `shared/virtualTags.ts` — `VirtualTag` interface, `VIRTUAL_TAGS` array (9 entries: v:quick, v:easy, v:dairy-free … v:peanut-free), `getVirtualTag(id)`, `matchesVirtualTag(dish, id)`, `matchesTag(dish, tagRef)`
+- [x] `shared/utils/anchorConflicts.ts` — pure `detectAnchorConflicts(virtualTagIds, pinnedTags, wishlistTagIds, dishes)` → `string[]` warnings
+
+**Client components**
+- [x] `app/components/VirtualTagPicker.vue` — multi-select chip grid; each chip shows emoji + primary label + italic sub-label; hides dietary tags when `showAllergens=false`; props: `modelValue: string[]`, `showAllergens: boolean`
+- [x] `app/components/TagRefPicker.vue` — combined real + virtual single-select for the pin builder; virtual group first with sub-labels, then real tags group; props: `modelValue: TagRef | null`, `showAllergens: boolean`; emits `update:modelValue`
+- [x] `app/components/WizardStep3.vue` — three sections A/B/C:
+  - A: `VirtualTagPicker` bound to `session.sessionVirtualTags`; live summary line below
+  - B: Pin list (existing pins as removable rows) + always-visible add-pin row (date select from session week, mealType select from session mealTypes, `TagRefPicker`, "+ Pin" button); validate all three selects before adding
+  - C: Clickable chip list of all real tags (from `GET /api/tags`) toggling `session.wishlistTags`
+  - Conflict warnings (computed via `detectAnchorConflicts` + loaded dishes)
+  - Auto-saves on every change via `emit('update', patch)` (no debounce needed — parent handles saves)
+
+**Wire-up**
+- [x] `app/pages/planning/[id].vue` — replace "Coming in the next session" placeholder with `<WizardStep3>` for `currentStep === 3`
+
+**Tests**
+- [x] `test/unit/virtualTags.test.ts`:
+  - Each virtual tag predicate: passing dish, failing dish, null field → false
+  - `matchesVirtualTag` with unknown ID → false
+  - `matchesTag` for virtual refs and real refs
+  - `detectAnchorConflicts`: virtual tag + pinned real tag with no surviving dishes → warning; virtual tag + wishlist real tag with no surviving dishes → warning; no conflict → empty array
+- [x] `test/unit/planningSessionService.test.ts` additions — PATCH round-trips for `sessionVirtualTags`, `pinnedTags`, `wishlistTags`
