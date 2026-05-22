@@ -68,6 +68,14 @@ describe('isEligibleForSlot', () => {
   it('never-served dish is eligible (effective daysSince = 1.5 × target ≥ cooldown)', () => {
     expect(isEligibleForSlot(base, null)).toBe(true)
   })
+
+  it('ineligible when one-off cooldown is active (even if daysSince is large)', () => {
+    expect(isEligibleForSlot(base, 100, true)).toBe(false)
+  })
+
+  it('eligible when one-off cooldown flag is false (default)', () => {
+    expect(isEligibleForSlot(base, 14, false)).toBe(true)
+  })
 })
 
 // ── seasonOf ─────────────────────────────────────────────────────────────────

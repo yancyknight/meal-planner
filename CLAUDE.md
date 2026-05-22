@@ -106,10 +106,9 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestones 0–10 complete. No milestone is currently in progress.
+Milestones 0–11 complete. No milestone is currently in progress.
 
 **Upcoming milestones (see `docs/backlog.md` for full checklists):**
-- M11 — One-Off Dish Cooldown (GitHub issues #21, #23)
 - M12 — Database Backups (GitHub issue #25)
 - M13 — CI/CD, Deployment Template & README (GitHub issues #26, #28, #29)
 

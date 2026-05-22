@@ -64,6 +64,13 @@
       "when": 1779465922558,
       "tag": "0008_slim_norrin_radd",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1779485897151,
+      "tag": "0009_luxuriant_maestro",
+      "breakpoints": true
     }
   ]
 }

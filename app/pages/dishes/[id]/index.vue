@@ -143,6 +143,38 @@
               v-model:excluded-from-suggestions="frequencyForm.excludedFromSuggestions"
             />
           </div>
+
+          <!-- One-off cooldown -->
+          <div class="rounded-lg border border-border p-4">
+            <p class="mb-3 text-xs font-medium uppercase tracking-wider text-text-muted">One-Off Cooldown</p>
+            <template v-if="activeCooldown">
+              <div class="mb-3 flex items-center gap-2 rounded-md bg-warning/10 px-3 py-2 text-sm">
+                <span class="text-warning">⏸</span>
+                <span class="text-text">Paused until <strong>{{ formatDate(activeCooldown.endsAt) }}</strong></span>
+              </div>
+              <button
+                class="w-full rounded-md border border-border px-3 py-1.5 text-xs text-text-muted transition hover:bg-surface-alt"
+                :disabled="cooldownRemoving"
+                @click="removeCooldown"
+              >{{ cooldownRemoving ? 'Removing…' : 'Remove cooldown' }}</button>
+            </template>
+            <template v-else>
+              <p class="mb-2 text-xs text-text-subtle">Temporarily exclude this dish from planning suggestions.</p>
+              <div class="flex gap-2">
+                <input
+                  v-model="cooldownEndsAt"
+                  type="date"
+                  :min="cooldownMinDate"
+                  class="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                />
+                <button
+                  class="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-accent-hover disabled:opacity-50"
+                  :disabled="!cooldownEndsAt || cooldownSetting"
+                  @click="setCooldown"
+                >{{ cooldownSetting ? 'Saving…' : 'Set' }}</button>
+              </div>
+            </template>
+          </div>
         </aside>
 
         <!-- Right column: main content -->
@@ -211,6 +243,13 @@ import type { Dish } from '#shared/types/dish'
 import type { DishIngredient } from '#shared/types/ingredient'
 import type { DishStats } from '#shared/types/dishStats'
 import type { AppSettings } from '#shared/types/settings'
+
+interface DishCooldown {
+  id: number
+  dishId: number
+  endsAt: string
+  createdAt: string
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -313,6 +352,58 @@ watch(frequencyForm, (form) => {
     }
   }, 800)
 }, { deep: true })
+
+// ── One-off cooldown ─────────────────────────────────────────────
+
+const { data: cooldownData } = useQuery({
+  queryKey: computed(() => queryKeys.dishes.cooldown(id.value)),
+  queryFn: () => $fetch<{ cooldown: DishCooldown | null }>(`/api/dishes/${id.value}/cooldown`),
+})
+
+const today = new Date()
+const cooldownMinDate = computed(() => {
+  const d = new Date(today)
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
+})
+
+const activeCooldown = computed(() => {
+  const record = cooldownData.value?.cooldown
+  if (!record) return null
+  const todayStr = today.toISOString().slice(0, 10)
+  return record.endsAt >= todayStr ? record : null
+})
+
+const cooldownEndsAt = ref('')
+const cooldownSetting = ref(false)
+const cooldownRemoving = ref(false)
+
+async function setCooldown() {
+  if (!cooldownEndsAt.value) return
+  cooldownSetting.value = true
+  try {
+    await $fetch(`/api/dishes/${id.value}/cooldown`, {
+      method: 'PUT',
+      body: { endsAt: cooldownEndsAt.value },
+    })
+    cooldownEndsAt.value = ''
+    queryClient.invalidateQueries({ queryKey: queryKeys.dishes.cooldown(id.value) })
+  }
+  finally {
+    cooldownSetting.value = false
+  }
+}
+
+async function removeCooldown() {
+  cooldownRemoving.value = true
+  try {
+    await $fetch(`/api/dishes/${id.value}/cooldown`, { method: 'DELETE' })
+    queryClient.invalidateQueries({ queryKey: queryKeys.dishes.cooldown(id.value) })
+  }
+  finally {
+    cooldownRemoving.value = false
+  }
+}
 
 // ── Other mutations ──────────────────────────────────────────────
 

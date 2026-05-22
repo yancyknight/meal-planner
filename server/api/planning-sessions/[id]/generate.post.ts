@@ -3,6 +3,7 @@ import { listDishes } from '../../../services/dishService'
 import { listByDateRange } from '../../../services/planEntryService'
 import { getSettings } from '../../../services/settingsService'
 import { generateDraft } from '../../../services/planningEngineService'
+import { getActiveDishIds } from '../../../services/dishCooldownService'
 import { addDays, format } from 'date-fns'
 
 export default defineEventHandler(async (event) => {
@@ -24,6 +25,7 @@ export default defineEventHandler(async (event) => {
     listByDateRange(session.weekStart, weekEnd),
     getSettings(),
   ])
+  const activeCooldownDishIds = await getActiveDishIds(dishes.map((d) => d.id), session.weekStart)
 
   // Build slot list from session state
   const slots = session.mealTypes.flatMap((mealType) => {
@@ -45,6 +47,7 @@ export default defineEventHandler(async (event) => {
     pinnedTags: session.pinnedTags,
     wishlistTags: session.wishlistTags,
     householdSize: settings.householdSize,
+    activeCooldownDishIds,
   })
 
   // Seed shownDishIdsBySlot with initial picks
