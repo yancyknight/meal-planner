@@ -87,7 +87,14 @@
           @update="handleUpdate"
         />
 
-        <!-- Steps 3 & 4 (future sessions) -->
+        <!-- Step 3: Anchors -->
+        <WizardStep3
+          v-else-if="session.currentStep === 3"
+          :session="session"
+          @update="handleUpdate"
+        />
+
+        <!-- Step 4 (future session) -->
         <div v-else class="text-center py-16">
           <p class="font-serif text-xl text-text mb-2">Step {{ session.currentStep }}</p>
           <p class="text-sm text-text-muted">Coming in the next session.</p>
