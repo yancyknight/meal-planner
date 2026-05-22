@@ -52,6 +52,7 @@
         type="button"
         class="flex h-9 w-9 sm:h-8 sm:w-8 items-center justify-center rounded text-xs text-text-subtle hover:bg-surface-alt hover:text-text transition"
         title="Remove"
+        aria-label="Remove entry"
         @click.stop="$emit('delete')"
       >×</button>
     </div>

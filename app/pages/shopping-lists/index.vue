@@ -22,6 +22,9 @@
       <div v-for="i in 3" :key="i" class="h-24 animate-pulse rounded-lg bg-surface-alt" />
     </div>
 
+    <!-- Error -->
+    <div v-else-if="listsError" class="text-sm text-warning">Failed to load shopping lists.</div>
+
     <!-- Empty state -->
     <div
       v-else-if="!lists?.length"
@@ -155,7 +158,7 @@ import type { ShoppingListSummary } from '#server/services/shoppingListService'
 const queryClient = useQueryClient()
 const router = useRouter()
 
-const { data: lists, isPending } = useQuery({
+const { data: lists, isPending, error: listsError } = useQuery({
   queryKey: queryKeys.shoppingLists.all(),
   queryFn: () => $fetch<ShoppingListSummary[]>('/api/shopping-lists'),
   refetchInterval: 60_000,
@@ -209,12 +212,16 @@ async function submitCreate() {
     formError.value = 'End date must be on or after start date.'
     return
   }
-  const list = await createList({
-    dateRangeStart: form.dateRangeStart,
-    dateRangeEnd: form.dateRangeEnd,
-  })
-  closeDialog()
-  router.push(`/shopping-lists/${list.id}`)
+  try {
+    const list = await createList({
+      dateRangeStart: form.dateRangeStart,
+      dateRangeEnd: form.dateRangeEnd,
+    })
+    closeDialog()
+    router.push(`/shopping-lists/${list.id}`)
+  } catch (e: unknown) {
+    formError.value = (e as { data?: { error?: string } })?.data?.error ?? 'Failed to create shopping list.'
+  }
 }
 
 // Delete

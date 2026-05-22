@@ -11,13 +11,14 @@
         </NuxtLink>
 
         <!-- Desktop nav -->
-        <nav class="hidden sm:flex flex-1 items-center gap-1 text-sm ml-8">
+        <nav class="hidden sm:flex flex-1 items-center gap-1 text-sm ml-8" aria-label="Main navigation">
           <NuxtLink
             v-for="link in navLinks"
             :key="link.to"
             :to="link.to"
             class="rounded-full px-4 py-1.5 text-text-muted transition hover:text-text"
             active-class="bg-accent-soft text-accent-deep font-medium"
+            :aria-current="route.path.startsWith(link.to) ? 'page' : undefined"
           >
             {{ link.label }}
           </NuxtLink>
@@ -41,13 +42,14 @@
 
       <!-- Mobile dropdown menu -->
       <div v-if="mobileMenuOpen" class="sm:hidden border-t border-border bg-surface px-6 py-3">
-        <nav class="flex flex-col gap-1">
+        <nav class="flex flex-col gap-1" aria-label="Main navigation">
           <NuxtLink
             v-for="link in navLinks"
             :key="link.to"
             :to="link.to"
             class="rounded-lg px-4 py-3 text-sm text-text-muted transition hover:bg-surface-alt hover:text-text"
             active-class="bg-accent-soft text-accent-deep font-medium"
+            :aria-current="route.path.startsWith(link.to) ? 'page' : undefined"
             @click="mobileMenuOpen = false"
           >
             {{ link.label }}

@@ -298,15 +298,15 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 10 — Polish & Edge Cases
+## Milestone 10 — Polish & Edge Cases ✅
 *After all features are working. One or more sessions.*
 
-- `[ ]` Dish list: sort options (last cooked fresh, target interval), advanced filter panel
-- `[ ]` Calendar: navigate to arbitrary date, keyboard shortcuts
-- `[ ]` Prevent dish delete when plan entries exist (should already be in M1 — verify UX is clear)
-- `[ ]` Empty states for all list views
-- `[ ]` Error boundary handling (import failures, network errors in shopping list generation)
-- `[ ]` Accessibility pass (keyboard nav, aria labels on interactive components)
+- `[x]` Dish list: sort options (last cooked fresh, target interval), advanced filter panel
+- `[x]` Calendar: navigate to arbitrary date, keyboard shortcuts
+- `[x]` Prevent dish delete when plan entries exist (should already be in M1 — verify UX is clear)
+- `[x]` Empty states for all list views
+- `[x]` Error boundary handling (import failures, network errors in shopping list generation)
+- `[x]` Accessibility pass (keyboard nav, aria labels on interactive components)
 
 ---
 

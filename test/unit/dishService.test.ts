@@ -15,7 +15,7 @@ vi.mock('../../server/database/index', async () => {
 })
 
 import { db } from '../../server/database/index'
-import { dishes } from '../../server/database/schema'
+import { dishes, planEntries } from '../../server/database/schema'
 import {
   createDish,
   getDishById,
@@ -27,6 +27,7 @@ import {
 } from '../../server/services/dishService'
 
 beforeEach(async () => {
+  await db.delete(planEntries)
   await db.delete(dishes)
 })
 
@@ -199,6 +200,101 @@ describe('createDishSchema freeFrom validation', () => {
   it('accepts an empty array (no claims)', () => {
     const result = createDishSchema.safeParse({ name: 'Dish', freeFrom: [] })
     expect(result.success).toBe(true)
+  })
+})
+
+describe('listDishes sort', () => {
+  it('name_asc returns dishes in alphabetical order', async () => {
+    await createDish({ name: 'Zucchini' })
+    await createDish({ name: 'Apple Pie' })
+    await createDish({ name: 'Muffins' })
+    const list = await listDishes({ sort: 'name_asc' })
+    expect(list.map(d => d.name)).toEqual(['Apple Pie', 'Muffins', 'Zucchini'])
+  })
+
+  it('target_interval_asc returns dishes ordered by shortest interval first', async () => {
+    await createDish({ name: 'Weekly', cooldownDays: 4, targetIntervalDays: 7 })
+    await createDish({ name: 'Monthly', cooldownDays: 15, targetIntervalDays: 30 })
+    await createDish({ name: 'Biweekly', cooldownDays: 7, targetIntervalDays: 14 })
+    const list = await listDishes({ sort: 'target_interval_asc' })
+    expect(list.map(d => d.name)).toEqual(['Weekly', 'Biweekly', 'Monthly'])
+  })
+
+  it('last_cooked_desc puts most-recently-cooked first, never-cooked last', async () => {
+    const a = await createDish({ name: 'Old Cooked' })
+    const b = await createDish({ name: 'Recent Cooked' })
+    await createDish({ name: 'Never Cooked' })
+
+    await db.insert(planEntries).values({
+      dishId: a.id, date: '2026-01-01', mealType: 'dinner', entryKind: 'fresh',
+      guestCount: 0, createdAt: new Date().toISOString(),
+    })
+    await db.insert(planEntries).values({
+      dishId: b.id, date: '2026-03-01', mealType: 'dinner', entryKind: 'fresh',
+      guestCount: 0, createdAt: new Date().toISOString(),
+    })
+
+    const list = await listDishes({ sort: 'last_cooked_desc' })
+    expect(list[0]!.name).toBe('Recent Cooked')
+    expect(list[1]!.name).toBe('Old Cooked')
+    expect(list[2]!.name).toBe('Never Cooked')
+  })
+
+  it('last_cooked_desc ignores leftover entries', async () => {
+    const a = await createDish({ name: 'Fresh Only' })
+    const b = await createDish({ name: 'Leftover Only' })
+
+    await db.insert(planEntries).values({
+      dishId: a.id, date: '2026-02-01', mealType: 'dinner', entryKind: 'fresh',
+      guestCount: 0, createdAt: new Date().toISOString(),
+    })
+    await db.insert(planEntries).values({
+      dishId: b.id, date: '2026-05-01', mealType: 'lunch', entryKind: 'leftover',
+      guestCount: 0, createdAt: new Date().toISOString(),
+    })
+
+    const list = await listDishes({ sort: 'last_cooked_desc' })
+    // Fresh Only has a fresh entry; Leftover Only has no fresh entry → sorted last
+    expect(list[0]!.name).toBe('Fresh Only')
+    expect(list[1]!.name).toBe('Leftover Only')
+  })
+})
+
+describe('listDishes virtualTagId filter', () => {
+  it('v:quick returns only dishes with time ≤ 20 min', async () => {
+    await createDish({ name: 'Fast', timeEstimateMinutes: 15 })
+    await createDish({ name: 'Slow', timeEstimateMinutes: 60 })
+    await createDish({ name: 'Unknown' })
+    const list = await listDishes({ virtualTagId: 'v:quick' })
+    expect(list).toHaveLength(1)
+    expect(list[0]!.name).toBe('Fast')
+  })
+
+  it('v:easy returns only dishes with difficulty = easy', async () => {
+    await createDish({ name: 'Easy Dish', difficulty: 'easy' })
+    await createDish({ name: 'Hard Dish', difficulty: 'hard' })
+    await createDish({ name: 'No Difficulty' })
+    const list = await listDishes({ virtualTagId: 'v:easy' })
+    expect(list).toHaveLength(1)
+    expect(list[0]!.name).toBe('Easy Dish')
+  })
+
+  it('v:dairy-free returns only dishes with dairy-free in freeFrom', async () => {
+    await createDish({ name: 'Dairy Free', freeFrom: ['dairy-free', 'nut-free'] })
+    await createDish({ name: 'Nut Free Only', freeFrom: ['nut-free'] })
+    await createDish({ name: 'No Claims' })
+    const list = await listDishes({ virtualTagId: 'v:dairy-free' })
+    expect(list).toHaveLength(1)
+    expect(list[0]!.name).toBe('Dairy Free')
+  })
+
+  it('virtualTagId stacks with search filter (AND logic)', async () => {
+    await createDish({ name: 'Quick Pasta', timeEstimateMinutes: 10 })
+    await createDish({ name: 'Quick Tacos', timeEstimateMinutes: 18 })
+    await createDish({ name: 'Slow Pasta', timeEstimateMinutes: 90 })
+    const list = await listDishes({ virtualTagId: 'v:quick', search: 'pasta' })
+    expect(list).toHaveLength(1)
+    expect(list[0]!.name).toBe('Quick Pasta')
   })
 })
 

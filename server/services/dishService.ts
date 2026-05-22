@@ -1,7 +1,7 @@
-import { and, eq, like, desc, inArray } from 'drizzle-orm'
+import { and, eq, like, desc, asc, inArray, sql } from 'drizzle-orm'
 import { db } from '../database'
-import { dishes, dishTags } from '../database/schema'
-import type { Dish } from '../../shared/types/dish'
+import { dishes, dishTags, planEntries } from '../database/schema'
+import type { Dish, DishSort } from '../../shared/types/dish'
 import type { Tag } from '../../shared/types/tag'
 import type { CreateDishInput, UpdateDishInput } from '../../shared/schemas/dish'
 import { getTagsForDishes, setDishTags } from './tagService'
@@ -28,10 +28,12 @@ export interface ListDishesOptions {
   search?: string
   archived?: boolean
   tagId?: number
+  virtualTagId?: string
+  sort?: DishSort
 }
 
 export async function listDishes(opts: ListDishesOptions = {}): Promise<Dish[]> {
-  const { search, archived = false, tagId } = opts
+  const { search, archived = false, tagId, virtualTagId, sort = 'created_desc' } = opts
   const conditions = [eq(dishes.archived, archived)]
 
   if (search) conditions.push(like(dishes.name, `%${search}%`))
@@ -45,11 +47,63 @@ export async function listDishes(opts: ListDishesOptions = {}): Promise<Dish[]> 
     conditions.push(inArray(dishes.id, tagged.map(r => r.dishId)))
   }
 
+  if (virtualTagId !== undefined) {
+    switch (virtualTagId) {
+      case 'v:quick':
+        conditions.push(sql`${dishes.timeEstimateMinutes} IS NOT NULL AND ${dishes.timeEstimateMinutes} <= 20`)
+        break
+      case 'v:easy':
+        conditions.push(eq(dishes.difficulty, 'easy'))
+        break
+      case 'v:dairy-free':
+        conditions.push(like(dishes.freeFrom, '%"dairy-free"%'))
+        break
+      case 'v:gluten-free':
+        conditions.push(like(dishes.freeFrom, '%"gluten-free"%'))
+        break
+      case 'v:nut-free':
+        conditions.push(like(dishes.freeFrom, '%"nut-free"%'))
+        break
+      case 'v:shellfish-free':
+        conditions.push(like(dishes.freeFrom, '%"shellfish-free"%'))
+        break
+      case 'v:egg-free':
+        conditions.push(like(dishes.freeFrom, '%"egg-free"%'))
+        break
+      case 'v:soy-free':
+        conditions.push(like(dishes.freeFrom, '%"soy-free"%'))
+        break
+      case 'v:peanut-free':
+        conditions.push(like(dishes.freeFrom, '%"peanut-free"%'))
+        break
+    }
+  }
+
+  if (sort === 'last_cooked_desc') {
+    // LEFT JOIN to get the most recent fresh plan entry per dish, sort by it DESC (never-cooked last)
+    const rows = await db
+      .select({ dish: dishes, lastCooked: sql<string | null>`max(case when ${planEntries.entryKind} = 'fresh' then ${planEntries.date} end)`.as('lastCooked') })
+      .from(dishes)
+      .leftJoin(planEntries, eq(planEntries.dishId, dishes.id))
+      .where(and(...conditions))
+      .groupBy(dishes.id)
+      .orderBy(sql`lastCooked DESC NULLS LAST`)
+
+    if (rows.length === 0) return []
+    const tagMap = await getTagsForDishes(rows.map(r => r.dish.id))
+    return rows.map(r => rowToDish(r.dish, tagMap.get(r.dish.id) ?? []))
+  }
+
+  const orderClause =
+    sort === 'name_asc' ? asc(dishes.name) :
+    sort === 'target_interval_asc' ? asc(dishes.targetIntervalDays) :
+    desc(dishes.createdAt)
+
   const rows = await db
     .select()
     .from(dishes)
     .where(and(...conditions))
-    .orderBy(desc(dishes.createdAt))
+    .orderBy(orderClause)
 
   if (rows.length === 0) return []
   const tagMap = await getTagsForDishes(rows.map(r => r.id))
