@@ -7,39 +7,40 @@
 
     <!-- Week picker -->
     <section class="mb-8">
-      <p class="text-xs font-medium uppercase tracking-wider text-text-muted mb-3">Week</p>
-
-      <div class="flex items-center gap-3 mb-3">
+      <div class="flex items-center gap-3">
         <button
           type="button"
-          class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface hover:bg-surface-alt transition text-text-muted"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface hover:bg-surface-alt transition text-text-muted text-lg"
           @click="stepWeek(-1)"
         >
           ‹
         </button>
-        <div class="flex-1 rounded-lg border border-border bg-surface px-4 py-2 text-center">
-          <span class="font-serif text-lg font-semibold text-text">{{ weekRangeLabel }}</span>
-          <span class="ml-2 text-xs text-text-muted">{{ weekHint }}</span>
+
+        <div class="flex-1 rounded-lg border border-border bg-surface px-4 pt-3 pb-4">
+          <p class="text-xs font-medium uppercase tracking-wider text-text-muted text-center mb-1">Week of</p>
+          <p class="font-serif text-2xl font-semibold text-text text-center leading-tight">
+            {{ weekRangeLabel }}<em class="font-normal italic text-accent-deep text-lg"> — {{ weekHint }}</em>
+          </p>
+          <hr class="my-3 border-dashed border-border" />
+          <div class="grid grid-cols-7">
+            <div
+              v-for="day in weekDays"
+              :key="day.iso"
+              class="text-center"
+            >
+              <p class="text-xs font-medium uppercase text-text-muted">{{ day.label }}</p>
+              <p class="text-sm text-text">{{ day.date }}</p>
+            </div>
+          </div>
         </div>
+
         <button
           type="button"
-          class="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-surface hover:bg-surface-alt transition text-text-muted"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-surface hover:bg-surface-alt transition text-text-muted text-lg"
           @click="stepWeek(1)"
         >
           ›
         </button>
-      </div>
-
-      <!-- Day-of-week tiles -->
-      <div class="grid grid-cols-7 gap-1">
-        <div
-          v-for="day in weekDays"
-          :key="day.iso"
-          class="rounded-md border border-border bg-surface-alt py-2 text-center"
-        >
-          <p class="text-xs font-medium uppercase text-text-muted">{{ day.label }}</p>
-          <p class="font-mono text-sm text-text">{{ day.date }}</p>
-        </div>
       </div>
     </section>
 
@@ -69,9 +70,7 @@
     </section>
 
     <!-- Info banner -->
-    <div class="rounded-lg border border-border bg-surface-alt px-4 py-3 text-sm text-text-muted">
-      {{ slotBanner }}
-    </div>
+    <div class="rounded-lg border border-border bg-surface-alt px-4 py-3 text-sm text-text-muted" v-html="slotBanner" />
   </div>
 </template>
 
@@ -148,9 +147,9 @@ const weekDays = computed(() => {
 
 const slotBanner = computed(() => {
   const count = mealTypes.value.length * 7
-  if (count === 7) return `That's 7 slots over seven days — one meal per day.`
-  if (count === 14) return `That's 14 slots over seven days — two meals a day.`
-  if (count === 21) return `That's 21 slots over seven days — a full week of three meals.`
+  if (count === 7) return `That's 7 slots over seven days — <em>one meal per day.</em>`
+  if (count === 14) return `That's 14 slots over seven days — <em>two meals a day.</em>`
+  if (count === 21) return `That's 21 slots over seven days — <em>a typical week.</em>`
   return `That's ${count} slot${count !== 1 ? 's' : ''} over seven days.`
 })
 </script>

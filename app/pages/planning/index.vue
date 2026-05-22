@@ -45,7 +45,7 @@
               :to="`/planning/${session.id}`"
               class="font-serif text-lg font-semibold text-text hover:text-accent-deep transition"
             >
-              Week of {{ formatWeek(session.weekStart) }}
+              Week of {{ formatWeek(session.weekStart) }}<em class="font-normal italic text-accent-deep text-base"> — {{ weekHint(session.weekStart) }}</em>
             </NuxtLink>
             <span class="shrink-0 rounded-full bg-accent-soft px-2.5 py-0.5 text-xs font-medium text-accent-deep">
               Step {{ session.currentStep }} of 4
@@ -79,7 +79,7 @@
 
 <script setup lang="ts">
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
-import { format, parseISO, addDays, startOfWeek } from 'date-fns'
+import { format, parseISO, addDays, startOfWeek, differenceInCalendarWeeks } from 'date-fns'
 import type { PlanningSession } from '#shared/types/planningSession'
 
 const queryClient = useQueryClient()
@@ -105,6 +105,16 @@ function formatMealTypes(mealTypes: string[]): string {
 
 function formatDate(iso: string): string {
   return format(parseISO(iso), 'MMM d')
+}
+
+function weekHint(weekStart: string): string {
+  const thisMonday = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const diff = differenceInCalendarWeeks(parseISO(weekStart), thisMonday, { weekStartsOn: 1 })
+  if (diff === 0) return 'this week'
+  if (diff === 1) return 'next week'
+  if (diff === -1) return 'last week'
+  if (diff > 1) return `in ${diff} weeks`
+  return `${Math.abs(diff)} weeks ago`
 }
 
 function currentMonday(): string {

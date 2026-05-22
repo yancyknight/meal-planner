@@ -13,29 +13,44 @@
 
     <template v-else>
       <!-- Bulk actions + live summary -->
-      <div class="mb-5 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          class="rounded-full border border-border px-3 py-1 text-xs font-medium text-text-muted hover:bg-surface-alt transition"
-          @click="skipAllPlan"
-        >
-          Skip all Plan
-        </button>
-        <button
-          type="button"
-          class="rounded-full border border-border px-3 py-1 text-xs font-medium text-text-muted hover:bg-surface-alt transition"
-          @click="planAllSkip"
-        >
-          Plan all Skip
-        </button>
-        <button
-          type="button"
-          class="rounded-full border border-border px-3 py-1 text-xs font-medium text-text-muted hover:bg-surface-alt transition"
-          @click="keepAllExisting"
-        >
-          Keep all existing
-        </button>
-        <span class="ml-auto text-xs text-text-muted">{{ statSummary }}</span>
+      <div class="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-medium uppercase tracking-wider text-text-subtle">Bulk</span>
+          <button
+            type="button"
+            class="text-xs font-medium text-text-muted hover:text-text transition underline-offset-2 hover:underline"
+            @click="skipAllPlan"
+          >
+            Skip all
+          </button>
+          <button
+            type="button"
+            class="text-xs font-medium text-text-muted hover:text-text transition underline-offset-2 hover:underline"
+            @click="planAllSkip"
+          >
+            Restore all
+          </button>
+          <button
+            type="button"
+            class="text-xs font-medium text-text-muted hover:text-text transition underline-offset-2 hover:underline"
+            @click="keepAllExisting"
+          >
+            Keep all existing
+          </button>
+        </div>
+
+        <!-- Colored count badges -->
+        <div class="ml-auto flex flex-wrap items-center gap-1.5">
+          <span
+            v-for="stat in statCounts"
+            :key="stat.state"
+            v-show="stat.count > 0"
+            class="rounded-full px-2.5 py-0.5 text-xs font-medium"
+            :class="stat.cls"
+          >
+            {{ stat.count }} {{ stat.state }}
+          </span>
+        </div>
       </div>
 
       <!-- Day grid: 2 cols desktop, 1 col mobile -->
@@ -301,14 +316,18 @@ function keepAllExisting() {
 }
 
 // Live state count summary
-const statSummary = computed(() => {
+const statCounts = computed(() => {
   const counts: Record<SlotState, number> = { plan: 0, skip: 0, 'one-off': 0, keep: 0 }
   for (const state of Object.values(localSlotStates.value)) {
     counts[state] = (counts[state] ?? 0) + 1
   }
-  return Object.entries(counts)
-    .filter(([, n]) => n > 0)
-    .map(([s, n]) => `${n} ${s}`)
-    .join(' · ')
+  const clsMap: Record<SlotState, string> = {
+    plan: 'bg-accent/15 text-accent-deep',
+    keep: 'bg-[#6B8E5A]/15 text-[#4a6640]',
+    'one-off': 'bg-leftover/20 text-leftover',
+    skip: 'bg-surface-alt text-text-subtle border border-border',
+  }
+  return (Object.entries(counts) as [SlotState, number][])
+    .map(([state, count]) => ({ state, count, cls: clsMap[state] }))
 })
 </script>
