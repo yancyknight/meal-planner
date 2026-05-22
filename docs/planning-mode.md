@@ -1,10 +1,13 @@
 # Planning Mode
 
-Planning Mode is a four-step wizard for generating Plan Entries over a date range. Sessions persist
+Planning Mode is a four-step wizard for generating Plan Entries one week at a time. Sessions persist
 to the database at every step so the user can close the browser and resume any time.
 
 Active sessions are listed at `/planning`. A session can be resumed or deleted from that list.
 Once finalized, the session is deleted — only committed Plan Entries remain on the calendar.
+
+> **v1 scope:** sessions cover a single Monday–Sunday week. Multi-week or partial-week planning is
+> out of scope. The Step 1 picker advances week-by-week.
 
 ---
 
@@ -21,13 +24,29 @@ not by user inputs.
 ## Step Flow
 
 ```
-Step 1: When & What        — date range, meal types
+Step 1: When & What        — week picker, meal types
 Step 2: Slot Setup         — per-slot state (plan / skip / one-off / keep)
 Step 3: Anchors (optional) — session-wide virtual tags · pinned tags · wishlist tags
-Step 4: Draft & Finalize   — generated draft with reroll / swap / clear · inline leftover toggle · confirm
+Step 4: Draft & Finalize   — generated draft on a calendar grid with per-slot reroll / swap / clear / leftover toggle · confirm
 ```
 
 The user can navigate back to any previous step. Advancing a step saves state to the DB immediately.
+
+---
+
+## Wizard Chrome
+
+Persistent across all four steps:
+
+- **Header band:** `← Calendar` on the left, a center label that reads
+  `PLANNING SESSION #<id> — draft — auto-saved`, and `Discard session` on the right
+  (with confirm prompt — see Confirm & Save).
+- **Left sidebar:** a `PLAN A WEEK` eyebrow over the selected week range and a one-line subtitle
+  (e.g. *"seven days, three meals"*). Below it, the four-step status list with circled numbers
+  (filled for the active step, checked for completed, muted for upcoming) and a short caption per
+  step.
+- **Footer:** `← Back`, the `n / 4` progress indicator, and the primary `Continue →` button
+  (or `Confirm & save plan` on Step 4).
 
 ---
 
@@ -35,13 +54,21 @@ The user can navigate back to any previous step. Advancing a step saves state to
 
 **Inputs:**
 
-- Start date (date picker)
-- End date (date picker)
-- Meal types to plan: checkbox group — Breakfast, Lunch, Dinner (any combination; at least one required). **Default: Dinner only.**
+- **Week picker** — single control that selects a full Monday–Sunday week. Default = current week
+  ("this week"). Left/right arrows step backward / forward one week. The picker label shows the week
+  range (e.g. *May 25 – 31*) with a contextual hint (*this week* · *next week* · *in 2 weeks* …).
+  The seven day-of-week tiles render below the range for affordance.
+- **Meal types to plan** — toggle chips for Breakfast, Lunch, Dinner (at least one required).
+  **Default: Dinner only.** Chips visually distinguish each meal (e.g. tinted pills) and the
+  helper text reminds the user that Dinner is on by default and the others fill more slots.
 
 `uncategorized` slots are never planned automatically.
 
-Saved to session: `dateRangeStart`, `dateRangeEnd`, `mealTypes`.
+Below the inputs, a passive info banner tells the user how many slots they're about to plan
+(e.g. *"That's 21 slots over seven days — a typical week."*). This is informational only.
+
+Saved to session: `weekStart` (Monday `YYYY-MM-DD`), `mealTypes`. The wizard derives the end
+date as `weekStart + 6 days` everywhere it's needed.
 
 ---
 
@@ -56,29 +83,49 @@ A single screen showing every slot in the selected range and meal types. Each sl
 | **One-off** + text | Free-text Plan Entry (e.g. "Pizza delivery"). Saved as `entryKind: 'one-off'` on finalize. |
 | **Keep** | Default for slots that already have a Plan Entry in the calendar. Entry stays as-is and is excluded from generation. **Remove** toggles to "Plan" — the existing entry is deleted on finalize. |
 
-Bulk actions: "Plan all empty," "Skip all empty," "Keep all existing."
+**Layout:** one card per day, two-column grid on desktop, single column on mobile. Each card shows
+the day header (e.g. *MON · May 25*) and one row per selected meal type. Each row carries the meal
+label and the four state pills (PLAN · SKIP · ONE-OFF · KEEP) with the active state highlighted.
+Slots that already have a Plan Entry render the existing dish (or one-off text) in the row with an
+`EXISTING — LOCKED` badge; their default state is KEEP. Slots in SKIP show a muted *"— blank on the
+calendar —"* hint. ONE-OFF slots show the entered free text inline.
+
+**Bulk actions** sit above the day grid: *Skip all Plan*, *Plan all Skip*, *Keep all existing*.
+Beside them a live state-count summary (e.g. *17 plan · 2 keep · 1 one-off · 1 skip*) updates as
+slots change.
 
 Saved to session: `slotStates` (keyed by `${date}:${mealType}`), `removedPlanEntryIds`, `pendingOneOffEntries`.
 
-If the entire range has no existing entries, the "Keep" column simply isn't shown.
+If the entire week has no existing entries, the KEEP pill is still shown for symmetry but is
+inactive (no-op).
 
 ---
 
 ## Step 3: Anchors (Optional)
 
-Three independent sections, each optional. All three operate on **tags** (real or virtual).
+Three independent sections, each optional, each labeled with a circled letter (A · B · C) to make
+the structure obvious. All three operate on **tags** (real or virtual).
 
-### Session-wide constraints
+### A. Session-wide constraints
 
 Multi-select of **virtual tags only**. Tags ticked here apply to every slot in `Plan` state as a hard pre-filter — only dishes matching all selected virtual tags are eligible.
 
+Each chip carries a primary label and a small italic sub-label that explains the underlying rule —
+e.g. `quick · ≤ 20 min`, `easy · easy difficulty`, `dairy-free · no dairy`. The sub-label keeps the
+constraint legible without a tooltip.
+
 ```
-[⚡ quick]  [🟢 easy]  [🥛 dairy-free]  [🌾 gluten-free]  [🥜 nut-free]  ...
+[⚡ quick  ≤ 20 min]  [🟢 easy  easy difficulty]  [🥛 dairy-free  no dairy]
+[🌾 gluten-free  no gluten]  [🥜 nut-free  no nuts]  [🌱 vegetarian  no meat]  ...
 ```
+
+Selected chips render in the active color; unselected chips remain quiet. A live summary line below
+the picker echoes the active filters (e.g. *"Only dishes tagged quick + dairy-free will be
+considered."*).
 
 Virtual tags are derived from dish fields at query time — see [`spec.md` §3 Virtual Tags](./spec.md#virtual-tags) for the full list and rules. Real tags are not offered here because session-wide thematic constraints ("every dinner must be pizza") are not a real use case — that intent is served by per-slot pins.
 
-### Pin tag to slot
+### B. Pin a tag to a slot
 
 Zero or more pins. Each pin is `(date, mealType, tag)` where `tag` may be a real tag *or* a virtual tag. Example pins:
 
@@ -89,7 +136,11 @@ When generating, pinned slots are resolved first. If no eligible dish matches a 
 
 Multiple pins on the same slot are AND-combined ("dinner must be both pasta and easy").
 
-### Include tag somewhere ("wishlist")
+**Layout:** each existing pin renders as a row — `Fri 5/29 · [Dinner ▼] · must be · [+ pizza ×]` —
+with a trailing remove button. An always-visible *add row* at the bottom carries three selects
+(*Pick a date…* · meal type · *Pick a tag…*) and a `+ Pin` button to commit the new pin.
+
+### C. Include tag somewhere ("wishlist")
 
 Zero or more **real tags** the user wants represented at least once in the plan but doesn't care where. Example: `[rice]  [soup]`.
 
@@ -103,40 +154,90 @@ Saved to session: `sessionVirtualTags: string[]`, `pinnedTags: { date, mealType,
 
 ## Step 4: Draft & Finalize
 
-A single screen that combines draft generation, per-slot adjustment, leftover suggestion, and final confirmation.
+A single long-scroll screen that combines draft generation, per-slot adjustment, leftover
+suggestion, and final confirmation. The whole week is presented as a **vertical stack of day
+cards**, one per planned day, with one row per selected meal type inside each card. The card stack
+is intentionally taller than a compressed calendar grid because each slot needs room for its
+identity, metadata, and actions on a single line.
 
 ### Draft Generation
 
-The planning engine is called with the session state and produces a complete `draftPlan` (see Algorithm). Slots already in `Skip`, `Keep`, or `One-off` states are not touched.
+The planning engine is called with the session state and produces a complete `draftPlan` (see
+Algorithm). Slots already in `Skip`, `Keep`, or `One-off` state are not touched.
 
-### Per-slot UI
+### Top Summary
 
-Each `Plan`-state slot shows:
+A stat row at the top of Step 4 surfaces the shape of the draft:
 
-- Dish name, difficulty chip, time estimate
-- Any active warning labels (e.g. "⚠ Pinned tag relaxed")
-- **Reroll** — replace with the next weighted-random eligible dish. Honors any pinned tag or wishlist tag attached to this slot. Already-shown dishes for this slot are excluded until the pool is exhausted, at which point the user is prompted to restart the shown-list.
-- **Swap** — open a dish-search dialog to manually pick any dish (bypasses filters). Marked as `isManualOverride`.
+```
+15 DISHES FILLED · 1 LEFTOVER SLOT · 1 ONE-OFF · 2 KEPT · 1 SKIPPED · 1 NO ELIGIBLE DISH
+```
+
+Directly below, an `APPLIED ·` row echoes the active anchors (e.g. `quick · dairy-free · 3 pins ·
+2 wishlist tags`) so the user can connect the result to the inputs.
+
+### Day Card Layout
+
+Each day card carries:
+
+- **Day header:** weekday + date on the left (e.g. `MON · May 25`); a small right-aligned summary
+  shows how many slots are net-new cooks vs. everything else (e.g. `2 cook · 1 other`).
+- **Meal rows** for each selected meal type, in order Breakfast → Lunch → Dinner. Every row uses
+  the same four-column rhythm:
+  1. **Meal label** — small bullet + label (e.g. `• Breakfast`).
+  2. **Abbreviation tile** — colored square with the dish's two-letter monogram (`GY`, `Cw`, `RC`,
+     `MP`, …) and a tint that reflects the slot category (fresh / kept / one-off / leftover /
+     no-match / skipped).
+  3. **Dish line** — dish name, then a meta row beneath it carrying difficulty dots (●●●),
+     time estimate (`20m`), `yields N`, and the dish's real tags (e.g. `salad · lunch · vegetarian`).
+     Pin / wishlist chips render at the end of this line (`+ pizza`, `· soup`).
+  4. **Actions** — right-aligned `Reroll`, `Swap`, `Clear` buttons. Locked/finalized rows replace
+     the trio with just `Clear` (or omit actions entirely — see below).
+
+### Per-row Actions
+
+- **Reroll** — replace with the next weighted-random eligible dish. Honors any pinned tag or
+  wishlist tag attached to this slot. Already-shown dishes for this slot are excluded until the
+  pool is exhausted, at which point the user is prompted to restart the shown-list.
+- **Swap** — open a dish-search dialog to manually pick any dish (bypasses filters). Marked as
+  `isManualOverride`.
 - **Clear** — leave this slot blank in the final output.
 
-`Keep` slots show the existing entry read-only.
-`Skip` slots show "Skipped — no entry will be written."
-`One-off` slots show the entered text.
+### State-specific Rendering
+
+| State | Visual | Actions |
+|---|---|---|
+| **Plan (filled)** | Standard row with abbreviation tile + meta line | `Reroll · Swap · Clear` |
+| **Keep** (existing entry) | Green-tinted row with `KEPT — LOCKED` chip after the dish name; no meta tags shown | `Clear` only (Clear here means "remove this existing entry on confirm" — equivalent to demoting back to Plan and then leaving blank) |
+| **One-off (existing)** | Pre-existing free-text entry; `KEPT — LOCKED` chip; ★ glyph in front of the text | `Clear` only |
+| **One-off (entered this session)** | Lavender-tinted row; free text with a `one-off` chip; ★ glyph | `Clear` only |
+| **Skip** | Hatched/striped background; row reads `skipped — blank on the calendar` | `Clear` (returns to Plan) |
+| **Leftover (queued by toggle)** | Cream/soft-tinted row; uses the originating dish's abbreviation; meta line replaced by an origin pointer `↻ from <day> dinner` | `Clear` only |
+| **No match** | Orange/coral-tinted row; large `NO MATCH` label with the offending tag chip; italic sub-line e.g. *"Pinned tag [soup] — no eligible dish."* | `Swap manually` (full-row CTA) |
 
 ### Inline Leftover Toggle
 
-On any `Plan`, `Keep`, or `Swap` slot whose dish has `yieldServings > householdSize + guestCount`, a small affordance appears:
+On any `Plan`, `Keep`, or `Swap` dinner row whose dish has `yieldServings > householdSize + guestCount`,
+a small affordance appears in the row's right-side area (above the action buttons), labelled
+*`○ leftover lunch tomorrow`*. Toggling it on:
 
-> 🥡 Add leftover lunch tomorrow? `[ toggle ]`
+1. Flips the indicator to *`· leftover lunch tomorrow ✓`* on the originating dinner row.
+2. Inserts (or updates) a `leftover` row on the next day's lunch slot in the day card below,
+   using the same dish, rendered with the leftover-tint and origin pointer.
 
-Toggling on queues a `entryKind: 'leftover'` Plan Entry for the next day's lunch slot using the same dish, provided that slot isn't already filled. This replaces the dedicated leftover step from the prior spec.
+If the next-day lunch slot is already in `Keep` or `One-off` state, the toggle is disabled with a
+tooltip explaining why.
 
-Leftover placements **do not** advance the dish's cooldown — only the originating Fresh entry counts.
+Leftover placements **do not** advance the dish's cooldown — only the originating Fresh entry
+counts.
 
-### Summary Bar
+### Confirm Row
+
+A footer block above the action buttons restates what's about to happen on confirm:
 
 ```
-12 dinners planned · 2 skipped · 1 one-off · 3 leftover lunches queued
+ON CONFIRM
+18 entries will be written · 2 kept · 1 left blank
 ```
 
 ### Confirm & Save
@@ -225,8 +326,7 @@ score             = selectionWeight × seasonMultiplier × diversityFactor
 ```typescript
 interface PlanningSession {
   id: number
-  dateRangeStart: string                    // YYYY-MM-DD
-  dateRangeEnd: string                      // YYYY-MM-DD
+  weekStart: string                         // YYYY-MM-DD — Monday of the planned week
   mealTypes: MealType[]                     // e.g. ['lunch', 'dinner']
   currentStep: 1 | 2 | 3 | 4
 

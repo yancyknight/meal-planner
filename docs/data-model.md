@@ -127,8 +127,7 @@ Persisted state for in-progress Planning Mode wizards. See `docs/planning-mode.m
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
 | `id` | integer | PK, autoincrement | |
-| `dateRangeStart` | text | NOT NULL | YYYY-MM-DD |
-| `dateRangeEnd` | text | NOT NULL | YYYY-MM-DD |
+| `weekStart` | text | NOT NULL | YYYY-MM-DD — Monday of the planned week. v1 sessions always cover seven days. |
 | `mealTypes` | text | NOT NULL | JSON string[] |
 | `currentStep` | integer | NOT NULL, DEFAULT 1 | 1–4 |
 | `slotStates` | text | NOT NULL, DEFAULT '{}' | JSON Record<slotKey, 'plan' \| 'skip' \| 'one-off' \| 'keep'> |

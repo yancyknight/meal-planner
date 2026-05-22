@@ -264,19 +264,19 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 **Design reference:** `docs/planning-mode.md` (4-step flow, virtual tags, pinned tags, wishlist tags, tag-overlap diversity, season multiplier).
 
 ### Session A — Session Setup + Steps 1–2
-- `[ ]` Add `planning_sessions` table per `docs/data-model.md` (new shape: `slotStates`, `removedPlanEntryIds`, `pendingOneOffEntries`, `sessionVirtualTags`, `pinnedTags`, `wishlistTags`, `draftPlan`, `shownDishIdsBySlot`, `leftoverToggles`); migration.
+- `[ ]` Add `planning_sessions` table per `docs/data-model.md` (new shape: `weekStart` (Monday date, not a range), `slotStates`, `removedPlanEntryIds`, `pendingOneOffEntries`, `sessionVirtualTags`, `pinnedTags`, `wishlistTags`, `draftPlan`, `shownDishIdsBySlot`, `leftoverToggles`); migration.
 - `[ ]` Implement `planningSessionService`: create, read, update step state, delete.
 - `[ ]` API routes for planning sessions (list, get, patch, finalize, delete).
 - `[ ]` Planning sessions list page (`/planning`): active sessions, resume/delete.
-- `[ ]` Wizard shell at `/planning/[id]`: 4-step indicator, back/forward navigation, state persistence on every advance.
-- `[ ]` **Step 1 — When & What:** date range + meal types (default: Dinner only).
-- `[ ]` **Step 2 — Slot Setup:** grid of every slot in range; per-slot state selector (`plan` / `skip` / `one-off` (+ text) / `keep` (existing entries)); bulk actions ("Plan all empty," "Skip all empty," "Keep all existing").
+- `[ ]` Wizard shell at `/planning/[id]`: persistent header (`Planning session #<id> — draft — auto-saved`, Discard), left sidebar with 4-step status list, footer with Back / progress / Continue. State persists on every advance.
+- `[ ]` **Step 1 — When & What:** week picker (Monday-anchored, prev/next arrows, contextual hint *this week / next week / in N weeks*) + meal-type toggle chips (default: Dinner only) + info banner with slot count.
+- `[ ]` **Step 2 — Slot Setup:** one card per day in a two-column grid (single column on mobile); per-slot state pills (`plan` / `skip` / `one-off` (+ text) / `keep` (existing entries)); bulk actions (*Skip all Plan*, *Plan all Skip*, *Keep all existing*); live state-count summary.
 - `[ ]` Tests: session CRUD, step state serialization, slot state transitions, removedPlanEntryIds and pendingOneOffEntries accumulation.
 
 ### Session B — Step 3 (Anchors) + Virtual Tag Scaffolding
 - `[ ]` Implement virtual tag registry (server-side): tag IDs `v:quick`, `v:easy`, `v:dairy-free`, `v:gluten-free`, `v:nut-free`, `v:shellfish-free`, `v:egg-free`, `v:soy-free`, `v:peanut-free`. Each maps to a SQL predicate.
 - `[ ]` Tag-matching helper `matchesTag(dish, tagRef)`: detects `v:` prefix and applies predicate; otherwise joins on `dish_tags`.
-- `[ ]` Tag picker component that surfaces real + virtual tags with visual distinction (chip style for virtual; respect `showAllergens` for dietary virtual tags).
+- `[ ]` Tag picker component that surfaces real + virtual tags with visual distinction (virtual chips carry a primary label + italic sub-label like `quick · ≤ 20 min`; respect `showAllergens` for dietary virtual tags).
 - `[ ]` **Step 3 — Anchors UI:** three optional sections:
   - Session-wide constraints (virtual tags only)
   - Pin tag to slot (date + mealType + tag, real or virtual; multiple pins allowed; AND-combined per slot)
@@ -288,9 +288,11 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 - `[ ]` Implement full Draft Plan generation in `planningEngineService` per `docs/planning-mode.md` Algorithm: virtual-tag prefilter, pinned-slot pass first (with best-effort relaxation + warning labels), wishlist pass (uniform-random slot, weighted by `score` within tag), chronological remaining pass; weighted-random by `selectionWeight × seasonMultiplier × diversityFactor`. Honor in-draft Fresh history for cooldown.
 - `[ ]` Implement `reroll(slotKey)` that preserves pin/wishlist tag and honors `shownDishIdsBySlot`; depletion warning + restart prompt when exhausted.
 - `[ ]` **Step 4 — Draft & Finalize UI:**
-  - Per-slot card: dish, difficulty/time chips, warning labels, Reroll / Swap (manual pick) / Clear
-  - Inline leftover toggle on high-yield dinners (queues `entryKind: 'leftover'` for next-day lunch; respects slot occupancy)
-  - Summary bar (planned / skipped / one-offs / leftover lunches)
+  - **Vertical day-card stack:** one card per planned day, one row per selected meal type inside. Each row: meal label · colored abbreviation tile · dish name + meta line (difficulty dots · time · `yields N` · real tags · pin/wishlist chips) · right-side `Reroll · Swap · Clear` action buttons.
+  - State-specific row treatments: KEPT — LOCKED (green tint, Clear-only), one-off existing/new (lavender tint), skipped (hatched, blank-on-calendar text), leftover (cream tint with `↻ from <day> dinner` origin pointer), NO MATCH (orange tint, italic reason line, full-row "Swap manually" CTA).
+  - Top stat row: `15 DISHES FILLED · 1 LEFTOVER SLOT · 1 ONE-OFF · 2 KEPT · 1 SKIPPED · 1 NO ELIGIBLE DISH`. Plus an `APPLIED ·` line echoing the active anchors.
+  - Inline leftover toggle on high-yield dinner rows (queues `entryKind: 'leftover'` for next-day lunch; disabled when target slot is Keep/One-off).
+  - `ON CONFIRM` footer block: `N entries will be written · K kept · M left blank`
   - Confirm: writes draft + pending one-offs + leftover-queued entries; deletes `removedPlanEntryIds`; deletes session row; redirects to calendar
 - `[ ]` Tests: generation algorithm (selection weight × season multiplier × diversity factor distribution matches expectations; cooldown enforced across draft; pinned relaxation; wishlist placement + reroll preserves tag; depletion handling), finalize write logic with correct `entryKind` mapping, session cleanup on finalize.
 
