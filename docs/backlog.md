@@ -324,14 +324,14 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 12 — Database Backups
+## Milestone 12 — Database Backups ✅
 *Depends on M0 (Nitro task infrastructure). Standalone infrastructure feature (#25).*
 
-- `[ ]` Add env vars: `BACKUP_DIR` (default `/data/backups`), `BACKUP_INTERVAL_HOURS` (default `24`), `BACKUP_RETAIN_COUNT` (default `7`); document in `.env.example` and the env-var table in `CLAUDE.md`
-- `[ ]` Implement `server/tasks/database/backup.ts`: use `db.backup(destination)` from `better-sqlite3` (safe hot-backup while app is running); destination filename: `<timestamp>-app.db`; after backup, prune oldest files in `BACKUP_DIR` beyond `BACKUP_RETAIN_COUNT`; log success/failure via `console.log`
-- `[ ]` Register task in `nuxt.config.ts` with a cron schedule derived from `BACKUP_INTERVAL_HOURS` (default: `0 * * * *` = hourly trigger, task guards internally, or use `24h` cron)
-- `[ ]` Settings page: add read-only "Backups" card showing last backup timestamp (read from newest file in `BACKUP_DIR`), next scheduled backup time, and count of retained backups
-- `[ ]` Tests: task creates a file with correct timestamp suffix; prune removes the oldest file(s) when count exceeds retain limit; when `BACKUP_DIR` does not exist the task logs a warning and exits cleanly without crashing
+- `[x]` Add env vars: `BACKUP_DIR` (default `/data/backups`); interval and retain count moved to app_settings (DB) so they are configurable from the UI without touching Docker env vars
+- `[x]` Implement `server/services/backupService.ts` + `server/tasks/database/backup.ts`: uses `sqlite.backup(destination)` from `better-sqlite3`; interval guard reads `backupIntervalHours` from settings; auto-creates `BACKUP_DIR` if missing; prunes oldest files beyond `backupRetainCount`
+- `[x]` Register task in `nuxt.config.ts` with `0 * * * *` hourly cron; task guards internally against interval
+- `[x]` Settings page: Backups card with editable interval + retain count fields and read-only status panel (last backup, next backup, file count)
+- `[x]` Tests: 10 tests covering prune behavior, correct filename format, auto-create dir, interval guard skip/run; all passing
 
 ---
 
@@ -339,7 +339,7 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 *Issue #26 (Docker image build) must land before #28 (deployment template) and #29 (README) can reference the image. All three are non-app-code changes.*
 
 - `[ ]` **#26 — GitHub Actions Docker build:** `.github/workflows/docker-publish.yml` — trigger on `v*.*.*` tag push; build multi-arch image (`linux/amd64` + `linux/arm64`) using `docker/build-push-action`; push to GitHub Container Registry (`ghcr.io/<owner>/<repo>`) tagged with the version and `latest`; no push on non-tag runs (build-only smoke test on `main`)
-- `[ ]` **#28 — Deployment compose template:** `deploy/compose.yml` — references the `ghcr.io` image; `/data` named volume; includes a [Watchtower](https://containrrr.dev/watchtower/) service configured to poll the registry and redeploy on new image; includes a `deploy/backup.sh` helper script that runs a hot SQLite backup (`sqlite3 /data/app.db ".backup /data/backups/pre-deploy-$(date +%Y%m%dT%H%M%S).db"`) and is called manually or wired to a pre-update hook; `README` in `deploy/` explains the setup
+- `[ ]` **#28 — Deployment compose template:** `deploy/compose.yml` — references the `ghcr.io` image; `/data` named volume; **add a second named volume for backups** (e.g. `meal-planner-backups`) mounted at `/data/backups` so backups survive independently of the main data volume and can be managed separately; includes a [Watchtower](https://containrrr.dev/watchtower/) service configured to poll the registry and redeploy on new image; includes a `deploy/backup.sh` helper script that runs a hot SQLite backup (`sqlite3 /data/app.db ".backup /data/backups/pre-deploy-$(date +%Y%m%dT%H%M%S).db"`) and is called manually or wired to a pre-update hook; `README` in `deploy/` explains the setup
 - `[ ]` **#29 — README.md:** project overview (what it does, key features, 2–3 screenshots); prominent disclaimer (personal/household use, no auth/authz, LAN or Tailscale VPN only, not designed for public internet); Docker quick-start using `deploy/compose.yml`; link to `docs/` for detailed spec; note that the app is opinionated/single-household and forks are welcome
 
 ---

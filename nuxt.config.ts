@@ -21,6 +21,7 @@ export default defineNuxtConfig({
     scheduledTasks: {
       '*/15 * * * *': ['shopping-lists:cleanup'],
       '0 0 * * *': ['dishes:cleanup-cooldowns'],
+      '0 * * * *': ['database:backup'],
     },
   },
 })
