@@ -1,4 +1,5 @@
 import type { Dish } from '../types/dish'
+import type { Tag } from '../types/tag'
 import type { PinnedTag } from '../types/planningSession'
 import { matchesVirtualTag, matchesTag, getVirtualTag } from '../virtualTags'
 
@@ -7,6 +8,7 @@ export interface AnchorConflictInput {
   pinnedTags: PinnedTag[]
   wishlistTagIds: number[]
   dishes: Dish[]
+  allTags?: Tag[]
 }
 
 /**
@@ -18,12 +20,22 @@ export function detectAnchorConflicts({
   pinnedTags,
   wishlistTagIds,
   dishes,
+  allTags = [],
 }: AnchorConflictInput): string[] {
   if (sessionVirtualTagIds.length === 0) return []
 
   const activeDishes = dishes.filter((d) =>
     sessionVirtualTagIds.every((id) => matchesVirtualTag(d, id)),
   )
+
+  // Build a tag lookup from allTags (authoritative) + any tags on dishes
+  const tagById = new Map<number, string>()
+  for (const t of allTags) tagById.set(t.id, t.name)
+  for (const d of dishes) for (const t of d.tags) if (!tagById.has(t.id)) tagById.set(t.id, t.name)
+
+  const constraintLabel = sessionVirtualTagIds
+    .map((id) => getVirtualTag(id)?.label ?? id)
+    .join(' + ')
 
   const warnings: string[] = []
   const warned = new Set<string>()
@@ -44,11 +56,9 @@ export function detectAnchorConflicts({
       matchesTag(d, { kind: 'real', tagId }),
     )
     if (!hasMatch) {
-      const tagName = dishes
-        .flatMap((d) => d.tags)
-        .find((t) => t.id === tagId)?.name ?? `tag #${tagId}`
+      const tagName = tagById.get(tagId) ?? `tag #${tagId}`
       warnings.push(
-        `No dish matches both your session constraints and the pinned tag "${tagName}".`,
+        `No dish is both "${constraintLabel}" and tagged "${tagName}" — session filter and pinned tag conflict.`,
       )
       warned.add(key)
     }
@@ -70,9 +80,9 @@ export function detectAnchorConflicts({
       matchesTag(d, { kind: 'virtual', id: virtualId }),
     )
     if (!hasMatch) {
-      const tagLabel = getVirtualTag(virtualId)?.label ?? virtualId
+      const pinLabel = getVirtualTag(virtualId)?.label ?? virtualId
       warnings.push(
-        `No dish matches both your session constraints and the pinned tag "${tagLabel}".`,
+        `No dish is both "${constraintLabel}" and "${pinLabel}" — session filter and pinned tag conflict.`,
       )
       warned.add(key)
     }
@@ -86,11 +96,9 @@ export function detectAnchorConflicts({
       matchesTag(d, { kind: 'real', tagId }),
     )
     if (!hasMatch) {
-      const tagName = dishes
-        .flatMap((d) => d.tags)
-        .find((t) => t.id === tagId)?.name ?? `tag #${tagId}`
+      const tagName = tagById.get(tagId) ?? `tag #${tagId}`
       warnings.push(
-        `No dish matches both your session constraints and the wishlist tag "${tagName}".`,
+        `No dish is both "${constraintLabel}" and tagged "${tagName}" — session filter and wishlist tag conflict.`,
       )
       warned.add(key)
     }

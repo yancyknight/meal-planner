@@ -222,6 +222,7 @@ const conflicts = computed(() => {
     pinnedTags: localPinnedTags.value,
     wishlistTagIds: localWishlistTags.value,
     dishes: allDishes.value,
+    allTags: allTags.value ?? [],
   })
 })
 
