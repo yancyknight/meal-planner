@@ -94,7 +94,7 @@ async function seedDish() {
     .insert(dishes)
     .values({
       name: 'Test Dish',
-      allergens: '[]',
+      freeFrom: '[]',
       season: '[]',
       cooldownDays: 7,
       targetIntervalDays: 14,

@@ -148,15 +148,15 @@
             <h1 class="font-serif text-3xl sm:text-4xl font-semibold leading-tight text-text">{{ dish.name }}</h1>
           </div>
 
-          <!-- Allergens (gated by showAllergens setting) -->
-          <div v-if="settings?.showAllergens && dish.allergens.length">
-            <p class="mb-2 text-xs font-medium uppercase tracking-wider text-text-muted">Allergens</p>
+          <!-- Free from (gated by showAllergens setting) -->
+          <div v-if="settings?.showAllergens && dish.freeFrom.length">
+            <p class="mb-2 text-xs font-medium uppercase tracking-wider text-text-muted">Free from</p>
             <div class="flex flex-wrap gap-1.5">
               <span
-                v-for="allergen in dish.allergens"
-                :key="allergen"
-                class="inline-flex items-center gap-1 rounded-full bg-surface-alt px-3 py-1 text-xs text-warning"
-              >⚠ {{ allergen }}</span>
+                v-for="claim in dish.freeFrom"
+                :key="claim"
+                class="inline-flex items-center gap-1 rounded-full bg-accent-soft px-3 py-1 text-xs text-accent-deep"
+              >✓ {{ formatFreeFromLabel(claim) }}</span>
             </div>
           </div>
 
@@ -247,6 +247,13 @@ function formatDate(dateStr: string): string {
   return new Date(year!, month! - 1, day!).toLocaleDateString(undefined, {
     month: 'short', day: 'numeric', year: 'numeric',
   })
+}
+
+function formatFreeFromLabel(opt: string): string {
+  return opt
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join('-')
 }
 
 // ── Frequency controls (auto-save with debounce) ────────────────

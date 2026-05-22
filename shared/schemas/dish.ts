@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const ALLERGEN_PRESETS = ['gluten', 'dairy', 'nuts', 'shellfish', 'eggs', 'soy', 'peanuts'] as const
+export const FREE_FROM_PRESETS = ['gluten-free', 'dairy-free', 'nut-free', 'shellfish-free', 'egg-free', 'soy-free', 'peanut-free'] as const
 export const SEASON_OPTIONS = ['spring', 'summer', 'fall', 'winter'] as const
 export const DIFFICULTY_OPTIONS = ['easy', 'medium', 'hard'] as const
 
@@ -24,7 +24,7 @@ const dishFields = z.object({
   sourceUrl: z.string().url().nullable().optional(),
   sourceName: z.string().nullable().optional(),
   difficulty: z.enum(DIFFICULTY_OPTIONS).nullable().optional(),
-  allergens: z.array(z.string()).optional(),
+  freeFrom: z.array(z.enum(FREE_FROM_PRESETS)).optional(),
   season: z.array(z.enum(SEASON_OPTIONS)).optional(),
   notes: z.string().nullable().optional(),
   cooldownDays: z.number().int().min(1).optional(),

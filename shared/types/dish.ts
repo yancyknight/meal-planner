@@ -10,7 +10,7 @@ export interface Dish {
   sourceUrl: string | null
   sourceName: string | null
   difficulty: 'easy' | 'medium' | 'hard' | null
-  allergens: string[]
+  freeFrom: ('gluten-free' | 'dairy-free' | 'nut-free' | 'shellfish-free' | 'egg-free' | 'soy-free' | 'peanut-free')[]
   season: ('spring' | 'summer' | 'fall' | 'winter')[]
   notes: string | null
   cooldownDays: number
