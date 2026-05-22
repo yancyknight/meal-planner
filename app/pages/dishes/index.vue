@@ -17,29 +17,49 @@
     </div>
 
     <!-- Filters -->
-    <div class="mb-6 flex flex-wrap items-center gap-3">
-      <!-- Search -->
-      <div class="relative flex-1 min-w-48 max-w-sm">
-        <input
-          v-model="search"
-          type="text"
-          placeholder="Search dishes…"
-          class="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
-        />
-        <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
+    <div class="mb-6 space-y-3">
+      <!-- Row 1: Search + Sort + Archived -->
+      <div class="flex flex-wrap items-center gap-3">
+        <div class="relative flex-1 min-w-48 max-w-sm">
+          <input
+            v-model="search"
+            type="text"
+            placeholder="Search dishes…"
+            class="w-full rounded-lg border border-border bg-surface py-2 pl-9 pr-3 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
+          />
+          <svg class="absolute left-2.5 top-2.5 h-4 w-4 text-text-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        <select
+          v-model="sort"
+          class="rounded-lg border border-border bg-surface py-2 pl-3 pr-8 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
+          aria-label="Sort dishes"
+        >
+          <option value="created_desc">Newest first</option>
+          <option value="name_asc">Name A–Z</option>
+          <option value="last_cooked_desc">Recently cooked</option>
+          <option value="target_interval_asc">Frequency (most often)</option>
+        </select>
+
+        <label class="ml-auto flex cursor-pointer items-center gap-2 text-sm text-text-muted select-none">
+          <input v-model="showArchived" type="checkbox" class="rounded border-border accent-accent" />
+          Show archived
+        </label>
       </div>
 
-      <!-- Tag filter pills -->
-      <div v-if="allTags?.length" class="flex flex-wrap gap-1.5">
+      <!-- Row 2: Tag filter pills -->
+      <div v-if="allTags?.length || visibleVirtualTags.length" class="flex flex-wrap gap-1.5">
         <button
           class="rounded-full border px-4 py-1.5 text-xs transition"
-          :class="selectedTagId === undefined
+          :class="!selectedTagId && !selectedVirtualTagId
             ? 'border-accent bg-accent-soft text-accent-deep font-medium'
             : 'border-border text-text-muted hover:bg-surface-alt'"
-          @click="selectedTagId = undefined"
+          @click="selectedTagId = undefined; selectedVirtualTagId = undefined"
         >All</button>
+
+        <!-- Real tags -->
         <button
           v-for="tag in allTags"
           :key="tag.id"
@@ -47,15 +67,23 @@
           :class="selectedTagId === tag.id
             ? 'border-accent bg-accent-soft text-accent-deep font-medium'
             : 'border-border text-text-muted hover:bg-surface-alt'"
-          @click="selectedTagId = tag.id"
+          @click="selectedTagId = tag.id; selectedVirtualTagId = undefined"
         >{{ tag.name }}</button>
-      </div>
 
-      <!-- Archived toggle -->
-      <label class="ml-auto flex cursor-pointer items-center gap-2 text-sm text-text-muted select-none">
-        <input v-model="showArchived" type="checkbox" class="rounded border-border accent-accent" />
-        Show archived
-      </label>
+        <!-- Divider when both exist -->
+        <span v-if="allTags?.length && visibleVirtualTags.length" class="my-auto h-4 w-px bg-border" />
+
+        <!-- Virtual tags -->
+        <button
+          v-for="vtag in visibleVirtualTags"
+          :key="vtag.id"
+          class="rounded-full border px-4 py-1.5 text-xs transition"
+          :class="selectedVirtualTagId === vtag.id
+            ? 'border-accent bg-accent-soft text-accent-deep font-medium'
+            : 'border-border text-text-muted hover:bg-surface-alt'"
+          @click="selectedVirtualTagId = vtag.id; selectedTagId = undefined"
+        >{{ vtag.emoji }} {{ vtag.label }}</button>
+      </div>
     </div>
 
     <!-- Loading skeletons -->
@@ -68,8 +96,10 @@
 
     <!-- Empty state -->
     <div v-else-if="!dishes?.length" class="py-20 text-center">
-      <p class="font-serif text-2xl text-text-subtle italic">Nothing here yet.</p>
-      <NuxtLink to="/dishes/new" class="mt-3 inline-block text-sm text-accent hover:text-accent-hover hover:underline">
+      <p class="font-serif text-2xl text-text-subtle italic">
+        {{ selectedTagId || selectedVirtualTagId ? 'No dishes match this filter.' : 'Nothing here yet.' }}
+      </p>
+      <NuxtLink v-if="!selectedTagId && !selectedVirtualTagId" to="/dishes/new" class="mt-3 inline-block text-sm text-accent hover:text-accent-hover hover:underline">
         Add your first dish ↗
       </NuxtLink>
     </div>
@@ -83,12 +113,16 @@
 
 <script setup lang="ts">
 import { useQuery } from '@tanstack/vue-query'
-import type { Dish } from '#shared/types/dish'
+import type { Dish, DishSort } from '#shared/types/dish'
 import type { Tag } from '#shared/types/tag'
+import type { AppSettings } from '#shared/types/settings'
+import { VIRTUAL_TAGS } from '#shared/virtualTags'
 
 const search = ref('')
 const showArchived = ref(false)
 const selectedTagId = ref<number>()
+const selectedVirtualTagId = ref<string>()
+const sort = ref<DishSort>('created_desc')
 const debouncedSearch = refDebounced(search, 300)
 
 const { data: allTags } = useQuery({
@@ -97,10 +131,21 @@ const { data: allTags } = useQuery({
   initialData: [],
 })
 
+const { data: settings } = useQuery({
+  queryKey: computed(() => queryKeys.settings.all()),
+  queryFn: () => $fetch<AppSettings>('/api/settings'),
+})
+
+const visibleVirtualTags = computed(() =>
+  VIRTUAL_TAGS.filter(vt => !vt.isDietary || settings.value?.showAllergens)
+)
+
 const filters = computed(() => ({
   search: debouncedSearch.value || undefined,
   archived: showArchived.value,
   tagId: selectedTagId.value,
+  virtualTagId: selectedVirtualTagId.value,
+  sort: sort.value,
 }))
 
 const { data: dishes, isPending, error } = useQuery({
@@ -110,6 +155,8 @@ const { data: dishes, isPending, error } = useQuery({
     if (filters.value.search) params.set('search', filters.value.search)
     if (filters.value.archived) params.set('archived', 'true')
     if (filters.value.tagId) params.set('tagId', String(filters.value.tagId))
+    if (filters.value.virtualTagId) params.set('virtualTagId', filters.value.virtualTagId)
+    if (filters.value.sort) params.set('sort', filters.value.sort)
     return $fetch<Dish[]>(`/api/dishes?${params}`)
   },
 })

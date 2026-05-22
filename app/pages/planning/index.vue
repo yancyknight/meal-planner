@@ -23,6 +23,9 @@
       <div v-for="i in 3" :key="i" class="h-20 animate-pulse rounded-lg bg-surface-alt" />
     </div>
 
+    <!-- Error -->
+    <div v-else-if="sessionsError" class="text-sm text-warning">Failed to load planning sessions.</div>
+
     <!-- Empty state -->
     <div
       v-else-if="!sessions?.length"
@@ -85,7 +88,7 @@ import type { PlanningSession } from '#shared/types/planningSession'
 const queryClient = useQueryClient()
 const router = useRouter()
 
-const { data: sessions, isPending } = useQuery({
+const { data: sessions, isPending, error: sessionsError } = useQuery({
   queryKey: queryKeys.planningSessions.all(),
   queryFn: () => $fetch<PlanningSession[]>('/api/planning-sessions'),
 })

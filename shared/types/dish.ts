@@ -1,5 +1,7 @@
 import type { Tag } from './tag'
 
+export type DishSort = 'name_asc' | 'created_desc' | 'last_cooked_desc' | 'target_interval_asc'
+
 export interface Dish {
   id: number
   name: string

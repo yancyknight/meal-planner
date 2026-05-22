@@ -32,6 +32,11 @@
         >Delete</button>
       </div>
 
+      <!-- Delete error banner -->
+      <div v-if="deleteError" class="mb-4 rounded-lg border border-warning/30 bg-warning/10 px-4 py-2 text-sm text-warning">
+        {{ deleteError }}
+      </div>
+
       <!-- Title — shown at top on mobile, hidden on lg (rendered again in right column) -->
       <div class="mb-6 lg:hidden">
         <p class="text-xs font-medium uppercase tracking-wider text-text-muted">Dish</p>
@@ -324,15 +329,27 @@ function toggleArchive() {
   patchDish({ archived: !dish.value.archived })
 }
 
+const deleteError = ref<string>()
+
 const { mutate: deleteDish } = useMutation({
   mutationFn: () => $fetch<void>(`/api/dishes/${id.value}`, { method: 'DELETE' }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.dishes.all() })
     router.push('/dishes')
   },
+  onError: (err: unknown) => {
+    const status = (err as { response?: { status?: number }; data?: { error?: string } })?.response?.status
+    const message = (err as { data?: { error?: string } })?.data?.error
+    if (status === 409) {
+      deleteError.value = message ?? 'This dish has plan entries — archive it instead of deleting.'
+    } else {
+      deleteError.value = 'Failed to delete dish. Please try again.'
+    }
+  },
 })
 
 function confirmDelete() {
+  deleteError.value = undefined
   if (confirm('Delete this dish? This cannot be undone.')) {
     deleteDish()
   }

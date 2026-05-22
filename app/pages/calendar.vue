@@ -37,6 +37,7 @@
           <button
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-full border border-border text-sm text-text-muted hover:bg-surface-alt transition"
+            aria-label="Previous"
             @click="navigate(-1)"
           >‹</button>
           <button
@@ -47,8 +48,17 @@
           <button
             type="button"
             class="flex h-9 w-9 items-center justify-center rounded-full border border-border text-sm text-text-muted hover:bg-surface-alt transition"
+            aria-label="Next"
             @click="navigate(1)"
           >›</button>
+          <!-- Jump to date -->
+          <input
+            type="date"
+            :value="jumpDateValue"
+            class="ml-1 h-9 rounded-lg border border-border bg-surface px-2 text-xs text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/40"
+            aria-label="Jump to date"
+            @change="onJumpDate"
+          />
         </div>
       </div>
     </div>
@@ -455,6 +465,31 @@ function navigate(dir: 1 | -1) {
 
 function goToday() {
   anchor.value = startOfDay(new Date())
+}
+
+// ── Jump to date ─────────────────────────────────────────────────
+const jumpDateValue = computed(() => format(anchor.value, 'yyyy-MM-dd'))
+
+function onJumpDate(event: Event) {
+  const val = (event.target as HTMLInputElement).value
+  if (val && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+    anchor.value = startOfDay(parseISO(val))
+  }
+}
+
+// ── Keyboard shortcuts ───────────────────────────────────────────
+if (import.meta.client) {
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
+    const tag = (e.target as HTMLElement)?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+    if (e.metaKey || e.ctrlKey || e.altKey) return
+    if (e.key === 'ArrowLeft') { navigate(-1); e.preventDefault() }
+    else if (e.key === 'ArrowRight') { navigate(1); e.preventDefault() }
+    else if (e.key === 't') goToday()
+    else if (e.key === '1') view.value = 'week'
+    else if (e.key === '2') view.value = 'month'
+    else if (e.key === '3') view.value = 'day'
+  })
 }
 
 function drillToDay(iso: string) {
