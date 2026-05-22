@@ -69,8 +69,6 @@
       <p v-if="mealTypes.length === 0" class="mt-2 text-xs text-warning">Select at least one meal type.</p>
     </section>
 
-    <!-- Info banner -->
-    <div class="rounded-lg border border-border bg-surface-alt px-4 py-3 text-sm text-text-muted" v-html="slotBanner" />
   </div>
 </template>
 
@@ -145,11 +143,4 @@ const weekDays = computed(() => {
   })
 })
 
-const slotBanner = computed(() => {
-  const count = mealTypes.value.length * 7
-  if (count === 7) return `That's 7 slots over seven days — <em>one meal per day.</em>`
-  if (count === 14) return `That's 14 slots over seven days — <em>two meals a day.</em>`
-  if (count === 21) return `That's 21 slots over seven days — <em>a typical week.</em>`
-  return `That's ${count} slot${count !== 1 ? 's' : ''} over seven days.`
-})
 </script>
