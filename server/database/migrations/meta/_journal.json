@@ -57,6 +57,13 @@
       "when": 1779403200000,
       "tag": "0007_rename_allergens_to_freeFrom",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1779465922558,
+      "tag": "0008_slim_norrin_radd",
+      "breakpoints": true
     }
   ]
 }

@@ -84,6 +84,25 @@ export const appSettings = sqliteTable('app_settings', {
   value: text('value').notNull(),
 })
 
+export const planningSessions = sqliteTable('planning_sessions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  weekStart: text('weekStart').notNull(),
+  mealTypes: text('mealTypes').notNull().default('["dinner"]'),
+  currentStep: integer('currentStep').notNull().default(1),
+  slotStates: text('slotStates').notNull().default('{}'),
+  removedPlanEntryIds: text('removedPlanEntryIds').notNull().default('[]'),
+  pendingOneOffEntries: text('pendingOneOffEntries').notNull().default('[]'),
+  sessionVirtualTags: text('sessionVirtualTags').notNull().default('[]'),
+  pinnedTags: text('pinnedTags').notNull().default('[]'),
+  wishlistTags: text('wishlistTags').notNull().default('[]'),
+  draftPlan: text('draftPlan').notNull().default('{}'),
+  shownDishIdsBySlot: text('shownDishIdsBySlot').notNull().default('{}'),
+  leftoverToggles: text('leftoverToggles').notNull().default('{}'),
+  status: text('status').notNull().default('in_progress'),
+  createdAt: text('createdAt').notNull(),
+  updatedAt: text('updatedAt').notNull(),
+})
+
 export const planEntries = sqliteTable('plan_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   date: text('date').notNull(),
