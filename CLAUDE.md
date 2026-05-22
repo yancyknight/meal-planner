@@ -106,33 +106,41 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestones 0–9-A complete. **Milestone 9-B — Step 3 (Anchors) + Virtual Tag Scaffolding** is in progress on `milestone-9b-step3-anchors`.
+Milestones 0–9-B complete. **Milestone 9-C — Step 4 (Draft, Reroll, Finalize) + Engine** is complete on `milestone-9c-step4-draft-finalize`.
 
-### Milestone 9-B Checklist
+### Milestone 9-C Checklist
 
-No DB schema changes or new API routes needed — existing PATCH schema already handles all Step 3 fields.
+**Server — Planning Engine** (`server/services/planningEngineService.ts`)
+- [x] `seasonOf`, `weightedRandom`, `computeScore` pure helpers
+- [x] `generateDraft(input)` — pinned pass → wishlist pass → chronological fill; no DB calls
+- [x] `reroll(input)` — excludes shown dishes; returns `'exhausted'` when pool empty
 
-**Shared infrastructure**
-- [x] `shared/virtualTags.ts` — `VirtualTag` interface, `VIRTUAL_TAGS` array (9 entries: v:quick, v:easy, v:dairy-free … v:peanut-free), `getVirtualTag(id)`, `matchesVirtualTag(dish, id)`, `matchesTag(dish, tagRef)`
-- [x] `shared/utils/anchorConflicts.ts` — pure `detectAnchorConflicts(virtualTagIds, pinnedTags, wishlistTagIds, dishes)` → `string[]` warnings
+**Server — New API routes**
+- [x] `POST /api/planning-sessions/[id]/generate` — runs engine, patches `draftPlan` + `shownDishIdsBySlot`, advances to step 4
+- [x] `POST /api/planning-sessions/[id]/reroll` — reruns reroll for a slot, patches session
+- [x] `POST /api/planning-sessions/[id]/finalize` — writes entries, deletes session, returns `weekStart`
 
-**Client components**
-- [x] `app/components/VirtualTagPicker.vue` — multi-select chip grid; each chip shows emoji + primary label + italic sub-label; hides dietary tags when `showAllergens=false`; props: `modelValue: string[]`, `showAllergens: boolean`
-- [x] `app/components/TagRefPicker.vue` — combined real + virtual single-select for the pin builder; virtual group first with sub-labels, then real tags group; props: `modelValue: TagRef | null`, `showAllergens: boolean`; emits `update:modelValue`
-- [x] `app/components/WizardStep3.vue` — three sections A/B/C:
-  - A: `VirtualTagPicker` bound to `session.sessionVirtualTags`; live summary line below
-  - B: Pin list (existing pins as removable rows) + always-visible add-pin row (date select from session week, mealType select from session mealTypes, `TagRefPicker`, "+ Pin" button); validate all three selects before adding
-  - C: Clickable chip list of all real tags (from `GET /api/tags`) toggling `session.wishlistTags`
-  - Conflict warnings (computed via `detectAnchorConflicts` + loaded dishes)
-  - Auto-saves on every change via `emit('update', patch)` (no debounce needed — parent handles saves)
+**Shared schemas**
+- [x] `rerollSchema`, `generateDraftSchema`, `finalizeSchema` added to `shared/schemas/planningSession.ts`
 
-**Wire-up**
-- [x] `app/pages/planning/[id].vue` — replace "Coming in the next session" placeholder with `<WizardStep3>` for `currentStep === 3`
+**Client — WizardStep4.vue**
+- [x] Auto-generates on mount if draft empty
+- [x] Stat row + applied anchors line
+- [x] Day-card stack with all state-specific row treatments
+- [x] Reroll / Swap (dish search dialog) / Clear actions
+- [x] Inline leftover toggle with next-day lunch insertion
+- [x] Confirm footer summary
 
-**Tests**
-- [x] `test/unit/virtualTags.test.ts`:
-  - Each virtual tag predicate: passing dish, failing dish, null field → false
-  - `matchesVirtualTag` with unknown ID → false
-  - `matchesTag` for virtual refs and real refs
-  - `detectAnchorConflicts`: virtual tag + pinned real tag with no surviving dishes → warning; virtual tag + wishlist real tag with no surviving dishes → warning; no conflict → empty array
-- [x] `test/unit/planningSessionService.test.ts` additions — PATCH round-trips for `sessionVirtualTags`, `pinnedTags`, `wishlistTags`
+**Client — Wire-up**
+- [x] `app/pages/planning/[id].vue` — Step 4 wired; footer button becomes "Confirm & save plan"; calls `finalize`, redirects to `/calendar?week=<weekStart>`
+- [x] `app/pages/calendar.vue` — respects `?week=YYYY-MM-DD` query param on load
+
+**Tests** (`test/unit/planningEngineService.test.ts`)
+- [x] `seasonOf` — all four seasons and boundary months
+- [x] `weightedRandom` — empty, single item, zero-weight item
+- [x] `generateDraft` — basic fill, archived/excluded skipped, skip-state ignored
+- [x] `generateDraft` — pinned slot resolved first; unmatched pin → best-effort + warning; no dishes → dishId -1
+- [x] `generateDraft` — wishlist tag placed with correct `wishlistTag` field; warns when no match
+- [x] `generateDraft` — cooldown from committed entries respected
+- [x] `generateDraft` — no eligible dishes → no-match slot + warning
+- [x] `reroll` — excludes shown; returns `'exhausted'` when all shown; respects `wishlistTagId`

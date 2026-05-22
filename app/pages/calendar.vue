@@ -306,8 +306,18 @@ const MEAL_COLORS: Record<MealType, string> = {
 }
 
 const queryClient = useQueryClient()
+const route = useRoute()
 const view = ref<View>('week')
-const anchor = ref(startOfDay(new Date()))
+
+// Honor ?week=YYYY-MM-DD from planning finalize redirect
+const initialDate = computed(() => {
+  const w = route.query.week
+  if (typeof w === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(w)) {
+    return startOfDay(parseISO(w))
+  }
+  return startOfDay(new Date())
+})
+const anchor = ref(initialDate.value)
 
 // Reduce month-cell previews to 1 on narrow screens
 const monthPreviewCount = ref(3)

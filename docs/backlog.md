@@ -258,7 +258,7 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 9 — Planning Mode
+## Milestone 9 — Planning Mode ✅
 *Most complex feature. Depends on M8.6 (free-from field) and everything above. Split into three sessions. Build each step's layout responsive from the start per the M6.6 constraint — do not retrofit. Respect the `showAllergens` setting from M8.5 — when off, hide dietary virtual tags from pickers (already-selected ones stay functional).*
 
 **Design reference:** `docs/planning-mode.md` (4-step flow, virtual tags, pinned tags, wishlist tags, tag-overlap diversity, season multiplier).
@@ -284,17 +284,17 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 - `[x]` Pinned-tag conflict detection: warn if a session-wide virtual tag excludes all dishes carrying a pinned/wishlist tag.
 - `[x]` Tests: virtual tag predicate correctness, tag matching across real/virtual, pinned tag CRUD, wishlist tag CRUD, conflict detection.
 
-### Session C — Step 4 (Draft, Reroll, Finalize) + Engine
-- `[ ]` Implement full Draft Plan generation in `planningEngineService` per `docs/planning-mode.md` Algorithm: virtual-tag prefilter, pinned-slot pass first (with best-effort relaxation + warning labels), wishlist pass (uniform-random slot, weighted by `score` within tag), chronological remaining pass; weighted-random by `selectionWeight × seasonMultiplier × diversityFactor`. Honor in-draft Fresh history for cooldown.
-- `[ ]` Implement `reroll(slotKey)` that preserves pin/wishlist tag and honors `shownDishIdsBySlot`; depletion warning + restart prompt when exhausted.
-- `[ ]` **Step 4 — Draft & Finalize UI:**
+### Session C — Step 4 (Draft, Reroll, Finalize) + Engine ✅
+- `[x]` Implement full Draft Plan generation in `planningEngineService` per `docs/planning-mode.md` Algorithm: virtual-tag prefilter, pinned-slot pass first (with best-effort relaxation + warning labels), wishlist pass (uniform-random slot, weighted by `score` within tag), chronological remaining pass; weighted-random by `selectionWeight × seasonMultiplier × diversityFactor`. Honor in-draft Fresh history for cooldown.
+- `[x]` Implement `reroll(slotKey)` that preserves pin/wishlist tag and honors `shownDishIdsBySlot`; depletion warning + restart prompt when exhausted.
+- `[x]` **Step 4 — Draft & Finalize UI:**
   - **Vertical day-card stack:** one card per planned day, one row per selected meal type inside. Each row: meal label · colored abbreviation tile · dish name + meta line (difficulty dots · time · `yields N` · real tags · pin/wishlist chips) · right-side `Reroll · Swap · Clear` action buttons.
   - State-specific row treatments: KEPT — LOCKED (green tint, Clear-only), one-off existing/new (lavender tint), skipped (hatched, blank-on-calendar text), leftover (cream tint with `↻ from <day> dinner` origin pointer), NO MATCH (orange tint, italic reason line, full-row "Swap manually" CTA).
   - Top stat row: `15 DISHES FILLED · 1 LEFTOVER SLOT · 1 ONE-OFF · 2 KEPT · 1 SKIPPED · 1 NO ELIGIBLE DISH`. Plus an `APPLIED ·` line echoing the active anchors.
   - Inline leftover toggle on high-yield dinner rows (queues `entryKind: 'leftover'` for next-day lunch; disabled when target slot is Keep/One-off).
   - `ON CONFIRM` footer block: `N entries will be written · K kept · M left blank`
   - Confirm: writes draft + pending one-offs + leftover-queued entries; deletes `removedPlanEntryIds`; deletes session row; redirects to calendar
-- `[ ]` Tests: generation algorithm (selection weight × season multiplier × diversity factor distribution matches expectations; cooldown enforced across draft; pinned relaxation; wishlist placement + reroll preserves tag; depletion handling), finalize write logic with correct `entryKind` mapping, session cleanup on finalize.
+- `[x]` Tests: generation algorithm (selection weight × season multiplier × diversity factor distribution matches expectations; cooldown enforced across draft; pinned relaxation; wishlist placement + reroll preserves tag; depletion handling), finalize write logic with correct `entryKind` mapping, session cleanup on finalize.
 
 ---
 
