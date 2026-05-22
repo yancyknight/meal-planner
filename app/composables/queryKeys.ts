@@ -35,4 +35,7 @@ export const queryKeys = {
   settings: {
     all: () => ['settings'] as const,
   },
+  backups: {
+    status: () => ['backups', 'status'] as const,
+  },
 }

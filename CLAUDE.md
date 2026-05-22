@@ -55,6 +55,9 @@ pnpm lint             # ESLint
 pnpm typecheck        # TypeScript check
 ```
 
+> **Tests:** always run inside Docker — `docker compose run --rm test`
+> (The `test` service in `compose.yaml` bind-mounts source and uses the `test` Docker target with Alpine-built node_modules.)
+
 ## Project Structure
 
 ```
@@ -95,10 +98,11 @@ data/                      # Docker volume mount point
 
 ## Environment Variables
 
-| Variable        | Default        | Description             |
-|-----------------|----------------|-------------------------|
-| `DATABASE_URL`  | `/data/app.db` | SQLite file path        |
-| `IMAGE_DIR`     | `/data/images` | Image upload directory  |
+| Variable        | Default          | Description                        |
+|-----------------|------------------|------------------------------------|
+| `DATABASE_URL`  | `/data/app.db`   | SQLite file path                   |
+| `IMAGE_DIR`     | `/data/images`   | Image upload directory             |
+| `BACKUP_DIR`    | `/data/backups`  | Database backup output directory   |
 
 ## Docker
 
@@ -106,9 +110,19 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestones 0–11 complete. No milestone is currently in progress.
+**M12 — Database Backups** (`milestone-12-database-backups`)
+
+- [x] Export raw `sqlite` instance from `server/database/index.ts`
+- [x] Add `BACKUP_DIR` (default `/data/backups`) to `.env.example` and env-var table in `CLAUDE.md`
+- [x] Schema migration: add `backupIntervalHours` (integer NOT NULL DEFAULT 24) and `backupRetainCount` (integer NOT NULL DEFAULT 7) to `app_settings`
+- [x] Update `settingsService.ts` and `AppSettings` type/schema to include the two new fields
+- [x] Create `server/services/backupService.ts`: `runBackup()` (interval guard, mkdir -p, sqlite.backup, prune), `getStatus()`, `pruneOldBackups()`
+- [x] Create `server/tasks/database/backup.ts`; register with `'0 * * * *'` cron in `nuxt.config.ts`
+- [x] Create `server/api/backups/status.get.ts`
+- [x] Add `backups.status()` key to `app/composables/queryKeys.ts`
+- [x] Update `app/pages/settings.vue`: add Backups card (editable interval + retain count; read-only last backup / next backup / file count)
+- [x] Write `test/unit/backupService.test.ts`: creates file with correct name, prunes oldest beyond retain count, no-dir graceful recovery (mkdir)
 
 **Upcoming milestones (see `docs/backlog.md` for full checklists):**
-- M12 — Database Backups (GitHub issue #25)
 - M13 — CI/CD, Deployment Template & README (GitHub issues #26, #28, #29)
 
