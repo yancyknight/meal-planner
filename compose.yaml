@@ -8,7 +8,6 @@ services:
     environment:
       DATABASE_URL: /data/app.db
       IMAGE_DIR: /data/images
-      NUXT_PUBLIC_APP_NAME: Meal Planner
     restart: unless-stopped
 
   test:
