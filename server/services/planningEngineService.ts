@@ -25,13 +25,15 @@ export function selectionWeight(
 
 /**
  * Returns true if a dish is eligible to be suggested for a slot.
- * Requires: not excluded, not archived, and daysSince >= cooldownDays.
+ * Requires: not excluded, not archived, daysSince >= cooldownDays, and no active one-off cooldown.
  */
 export function isEligibleForSlot(
   dish: DishFrequency,
   daysSince: number | null,
+  oneOffCooldownActive = false,
 ): boolean {
   if (dish.excludedFromSuggestions || dish.archived) return false
+  if (oneOffCooldownActive) return false
   const effective = daysSince ?? dish.targetIntervalDays * 1.5
   return effective >= dish.cooldownDays
 }
@@ -92,6 +94,8 @@ export interface GenerateDraftInput {
   pinnedTags: PinnedTag[]
   wishlistTags: number[]
   householdSize: number
+  /** Dish IDs that have an active one-off cooldown and must be excluded from suggestions. */
+  activeCooldownDishIds?: Set<number>
 }
 
 export interface GenerateDraftResult {
@@ -129,7 +133,7 @@ function daysToSlot(
 }
 
 export function generateDraft(input: GenerateDraftInput): GenerateDraftResult {
-  const { slots, dishes, committedEntries, sessionVirtualTags, pinnedTags, wishlistTags } = input
+  const { slots, dishes, committedEntries, sessionVirtualTags, pinnedTags, wishlistTags, activeCooldownDishIds } = input
 
   const draftPlan: Record<string, DraftSlot> = {}
   const warnings: string[] = []
@@ -152,7 +156,7 @@ export function generateDraft(input: GenerateDraftInput): GenerateDraftResult {
       if (!baseEligible(dish)) return false
       if (exclude?.has(dish.id)) return false
       const daysSince = daysToSlot(dish, slotDate, committedEntries, draftHistory)
-      if (!isEligibleForSlot(dish, daysSince)) return false
+      if (!isEligibleForSlot(dish, daysSince, activeCooldownDishIds?.has(dish.id) ?? false)) return false
       for (const c of extraConstraints) {
         if (!matchesTag(dish, c.tagRef as Parameters<typeof matchesTag>[1])) return false
       }
@@ -340,10 +344,12 @@ export interface RerollInput {
   sessionVirtualTags: string[]
   pinTagRefs: { kind: string; tagId?: number; id?: string }[]
   wishlistTagId?: number
+  /** Dish IDs that have an active one-off cooldown and must be excluded from suggestions. */
+  activeCooldownDishIds?: Set<number>
 }
 
 export function reroll(input: RerollInput): { dishId: number; shownDishIds: number[] } | 'exhausted' {
-  const { slotKey, dishes, committedEntries, currentDraftHistory, shownDishIds, sessionVirtualTags, pinTagRefs, wishlistTagId } = input
+  const { slotKey, dishes, committedEntries, currentDraftHistory, shownDishIds, sessionVirtualTags, pinTagRefs, wishlistTagId, activeCooldownDishIds } = input
   const [slotDate] = slotKey.split(':')
 
   function baseEligible(dish: Dish): boolean {
@@ -358,7 +364,7 @@ export function reroll(input: RerollInput): { dishId: number; shownDishIds: numb
     if (!baseEligible(dish)) return false
     if (shown.has(dish.id)) return false
     const daysSince = daysToSlot(dish, slotDate!, committedEntries, currentDraftHistory)
-    if (!isEligibleForSlot(dish, daysSince)) return false
+    if (!isEligibleForSlot(dish, daysSince, activeCooldownDishIds?.has(dish.id) ?? false)) return false
     for (const c of pinTagRefs) {
       if (!matchesTag(dish, c as Parameters<typeof matchesTag>[1])) return false
     }

@@ -3,6 +3,7 @@ import { getPlanningSession, patchPlanningSession } from '../../../services/plan
 import { listDishes } from '../../../services/dishService'
 import { listByDateRange } from '../../../services/planEntryService'
 import { reroll } from '../../../services/planningEngineService'
+import { getActiveDishIds } from '../../../services/dishCooldownService'
 import { addDays, format } from 'date-fns'
 
 export default defineEventHandler(async (event) => {
@@ -31,6 +32,7 @@ export default defineEventHandler(async (event) => {
     listDishes({ archived: false }),
     listByDateRange(session.weekStart, weekEnd),
   ])
+  const activeCooldownDishIds = await getActiveDishIds(dishes.map((d) => d.id), slotDate!)
 
   // Build current draft history (all fresh-placed dish ids and their dates, excluding the slot being rerolled)
   const currentDraftHistory: { dishId: number; date: string }[] = []
@@ -60,6 +62,7 @@ export default defineEventHandler(async (event) => {
     sessionVirtualTags: session.sessionVirtualTags,
     pinTagRefs: slotPins.map((p) => p.tagRef),
     wishlistTagId,
+    activeCooldownDishIds,
   })
 
   if (rerollResult === 'exhausted') {

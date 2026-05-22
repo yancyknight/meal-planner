@@ -310,17 +310,17 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 11 — One-Off Dish Cooldown
+## Milestone 11 — One-Off Dish Cooldown ✅
 *Depends on M1 (dish CRUD), M7 (frequency controls), M9 (planning engine). Fixes allergen display bug (#21) and adds the one-off cooldown feature (#23).*
 
-- `[ ]` **Bug fix #21:** Dish detail page (`/dishes/[id]/index.vue`) — add `freeFrom` chip display section, subject to `showAllergens` setting (section is missing from detail view; only visible in edit form currently)
-- `[ ]` Add `dish_cooldowns` table: `id` (integer PK), `dishId` (FK → dishes, unique), `endsAt` (TEXT ISO `YYYY-MM-DD`), `createdAt`; generate and run migration
-- `[ ]` Implement `dishCooldownService`: `set(dishId, endsAt)` (upsert — only one per dish), `get(dishId)` → record or null, `remove(dishId)`, `isActive(dishId, asOf?)`, `cleanup()` (deletes records where `endsAt < today`)
-- `[ ]` API routes: `GET /api/dishes/[id]/cooldown`, `PUT /api/dishes/[id]/cooldown` (Zod: `{ endsAt: YYYY-MM-DD, min today }`), `DELETE /api/dishes/[id]/cooldown`
-- `[ ]` Update `isEligibleForSlot` in `planningEngineService`: call `dishCooldownService.isActive(dish.id, slotDate)` and return false when active
-- `[ ]` Dish detail page: show active one-off cooldown badge ("Cooldown until <date>") + Remove button; show "Set one-off cooldown" date-picker form when no cooldown is active
-- `[ ]` Extend existing Nitro cleanup task (or add a `server/tasks/dishes/cleanup-cooldowns.ts`) to prune expired `dish_cooldowns` rows; register in `nuxt.config.ts`
-- `[ ]` Tests: `dishCooldownService` set/get/remove/isActive round-trips; `cleanup` removes expired records and preserves active ones; `isEligibleForSlot` rejects dish with an active one-off cooldown
+- `[x]` **Bug fix #21:** Dish detail page (`/dishes/[id]/index.vue`) — `freeFrom` chip display section already added in M10; confirmed present and gated by `showAllergens` setting
+- `[x]` Add `dish_cooldowns` table: `id` (integer PK), `dishId` (FK → dishes, unique), `endsAt` (TEXT ISO `YYYY-MM-DD`), `createdAt`; generate and run migration
+- `[x]` Implement `dishCooldownService`: `set(dishId, endsAt)` (upsert — only one per dish), `get(dishId)` → record or null, `remove(dishId)`, `isActive(record, asOf?)`, `getActiveDishIds(ids, asOf?)` (batch lookup for planning engine), `cleanup()` (deletes records where `endsAt < today`)
+- `[x]` API routes: `GET /api/dishes/[id]/cooldown`, `PUT /api/dishes/[id]/cooldown` (Zod: `{ endsAt: YYYY-MM-DD, min today }`), `DELETE /api/dishes/[id]/cooldown`
+- `[x]` Update `isEligibleForSlot` in `planningEngineService`: added `oneOffCooldownActive` boolean param (Option A — pure function); call sites in `generate.post.ts` and `reroll.post.ts` resolve active cooldown IDs via `getActiveDishIds` before invoking the engine
+- `[x]` Dish detail page: show active one-off cooldown badge ("Paused until <date>") + Remove button; show "Set one-off cooldown" date-picker form when no cooldown is active
+- `[x]` Added `server/tasks/dishes/cleanup-cooldowns.ts`; registered in `nuxt.config.ts` on daily cron
+- `[x]` Tests: `dishCooldownService` set/get/remove/isActive/getActiveDishIds/cleanup (18 tests); `isEligibleForSlot` rejects dish with active one-off cooldown (2 new tests in planningEngineService.test.ts)
 
 ---
 

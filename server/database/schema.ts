@@ -103,6 +103,13 @@ export const planningSessions = sqliteTable('planning_sessions', {
   updatedAt: text('updatedAt').notNull(),
 })
 
+export const dishCooldowns = sqliteTable('dish_cooldowns', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  dishId: integer('dishId').notNull().references(() => dishes.id, { onDelete: 'cascade' }).unique(),
+  endsAt: text('endsAt').notNull(),
+  createdAt: text('createdAt').notNull(),
+})
+
 export const planEntries = sqliteTable('plan_entries', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   date: text('date').notNull(),
