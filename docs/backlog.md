@@ -310,6 +310,40 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
+## Milestone 11 — One-Off Dish Cooldown
+*Depends on M1 (dish CRUD), M7 (frequency controls), M9 (planning engine). Fixes allergen display bug (#21) and adds the one-off cooldown feature (#23).*
+
+- `[ ]` **Bug fix #21:** Dish detail page (`/dishes/[id]/index.vue`) — add `freeFrom` chip display section, subject to `showAllergens` setting (section is missing from detail view; only visible in edit form currently)
+- `[ ]` Add `dish_cooldowns` table: `id` (integer PK), `dishId` (FK → dishes, unique), `endsAt` (TEXT ISO `YYYY-MM-DD`), `createdAt`; generate and run migration
+- `[ ]` Implement `dishCooldownService`: `set(dishId, endsAt)` (upsert — only one per dish), `get(dishId)` → record or null, `remove(dishId)`, `isActive(dishId, asOf?)`, `cleanup()` (deletes records where `endsAt < today`)
+- `[ ]` API routes: `GET /api/dishes/[id]/cooldown`, `PUT /api/dishes/[id]/cooldown` (Zod: `{ endsAt: YYYY-MM-DD, min today }`), `DELETE /api/dishes/[id]/cooldown`
+- `[ ]` Update `isEligibleForSlot` in `planningEngineService`: call `dishCooldownService.isActive(dish.id, slotDate)` and return false when active
+- `[ ]` Dish detail page: show active one-off cooldown badge ("Cooldown until <date>") + Remove button; show "Set one-off cooldown" date-picker form when no cooldown is active
+- `[ ]` Extend existing Nitro cleanup task (or add a `server/tasks/dishes/cleanup-cooldowns.ts`) to prune expired `dish_cooldowns` rows; register in `nuxt.config.ts`
+- `[ ]` Tests: `dishCooldownService` set/get/remove/isActive round-trips; `cleanup` removes expired records and preserves active ones; `isEligibleForSlot` rejects dish with an active one-off cooldown
+
+---
+
+## Milestone 12 — Database Backups
+*Depends on M0 (Nitro task infrastructure). Standalone infrastructure feature (#25).*
+
+- `[ ]` Add env vars: `BACKUP_DIR` (default `/data/backups`), `BACKUP_INTERVAL_HOURS` (default `24`), `BACKUP_RETAIN_COUNT` (default `7`); document in `.env.example` and the env-var table in `CLAUDE.md`
+- `[ ]` Implement `server/tasks/database/backup.ts`: use `db.backup(destination)` from `better-sqlite3` (safe hot-backup while app is running); destination filename: `<timestamp>-app.db`; after backup, prune oldest files in `BACKUP_DIR` beyond `BACKUP_RETAIN_COUNT`; log success/failure via `console.log`
+- `[ ]` Register task in `nuxt.config.ts` with a cron schedule derived from `BACKUP_INTERVAL_HOURS` (default: `0 * * * *` = hourly trigger, task guards internally, or use `24h` cron)
+- `[ ]` Settings page: add read-only "Backups" card showing last backup timestamp (read from newest file in `BACKUP_DIR`), next scheduled backup time, and count of retained backups
+- `[ ]` Tests: task creates a file with correct timestamp suffix; prune removes the oldest file(s) when count exceeds retain limit; when `BACKUP_DIR` does not exist the task logs a warning and exits cleanly without crashing
+
+---
+
+## Milestone 13 — CI/CD, Deployment Template & README
+*Issue #26 (Docker image build) must land before #28 (deployment template) and #29 (README) can reference the image. All three are non-app-code changes.*
+
+- `[ ]` **#26 — GitHub Actions Docker build:** `.github/workflows/docker-publish.yml` — trigger on `v*.*.*` tag push; build multi-arch image (`linux/amd64` + `linux/arm64`) using `docker/build-push-action`; push to GitHub Container Registry (`ghcr.io/<owner>/<repo>`) tagged with the version and `latest`; no push on non-tag runs (build-only smoke test on `main`)
+- `[ ]` **#28 — Deployment compose template:** `deploy/compose.yml` — references the `ghcr.io` image; `/data` named volume; includes a [Watchtower](https://containrrr.dev/watchtower/) service configured to poll the registry and redeploy on new image; includes a `deploy/backup.sh` helper script that runs a hot SQLite backup (`sqlite3 /data/app.db ".backup /data/backups/pre-deploy-$(date +%Y%m%dT%H%M%S).db"`) and is called manually or wired to a pre-update hook; `README` in `deploy/` explains the setup
+- `[ ]` **#29 — README.md:** project overview (what it does, key features, 2–3 screenshots); prominent disclaimer (personal/household use, no auth/authz, LAN or Tailscale VPN only, not designed for public internet); Docker quick-start using `deploy/compose.yml`; link to `docs/` for detailed spec; note that the app is opinionated/single-household and forks are welcome
+
+---
+
 ## Notes on Session Sizing
 
 If a milestone feels too large mid-session, it's fine to split it. Common split points:

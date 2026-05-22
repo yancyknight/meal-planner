@@ -106,62 +106,10 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestones 0–9-C complete. **Milestone 10 — Polish & Edge Cases** is in progress on `milestone-10-polish`.
+Milestones 0–10 complete. No milestone is currently in progress.
 
-### Milestone 10 Checklist
+**Upcoming milestones (see `docs/backlog.md` for full checklists):**
+- M11 — One-Off Dish Cooldown (GitHub issues #21, #23)
+- M12 — Database Backups (GitHub issue #25)
+- M13 — CI/CD, Deployment Template & README (GitHub issues #26, #28, #29)
 
-**A — Dish List Sort Options**
-- [x] `listDishes` accepts `sort`: `name_asc` | `created_desc` | `last_cooked_desc` | `target_interval_asc`
-- [x] `last_cooked_desc` LEFT JOINs plan_entries (fresh only) to order by max(date) DESC NULLS LAST
-- [x] `GET /api/dishes` forwards `sort` param
-- [x] Dish list page: sort dropdown added to filter row
-
-**B — Dish List Virtual Tag Filters**
-- [x] `listDishes` accepts `virtualTagId` — applies SQL predicate for v:quick, v:easy, v:*-free
-- [x] `GET /api/dishes` forwards `virtualTagId`
-- [x] Dish list page: virtual tag chips added after real tag pills; dietary ones hidden when `showAllergens = false`
-
-**C — Dish Delete: 409 Error UX**
-- [x] `confirmDelete` in dish detail catches 409 and shows inline error message
-
-**D — Calendar: Jump to Date**
-- [x] `<input type="date">` added next to Today button; sets anchor on change
-
-**E — Calendar Keyboard Shortcuts**
-- [x] `ArrowLeft` / `ArrowRight` → navigate(-1) / navigate(1)
-- [x] `t` → goToday(); `1`/`2`/`3` → switch view; skips when focus is in input/textarea
-
-**F — Empty States Audit**
-- [x] Calendar day view: meal-type cards with "+ Add" always visible — no empty state needed
-- [x] Shopping list detail: empty state already exists ("No ingredients found")
-
-**G — Error Boundary Improvements**
-- [x] Recipe import: `onError` already wired (catch block in `new.vue`)
-- [x] Shopping list creation: wrapped `mutateAsync` in try/catch; surfaces API error inline
-- [x] Added `error` query branches to shopping-lists/index.vue and planning/index.vue
-
-**H — Accessibility (light pass)**
-- [x] `aria-label` on calendar nav arrows (Previous/Next) and chip × button (Remove entry)
-- [x] `<main>` landmark already in default layout; `aria-current="page"` added to nav links
-- [x] Shopping list checkbox already uses `<button>` with `aria-label`
-
-**Tests**
-- [x] `dishService.listDishes` — sort by each option (name_asc, last_cooked_desc with/without entries, target_interval_asc)
-- [x] `dishService.listDishes` — virtualTagId filter (v:quick, v:easy, v:dairy-free; stacked with search)
-- [x] Reroll / Swap (dish search dialog) / Clear actions
-- [x] Inline leftover toggle with next-day lunch insertion
-- [x] Confirm footer summary
-
-**Client — Wire-up**
-- [x] `app/pages/planning/[id].vue` — Step 4 wired; footer button becomes "Confirm & save plan"; calls `finalize`, redirects to `/calendar?week=<weekStart>`
-- [x] `app/pages/calendar.vue` — respects `?week=YYYY-MM-DD` query param on load
-
-**Tests** (`test/unit/planningEngineService.test.ts`)
-- [x] `seasonOf` — all four seasons and boundary months
-- [x] `weightedRandom` — empty, single item, zero-weight item
-- [x] `generateDraft` — basic fill, archived/excluded skipped, skip-state ignored
-- [x] `generateDraft` — pinned slot resolved first; unmatched pin → best-effort + warning; no dishes → dishId -1
-- [x] `generateDraft` — wishlist tag placed with correct `wishlistTag` field; warns when no match
-- [x] `generateDraft` — cooldown from committed entries respected
-- [x] `generateDraft` — no eligible dishes → no-match slot + warning
-- [x] `reroll` — excludes shown; returns `'exhausted'` when all shown; respects `wishlistTagId`
