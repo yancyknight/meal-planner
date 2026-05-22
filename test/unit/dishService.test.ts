@@ -38,7 +38,7 @@ describe('createDish', () => {
     expect(dish.cooldownDays).toBe(7)
     expect(dish.targetIntervalDays).toBe(14)
     expect(dish.excludedFromSuggestions).toBe(false)
-    expect(dish.allergens).toEqual([])
+    expect(dish.freeFrom).toEqual([])
     expect(dish.season).toEqual([])
     expect(dish.archived).toBe(false)
     expect(dish.createdAt).toBeTypeOf('string')
@@ -47,10 +47,10 @@ describe('createDish', () => {
   it('stores and deserialises JSON array fields', async () => {
     const dish = await createDish({
       name: 'Full Dish',
-      allergens: ['gluten', 'dairy'],
+      freeFrom: ['gluten-free', 'dairy-free'],
       season: ['spring', 'winter'],
     })
-    expect(dish.allergens).toEqual(['gluten', 'dairy'])
+    expect(dish.freeFrom).toEqual(['gluten-free', 'dairy-free'])
     expect(dish.season).toEqual(['spring', 'winter'])
   })
 
@@ -132,8 +132,8 @@ describe('updateDish', () => {
 
   it('updates JSON array fields correctly', async () => {
     const dish = await createDish({ name: 'Dish' })
-    const updated = await updateDish(dish.id, { allergens: ['nuts', 'soy'] })
-    expect(updated?.allergens).toEqual(['nuts', 'soy'])
+    const updated = await updateDish(dish.id, { freeFrom: ['nut-free', 'soy-free'] })
+    expect(updated?.freeFrom).toEqual(['nut-free', 'soy-free'])
   })
 
   it('sets nullable fields to null', async () => {
@@ -180,6 +180,25 @@ describe('archiveDish / unarchiveDish', () => {
     await archiveDish(dish.id)
     expect(await listDishes()).toHaveLength(0)
     expect(await listDishes({ archived: true })).toHaveLength(1)
+  })
+})
+
+describe('createDishSchema freeFrom validation', () => {
+  it('accepts all preset values', () => {
+    const presets = ['gluten-free', 'dairy-free', 'nut-free', 'shellfish-free', 'egg-free', 'soy-free', 'peanut-free']
+    const result = createDishSchema.safeParse({ name: 'Dish', freeFrom: presets })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects unknown / legacy values', () => {
+    // Old "contains" names must not slip through under the new "free from" semantic.
+    const result = createDishSchema.safeParse({ name: 'Dish', freeFrom: ['gluten'] })
+    expect(result.success).toBe(false)
+  })
+
+  it('accepts an empty array (no claims)', () => {
+    const result = createDishSchema.safeParse({ name: 'Dish', freeFrom: [] })
+    expect(result.success).toBe(true)
   })
 })
 

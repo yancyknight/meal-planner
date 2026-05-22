@@ -53,11 +53,11 @@ describe('POST /api/dishes', () => {
   it('creates a dish and returns the full object', async () => {
     const data = await $fetch<Dish>('/api/dishes', {
       method: 'POST',
-      body: { name: 'API Route Test Dish', allergens: ['gluten'] },
+      body: { name: 'API Route Test Dish', freeFrom: ['gluten-free'] },
     })
     expect(data.id).toBeTypeOf('number')
     expect(data.name).toBe('API Route Test Dish')
-    expect(data.allergens).toEqual(['gluten'])
+    expect(data.freeFrom).toEqual(['gluten-free'])
   })
 })
 

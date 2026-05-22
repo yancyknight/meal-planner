@@ -42,7 +42,7 @@ export const dishes = sqliteTable('dishes', {
   sourceUrl: text('sourceUrl'),
   sourceName: text('sourceName'),
   difficulty: text('difficulty'),
-  allergens: text('allergens').notNull().default('[]'),
+  freeFrom: text('freeFrom').notNull().default('[]'),
   season: text('season').notNull().default('[]'),
   notes: text('notes'),
   cooldownDays: integer('cooldownDays').notNull().default(7),

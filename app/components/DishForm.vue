@@ -115,14 +115,23 @@
       </div>
     </div>
 
-    <!-- Allergens -->
+    <!-- Free from -->
     <div>
-      <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">Allergens</label>
-      <TagInput
-        v-model="form.allergens"
-        :presets="ALLERGEN_PRESETS"
-        placeholder="Add custom allergen..."
-      />
+      <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">
+        Free from <span class="normal-case tracking-normal font-normal text-text-subtle">(only check what this dish is certified free from)</span>
+      </label>
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="opt in FREE_FROM_PRESETS"
+          :key="opt"
+          type="button"
+          class="rounded-full border px-4 py-1.5 text-sm transition"
+          :class="form.freeFrom.includes(opt)
+            ? 'border-accent bg-accent-soft text-accent-deep font-medium'
+            : 'border-border text-text-muted hover:bg-surface-alt'"
+          @click="toggleFreeFrom(opt)"
+        >{{ formatFreeFromLabel(opt) }}</button>
+      </div>
     </div>
 
     <!-- Season pills -->
@@ -193,7 +202,7 @@
 
 <script setup lang="ts">
 import type { CreateDishInput } from '#shared/schemas/dish'
-import { ALLERGEN_PRESETS, SEASON_OPTIONS } from '#shared/schemas/dish'
+import { FREE_FROM_PRESETS, SEASON_OPTIONS } from '#shared/schemas/dish'
 import type { Tag } from '#shared/types/tag'
 import type { DishIngredient, IngredientRowValue } from '#shared/types/ingredient'
 
@@ -243,8 +252,10 @@ watch(() => props.initialIngredients, (val) => {
   }
 })
 
-type DishFormState = Omit<CreateDishInput, 'allergens' | 'season' | 'tagIds' | 'cooldownDays' | 'targetIntervalDays' | 'excludedFromSuggestions'> & {
-  allergens: string[]
+type FreeFromOption = (typeof FREE_FROM_PRESETS)[number]
+
+type DishFormState = Omit<CreateDishInput, 'freeFrom' | 'season' | 'tagIds' | 'cooldownDays' | 'targetIntervalDays' | 'excludedFromSuggestions'> & {
+  freeFrom: FreeFromOption[]
   season: (typeof SEASON_OPTIONS)[number][]
   tagIds: number[]
   cooldownDays: number
@@ -261,7 +272,7 @@ const form = reactive<DishFormState>({
   sourceUrl: props.initialValues?.sourceUrl ?? null,
   sourceName: props.initialValues?.sourceName ?? null,
   difficulty: props.initialValues?.difficulty ?? null,
-  allergens: [...(props.initialValues?.allergens ?? [])],
+  freeFrom: [...((props.initialValues?.freeFrom ?? []) as FreeFromOption[])],
   season: [...(props.initialValues?.season ?? [])] as (typeof SEASON_OPTIONS)[number][],
   notes: props.initialValues?.notes ?? null,
   cooldownDays: props.initialValues?.cooldownDays ?? 7,
@@ -283,6 +294,19 @@ function toggleSeason(opt: (typeof SEASON_OPTIONS)[number]) {
   const idx = form.season.indexOf(opt)
   if (idx === -1) form.season.push(opt)
   else form.season.splice(idx, 1)
+}
+
+function toggleFreeFrom(opt: FreeFromOption) {
+  const idx = form.freeFrom.indexOf(opt)
+  if (idx === -1) form.freeFrom.push(opt)
+  else form.freeFrom.splice(idx, 1)
+}
+
+function formatFreeFromLabel(opt: FreeFromOption): string {
+  return opt
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join('-')
 }
 
 function handleFileChange(e: Event) {

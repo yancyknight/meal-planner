@@ -36,7 +36,7 @@ import {
 async function seedDish(name: string) {
   const now = new Date().toISOString()
   const [row] = await db.insert(dishes).values({
-    name, allergens: '[]', season: '[]', cooldownDays: 7,
+    name, freeFrom: '[]', season: '[]', cooldownDays: 7,
     targetIntervalDays: 14, excludedFromSuggestions: 0,
     archived: false, createdAt: now, updatedAt: now,
   }).returning()

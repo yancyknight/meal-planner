@@ -13,7 +13,7 @@ function rowToDish(row: DishRow, dishTagList: Tag[] = []): Dish {
   return {
     ...row,
     difficulty: row.difficulty as Dish['difficulty'],
-    allergens: JSON.parse(row.allergens) as string[],
+    freeFrom: JSON.parse(row.freeFrom) as Dish['freeFrom'],
     season: JSON.parse(row.season) as Dish['season'],
     excludedFromSuggestions: row.excludedFromSuggestions === 1,
     tags: dishTagList,
@@ -76,7 +76,7 @@ export async function createDish(input: CreateDishInput & { tagIds?: number[] })
       sourceUrl: input.sourceUrl ?? null,
       sourceName: input.sourceName ?? null,
       difficulty: input.difficulty ?? null,
-      allergens: JSON.stringify(input.allergens ?? []),
+      freeFrom: JSON.stringify(input.freeFrom ?? []),
       season: JSON.stringify(input.season ?? []),
       notes: input.notes ?? null,
       cooldownDays: input.cooldownDays ?? 7,
@@ -110,7 +110,7 @@ export async function updateDish(id: number, input: UpdateDishInput & { tagIds?:
   if (input.sourceUrl !== undefined) updates.sourceUrl = input.sourceUrl ?? null
   if (input.sourceName !== undefined) updates.sourceName = input.sourceName ?? null
   if (input.difficulty !== undefined) updates.difficulty = input.difficulty ?? null
-  if (input.allergens !== undefined) updates.allergens = JSON.stringify(input.allergens)
+  if (input.freeFrom !== undefined) updates.freeFrom = JSON.stringify(input.freeFrom)
   if (input.season !== undefined) updates.season = JSON.stringify(input.season)
   if (input.notes !== undefined) updates.notes = input.notes ?? null
   if (input.cooldownDays !== undefined) updates.cooldownDays = input.cooldownDays
