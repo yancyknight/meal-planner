@@ -1,207 +1,248 @@
 # Planning Mode
 
-Planning Mode is a multi-step wizard for generating Plan Entries over a date range. Sessions are
-persisted to the database at every step so the user can close the browser and resume at any time.
+Planning Mode is a four-step wizard for generating Plan Entries over a date range. Sessions persist
+to the database at every step so the user can close the browser and resume any time.
 
 Active sessions are listed at `/planning`. A session can be resumed or deleted from that list.
 Once finalized, the session is deleted — only committed Plan Entries remain on the calendar.
 
 ---
 
+## Design Principles
+
+The wizard intentionally surfaces only the inputs that a typical household actually thinks about
+when planning meals. Constraints that *can* be derived from existing dish data — time estimate,
+difficulty, dietary claims — are exposed as **virtual tags** rather than as a separate filter UI.
+Diversity (e.g. "not three pasta dishes in a row") and seasonality are handled by the algorithm,
+not by user inputs.
+
+---
+
 ## Step Flow
 
 ```
-Step 1: Date Range & Meal Types
-Step 2: Review Existing Entries
-Step 3: One-Off Events
-Step 4: Filters
-Step 5: Composition Rules
-Step 6: Leftover Suggestions
-Step 7: Draft Review
-Step 8: Finalize
+Step 1: When & What        — date range, meal types
+Step 2: Slot Setup         — per-slot state (plan / skip / one-off / keep)
+Step 3: Anchors (optional) — session-wide virtual tags · pinned tags · wishlist tags
+Step 4: Draft & Finalize   — generated draft with reroll / swap / clear · inline leftover toggle · confirm
 ```
 
 The user can navigate back to any previous step. Advancing a step saves state to the DB immediately.
 
 ---
 
-## Step 1: Date Range & Meal Types
+## Step 1: When & What
 
 **Inputs:**
+
 - Start date (date picker)
 - End date (date picker)
-- Meal types to plan: checkbox group — Breakfast, Lunch, Dinner (any combination; at least one required)
+- Meal types to plan: checkbox group — Breakfast, Lunch, Dinner (any combination; at least one required). **Default: Dinner only.**
 
 `uncategorized` slots are never planned automatically.
 
-Saved to session: `dateRangeStart`, `dateRangeEnd`, `mealTypes`
+Saved to session: `dateRangeStart`, `dateRangeEnd`, `mealTypes`.
 
 ---
 
-## Step 2: Review Existing Entries
+## Step 2: Slot Setup
 
-System queries all Plan Entries in the selected date range for the selected meal types.
+A single screen showing every slot in the selected range and meal types. Each slot has one of four states:
 
-**For each entry found:**
-- Display: date, meal type, dish name (or one-off text)
-- Action: **Keep** or **Remove**
-  - Keep → slot is marked as confirmed; excluded from Draft Plan generation
-  - Remove → entry is deleted from the calendar when the user advances past this step
+| State | Meaning |
+|---|---|
+| **Plan** | Default for empty slots. Algorithm will fill this slot in Step 4. |
+| **Skip** | Slot is intentionally left blank (e.g. "we're at Gram's"). No entry is written on finalize. |
+| **One-off** + text | Free-text Plan Entry (e.g. "Pizza delivery"). Saved as `entryKind: 'one-off'` on finalize. |
+| **Keep** | Default for slots that already have a Plan Entry in the calendar. Entry stays as-is and is excluded from generation. **Remove** toggles to "Plan" — the existing entry is deleted on finalize. |
 
-A "Keep All" and "Remove All" bulk action is provided.
+Bulk actions: "Plan all empty," "Skip all empty," "Keep all existing."
 
-If no entries exist in the range, this step is skipped automatically.
+Saved to session: `slotStates` (keyed by `${date}:${mealType}`), `removedPlanEntryIds`, `pendingOneOffEntries`.
 
-Saved to session: `confirmedEntryIds` (IDs of kept entries)
-
----
-
-## Step 3: One-Off Events
-
-User adds free-text One-Off Entries that should block the planning algorithm for specific slots.
-
-Examples: "Dinner at Gram's", "Pizza delivery night", "Out of town"
-
-**Per entry:**
-- Text input
-- Date picker
-- Meal type selector
-
-These entries are saved to `planning_session.oneOffEntries` (not yet written to the calendar).
-They are committed to the calendar as One-Off Plan Entries when the session is finalized.
-
-If the user skips this step (adds nothing), that is valid.
+If the entire range has no existing entries, the "Keep" column simply isn't shown.
 
 ---
 
-## Step 4: Filters
+## Step 3: Anchors (Optional)
 
-Optional constraints. Dishes must meet ALL active filters to be eligible for generation.
+Three independent sections, each optional. All three operate on **tags** (real or virtual).
 
-| Filter | Type | Default |
+### Session-wide constraints
+
+Multi-select of **virtual tags only**. Tags ticked here apply to every slot in `Plan` state as a hard pre-filter — only dishes matching all selected virtual tags are eligible.
+
+```
+[⚡ quick]  [🟢 easy]  [🥛 dairy-free]  [🌾 gluten-free]  [🥜 nut-free]  ...
+```
+
+Virtual tags are derived from dish fields at query time (see **Virtual Tags** below). Real tags are not offered here because session-wide thematic constraints ("every dinner must be pizza") are not a real use case — that intent is served by per-slot pins.
+
+### Pin tag to slot
+
+Zero or more pins. Each pin is `(date, mealType, tag)` where `tag` may be a real tag *or* a virtual tag. Example pins:
+
+- `Fri 2026-06-05 · Dinner · 🍕 pizza` — Friday dinner must be a pizza-tagged dish.
+- `Tue 2026-06-09 · Dinner · ⚡ quick` — soccer Tuesday must be ≤20 min.
+
+When generating, pinned slots are resolved first. If no eligible dish matches a pin, the slot is filled with a clearly labeled warning ("⚠ Pinned tag [pizza] — no matching dish found"). The slot still gets a placeholder dish (best-effort from the unconstrained pool) and can be rerolled or overridden manually in Step 4.
+
+Multiple pins on the same slot are AND-combined ("dinner must be both pasta and easy").
+
+### Include tag somewhere ("wishlist")
+
+Zero or more **real tags** the user wants represented at least once in the plan but doesn't care where. Example: `[rice]  [soup]`.
+
+For each wishlist tag, after pinned slots are resolved, the engine picks one unfilled `Plan` slot uniformly at random and places an eligible dish carrying that tag. Reroll on a wishlist-placed slot keeps the tag constraint. If no eligible dish exists for the tag, the wishlist entry is skipped and the user is warned.
+
+Wishlist is real-tag-only; virtual-tag wishlists ("include one quick dish somewhere") are not a real use case.
+
+Saved to session: `sessionVirtualTags: string[]`, `pinnedTags: { date, mealType, tagRef }[]`, `wishlistTags: string[]`.
+
+---
+
+## Step 4: Draft & Finalize
+
+A single screen that combines draft generation, per-slot adjustment, leftover suggestion, and final confirmation.
+
+### Draft Generation
+
+The planning engine is called with the session state and produces a complete `draftPlan` (see Algorithm). Slots already in `Skip`, `Keep`, or `One-off` states are not touched.
+
+### Per-slot UI
+
+Each `Plan`-state slot shows:
+
+- Dish name, difficulty chip, time estimate
+- Any active warning labels (e.g. "⚠ Pinned tag relaxed")
+- **Reroll** — replace with the next weighted-random eligible dish. Honors any pinned tag or wishlist tag attached to this slot. Already-shown dishes for this slot are excluded until the pool is exhausted, at which point the user is prompted to restart the shown-list.
+- **Swap** — open a dish-search dialog to manually pick any dish (bypasses filters). Marked as `isManualOverride`.
+- **Clear** — leave this slot blank in the final output.
+
+`Keep` slots show the existing entry read-only.
+`Skip` slots show "Skipped — no entry will be written."
+`One-off` slots show the entered text.
+
+### Inline Leftover Toggle
+
+On any `Plan`, `Keep`, or `Swap` slot whose dish has `yieldServings > householdSize + guestCount`, a small affordance appears:
+
+> 🥡 Add leftover lunch tomorrow? `[ toggle ]`
+
+Toggling on queues a `entryKind: 'leftover'` Plan Entry for the next day's lunch slot using the same dish, provided that slot isn't already filled. This replaces the dedicated leftover step from the prior spec.
+
+Leftover placements **do not** advance the dish's cooldown — only the originating Fresh entry counts.
+
+### Summary Bar
+
+```
+12 dinners planned · 2 skipped · 1 one-off · 3 leftover lunches queued
+```
+
+### Confirm & Save
+
+On Confirm:
+
+1. All `Plan` slots in `draftPlan` write `entryKind: 'fresh'` Plan Entries (or `'one-off'` for one-off type, `'leftover'` for queued leftovers).
+2. `pendingOneOffEntries` write `entryKind: 'one-off'`.
+3. `removedPlanEntryIds` are deleted from `plan_entries`.
+4. The Planning Session row is deleted.
+5. User is redirected to the Calendar view at the session's start date.
+
+**Cancel** at any point prompts ("This will discard your planning session. Continue?") and deletes the session.
+
+---
+
+## Virtual Tags
+
+Virtual tags are filter tokens computed from dish fields at query time. They are not stored in the `tags` table and cannot be assigned manually on a dish form.
+
+| ID | Display | Rule |
 |---|---|---|
-| Max time (minutes) | Integer input or "No limit" | No limit |
-| Difficulty | Multi-select: Easy, Medium, Hard | All |
-| Must include tags | Tag multi-select (dish must have ALL selected) | None |
-| Must exclude tags | Tag multi-select (dish must have NONE) | None |
-| Allergen exclusions | Allergen multi-select | None |
-| Season | Multi-select: Spring, Summer, Fall, Winter | Current season pre-selected |
+| `v:quick` | ⚡ quick | `dish.timeEstimateMinutes ≤ 20` |
+| `v:easy` | 🟢 easy | `dish.difficulty = 'easy'` |
+| `v:dairy-free` | 🥛 dairy-free | `'dairy-free' ∈ dish.freeFrom` |
+| `v:gluten-free` | 🌾 gluten-free | `'gluten-free' ∈ dish.freeFrom` |
+| `v:nut-free` | 🥜 nut-free | `'nut-free' ∈ dish.freeFrom` |
+| `v:shellfish-free` | 🦐 shellfish-free | `'shellfish-free' ∈ dish.freeFrom` |
+| `v:egg-free` | 🥚 egg-free | `'egg-free' ∈ dish.freeFrom` |
+| `v:soy-free` | 🫘 soy-free | `'soy-free' ∈ dish.freeFrom` |
+| `v:peanut-free` | 🥜 peanut-free | `'peanut-free' ∈ dish.freeFrom` |
 
-Dishes with `excludedFromSuggestions = true` are always filtered out regardless of these settings.
+Implementation notes:
 
-Saved to session: `filters`
-
----
-
-## Step 5: Composition Rules
-
-User adds zero or more rules that pin a specific dish characteristic to a specific date and meal type.
-
-**Each rule:**
-- Date (must be within the session range)
-- Meal type (must be one of the selected meal types)
-- Constraint type: **Tag** or **Canonical Ingredient**
-- Constraint value: selected tag or canonical ingredient
-
-**Example rules:**
-- `2025-06-06 / Dinner / Tag: pizza` → Friday dinner must be a pizza dish
-- `2025-06-10 / Lunch / Ingredient: Chicken Breast` → Tuesday lunch must use chicken breast
-- `2025-06-08 / Dinner / Tag: soup` → Sunday dinner must be a soup
-
-If multiple rules exist for the same date+meal type, the planning engine uses best-effort matching: it first attempts to find a dish satisfying all rules for that slot, then progressively relaxes them one at a time (most specific first) until a match is found. When a fallback occurs, the draft slot is clearly labeled — e.g. "⚠ Partial match: no dish found with both [tag: pasta] and [ingredient: Chicken Breast] — matched on tag only."
-
-Composition rules are applied on top of session filters — a dish must meet both to be placed in a ruled slot.
-
-Saved to session: `compositionRules`
+- Virtual tag IDs use a `v:` prefix so they're trivially distinguishable from real tag IDs (which are numeric).
+- The matching code in the planning engine and library filters detects `v:` prefixes and substitutes the corresponding SQL predicate instead of a join on `dish_tags`.
+- Dishes with a `null` field that a virtual tag references are simply not in that tag's set. No "unknown = maybe" ambiguity.
+- The `quick` threshold (20 min) is hardcoded in v1.
+- Dietary virtual tags respect the `showAllergens` setting from M8.5: when `showAllergens` is false, dietary virtual tags are hidden from all pickers but still functional if previously selected.
 
 ---
 
-## Step 6: Leftover Suggestions
+## Algorithm
 
-This step is shown only if any confirmed or already-placed dinner Plan Entries produce leftovers
-(i.e., `dish.yieldServings > householdSize + planEntry.guestCount`).
+Stateless function `planningEngineService.generateDraft(input) → draftPlan` plus a per-slot `reroll(input, slotKey) → dishId`.
 
-**For each such dinner entry:**
-- Show: dish name, date, yield, estimated leftover servings
-- Prompt: "Add [Dish Name] as leftovers for lunch on [next day]?"
-- Toggle: Yes / No (default No)
+### Inputs
 
-If "Yes", a Plan Entry with `entryKind = 'leftover'` is queued for the next day's lunch slot using the same dish.
-This queued entry is excluded from generation (slot is pre-filled in the draft) and does **not** reset that dish's cooldown clock — only the originating fresh entry advances the cooldown / overdueness calculation.
+```typescript
+{
+  slots: { date: string, mealType: MealType, state: 'plan' | 'skip' | 'one-off' | 'keep' }[]
+  sessionVirtualTags: string[]            // e.g. ['v:quick', 'v:dairy-free']
+  pinnedTags: { date, mealType, tagRef }[]
+  wishlistTags: string[]                  // real tag IDs only
+  committedEntries: PlanEntry[]           // pre-existing Fresh/Leftover entries up to and within the range
+  householdSize: number
+  showAllergens: boolean                  // for filtering pickers; engine accepts whatever it receives
+}
+```
 
-If the next day's lunch slot is already filled (confirmed entry or one-off), the suggestion is not shown for that slot.
+### Per-slot eligibility predicate
 
-Saved to session: leftover selections embedded in `draftPlan` (marked with `type: 'leftover'`).
+A candidate dish is eligible for a slot iff:
 
----
+1. `dish.archived = false` and `dish.excludedFromSuggestions = false`
+2. **Session virtual tags** — dish satisfies every selected virtual tag (hard filter)
+3. **Pinned tags** — for the specific slot, dish satisfies every pin on that slot (hard filter, with best-effort relaxation if no candidate survives — see below)
+4. **Cooldown** — `daysSinceLastServedFresh(dish, slotDate) ≥ dish.cooldownDays`. The lookup considers both committed Fresh entries and already-placed Fresh slots earlier in this draft. Never-served dishes use `daysSince = 1.5 × targetIntervalDays`.
 
-## Step 7: Draft Review
+### Selection score
 
-The planning engine generates a Draft Plan for all open slots (not blocked by confirmed entries, one-offs, or leftover fills).
+For each eligible candidate at a given slot:
 
-### Generation Algorithm
+```
+overdueness       = daysSinceFresh / dish.targetIntervalDays
+selectionWeight   = min(overdueness, 3.0)
+seasonMultiplier  = 1.0  if dish.season is empty (year-round)
+                    1.0  if seasonOf(slot.date) ∈ dish.season
+                    0.5  otherwise
+tagOverlapCount   = number of dishes already placed in this draft sharing ≥1 tag with this dish
+diversityFactor   = 1 / (1 + tagOverlapCount)
+score             = selectionWeight × seasonMultiplier × diversityFactor
+```
 
-Slots are processed in chronological order so that a dish chosen on day N correctly increments `daysSinceLastServedFresh` for day N+1.
+`seasonOf` maps a date to its meteorological season (Mar–May spring, Jun–Aug summer, Sep–Nov fall, Dec–Feb winter). Always evaluated on the **slot's date**, not today.
 
-For each open slot:
-1. Start with all non-archived dishes where `excludedFromSuggestions = false`
-2. Apply session filters (Step 4)
-3. **Eligibility (cooldown):** drop any dish whose most recent `entryKind = 'fresh'` Plan Entry (looking at both committed entries and already-placed Fresh slots in the in-progress draft) is within `cooldownDays` of the slot date. Dishes never served fresh are treated as `daysSinceLastServedFresh = 1.5 × targetIntervalDays` for both eligibility and the overdueness math.
-4. If a composition rule (or rules) exist for this date+meal type, apply them with **best-effort matching**:
-   - First attempt: filter to dishes matching **all** rules for this slot
-   - If no candidates remain: relax rules one at a time (most specific first — ingredient constraints before tag constraints) and retry
-   - If a match required relaxing any rule: mark the slot with a warning label listing exactly which constraint(s) were not met (e.g. "⚠ Partial match: no dish has tag [pizza] — constraint relaxed")
-   - If no eligible dish remains even after full relaxation: fall through to unruled behavior and mark slot "⚠ Composition rule could not be satisfied"
-5. **Compute Selection Weight** for each candidate:
-   ```
-   overdueness     = daysSinceLastServedFresh / targetIntervalDays
-   selectionWeight = min(overdueness, 3.0)
-   ```
-6. Remove dishes already placed elsewhere in this draft from the primary pool
-7. Select by weighted random from the primary pool using `selectionWeight`
-   - If primary pool is empty (all eligible dishes already used): use the full eligible pool (secondary pool) — flagging that a repeat is being used
-8. Mark selected dish as used; record it in `usedDishIds` and treat it as a Fresh placement when evaluating later slots in this draft
+### Generation order
 
-**If no eligible dishes exist for a slot**, show:
-> "No matching dishes for [date] [meal type]"
-> With a breakdown: e.g. "3 dishes match your filters but are still within their cooldown period · 0 dishes remain"
-> And an "Override manually" option
+1. **Resolve pinned slots first.** For each pinned slot in date order:
+   - Build the eligible pool with all hard filters including the pin.
+   - If non-empty: weighted-random by `score`. Mark slot, add dish to in-draft history.
+   - If empty: best-effort relaxation — relax the pin (drop one constraint at a time if multiple pins on the slot) and retry. If still empty after full relaxation, pick best-effort from the unconstrained eligible pool and attach a warning label listing which constraint(s) were dropped.
+2. **Place wishlist tags.** For each wishlist tag (in user-entered order):
+   - Find all `Plan`-state slots not already filled.
+   - Pick one uniformly at random.
+   - From eligible dishes for that slot, filter to those carrying the wishlist tag. If non-empty: weighted-random by `score`. Mark slot with `wishlistTag = <tagId>` so reroll preserves it.
+   - If no dish in the pool carries the tag: skip this wishlist entry, attach a top-level warning ("No eligible dish has tag [rice]").
+3. **Fill remaining `Plan` slots in chronological order.** For each:
+   - Build eligible pool (hard filters, no pin).
+   - Remove dishes already used elsewhere in this draft from the primary pool.
+   - Weighted-random by `score` from the primary pool. If primary is empty, use the secondary pool (allow repeats) with a warning.
+   - If still empty (no eligible dishes at all): mark the slot "No eligible dishes for [date] [meal type]" with a reason breakdown ("3 dishes match your filters but are still in cooldown") and offer manual override.
 
-### Draft UI (per slot)
+### Reroll
 
-Each slot in the draft shows:
-- Dish name, difficulty badge, time estimate, season tags
-- **Reroll** button: replaces this slot with the next weighted-random eligible dish
-  - Dishes already suggested for *this specific slot* during rerolling are not shown again
-  - If all eligible dishes for a slot have been shown: display "All matching dishes have been suggested. Show from the beginning?" — user confirms before cycling back
-- **Override** button: open dish search to manually pick any dish (bypasses filters)
-- **Clear** button: leave this slot unplanned in the final output
-
-Summary bar showing: X slots filled, Y slots cleared, Z leftover fills, W manual overrides.
-
-Saved to session: `draftPlan`, `usedDishIds`, `shownDishIdsBySlot`
-
----
-
-## Step 8: Finalize
-
-Final review before committing.
-
-**Summary shows:**
-- Date range
-- Meal types planned
-- Count of slots filled vs cleared
-- Total unique Canonical Ingredients across all selected dishes (useful for grocery complexity preview)
-- Any slots that were left empty (with a note they won't be added to the calendar)
-
-**On "Confirm & Save":**
-1. All draft Dish Plan Entries are written to `plan_entries`
-2. All queued One-Off Entries from Step 3 are written to `plan_entries`
-3. Any entries marked "Remove" in Step 2 are deleted from `plan_entries`
-4. The Planning Session record is deleted
-5. User is redirected to the Calendar view at the session's start date
-
-**Cancel** at any point deletes the session and discards all changes. A confirmation prompt is shown ("This will discard your planning session. Continue?").
+`reroll(slotKey)` rebuilds the eligible pool with the slot's stored constraints (pin or wishlist tag if any), excludes dishes already shown for *this slot* during this session, and picks the next weighted-random candidate. When the shown-list is exhausted, the user is prompted to restart it ("All matching dishes have been suggested. Show from the beginning?").
 
 ---
 
@@ -210,47 +251,50 @@ Final review before committing.
 ```typescript
 interface PlanningSession {
   id: number
-  dateRangeStart: string           // YYYY-MM-DD
-  dateRangeEnd: string             // YYYY-MM-DD
-  mealTypes: MealType[]            // e.g. ['lunch', 'dinner']
-  currentStep: number              // 1–8
-  filters: {
-    maxTimeMinutes: number | null
-    difficulties: Difficulty[]
-    requiredTagIds: number[]
-    excludedTagIds: number[]
-    excludedAllergens: string[]
-    seasons: Season[]
+  dateRangeStart: string                    // YYYY-MM-DD
+  dateRangeEnd: string                      // YYYY-MM-DD
+  mealTypes: MealType[]                     // e.g. ['lunch', 'dinner']
+  currentStep: 1 | 2 | 3 | 4
+
+  // Step 2
+  slotStates: {
+    [slotKey: string]: 'plan' | 'skip' | 'one-off' | 'keep'
+    // slotKey = `${date}:${mealType}`
   }
-  compositionRules: {
-    date: string
-    mealType: MealType
-    constraintType: 'tag' | 'ingredient'
-    constraintId: number           // tag ID or canonical ingredient ID
-  }[]
-  draftPlan: {
-    [slotKey: string]: {           // slotKey = `${date}:${mealType}`
-      type: 'dish' | 'one-off' | 'leftover' | 'empty'
-      // On finalize, `type` maps to `plan_entries.entryKind`:
-      //   'dish'     → 'fresh'
-      //   'leftover' → 'leftover'
-      //   'one-off'  → 'one-off'
-      //   'empty'    → not written
-      dishId?: number
-      oneOffText?: string
-      isManualOverride?: boolean
-    }
-  }
-  confirmedEntryIds: number[]      // plan_entry IDs kept in Step 2
-  pendingOneOffEntries: {          // Step 3 entries, not yet in DB
+  removedPlanEntryIds: number[]             // existing entries marked for deletion on finalize
+  pendingOneOffEntries: {
     date: string
     mealType: MealType
     text: string
   }[]
-  usedDishIds: number[]            // dishes placed anywhere in current draft
-  shownDishIdsBySlot: {            // reroll history per slot
+
+  // Step 3
+  sessionVirtualTags: string[]              // e.g. ['v:quick', 'v:dairy-free']
+  pinnedTags: {
+    date: string
+    mealType: MealType
+    tagRef: { kind: 'real', tagId: number } | { kind: 'virtual', id: string }
+  }[]
+  wishlistTags: number[]                    // real tag IDs only
+
+  // Step 4
+  draftPlan: {
+    [slotKey: string]: {
+      kind: 'dish' | 'leftover-suggestion'
+      dishId: number
+      isManualOverride?: boolean
+      warningLabels?: string[]              // e.g. ['Pinned tag [pizza] relaxed']
+      wishlistTag?: number                  // present if this slot was placed by the wishlist pass
+      leftoverFor?: string                  // present on leftover-suggestion entries — slotKey of the dinner this came from
+    }
+  }
+  shownDishIdsBySlot: {
     [slotKey: string]: number[]
   }
+  leftoverToggles: {                        // user toggles in Step 4
+    [slotKey: string]: boolean              // slotKey of the originating dinner
+  }
+
   status: 'in_progress' | 'finalizing'
   createdAt: string
   updatedAt: string
@@ -263,9 +307,11 @@ interface PlanningSession {
 
 | Scenario | Behavior |
 |---|---|
-| Filters so strict no dishes qualify for any slot | Show warning at top of Step 7; all slots show "No eligible dishes" |
-| All filter-matching dishes are still within their cooldown for a given slot | Slot shows "No eligible dishes — N matching dishes are still in cooldown"; offer manual override |
-| Composition rule references a dish that the filters exclude | Warn in Step 5: "Your filters exclude all dishes with tag [X]" |
-| The same slot has a confirmed entry AND a one-off added in Step 3 | One-off is rejected with an error: "That slot is already occupied" |
-| User rerolls until all eligible dishes shown | Prompt to restart shown-list; confirm before cycling |
-| Planning session is open while another browser tab adds plan entries | Step 2 re-fetches on enter; warn if entries were added after session started |
+| Session-wide virtual tags exclude all dishes | Step 4 shows top-level warning; every Plan slot shows "No eligible dishes." |
+| Pinned tag has no matching dish | Slot is filled best-effort from unconstrained pool, labeled "⚠ Pinned tag [X] relaxed." |
+| Wishlist tag has no matching dish | Wishlist entry skipped; top-level warning shown. |
+| All filter-matching dishes are still in cooldown for a slot | Slot shows "No eligible dishes — N matching dishes are still in cooldown"; manual override offered. |
+| Leftover toggle on but next-day lunch already has Keep/One-off | Toggle is disabled with a tooltip explaining why. |
+| User rerolls until all eligible dishes shown | Prompt to restart shown-list; confirm before cycling. |
+| External tab adds a plan entry while session is open | Step 2 re-fetches on enter; warn if entries appeared after session started. |
+| Pin and wishlist target same tag | Allowed; pin counts as the wishlist's "one slot." Wishlist pass skips that tag if it's already represented. |

@@ -106,4 +106,4 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-Milestones 0–8.5 complete. Next up: **Milestone 9 — Planning Mode** (Session A). See `docs/backlog.md` for the full checklists.
+Milestones 0–8.5 complete. Next up: **Milestone 8.6 — Allergen Semantic Fix**, then **Milestone 9 — Planning Mode** (3 sessions, 4-step wizard). See `docs/backlog.md` for the full checklists and `docs/planning-mode.md` for the M9 design.
