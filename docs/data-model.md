@@ -22,7 +22,7 @@ The core dish library. One row per saved dish template.
 | `sourceUrl` | text | nullable | Link to original recipe |
 | `sourceName` | text | nullable | Website or cookbook name |
 | `difficulty` | text | nullable | 'easy' \| 'medium' \| 'hard' |
-| `allergens` | text | NOT NULL, DEFAULT '[]' | JSON string[]. Presets + freeform. |
+| `freeFrom` | text | NOT NULL, DEFAULT '[]' | JSON string[]. Dietary claims this dish is certified free from. Presets: `gluten-free`, `dairy-free`, `nut-free`, `shellfish-free`, `egg-free`, `soy-free`, `peanut-free`. |
 | `season` | text | NOT NULL, DEFAULT '[]' | JSON string[]. 'spring' \| 'summer' \| 'fall' \| 'winter'. Empty = year-round. |
 | `notes` | text | nullable | |
 | `cooldownDays` | integer | NOT NULL, DEFAULT 7 | Hard floor. Dish ineligible if its most recent Fresh Plan Entry is within this many days of the slot date. |
@@ -122,7 +122,7 @@ One row per Canonical Ingredient per Shopping List.
 
 ### `planning_sessions`
 
-Persisted state for in-progress Planning Mode wizards.
+Persisted state for in-progress Planning Mode wizards. See `docs/planning-mode.md` for the JSON shapes.
 
 | Column | Type | Constraints | Notes |
 |---|---|---|---|
@@ -130,14 +130,16 @@ Persisted state for in-progress Planning Mode wizards.
 | `dateRangeStart` | text | NOT NULL | YYYY-MM-DD |
 | `dateRangeEnd` | text | NOT NULL | YYYY-MM-DD |
 | `mealTypes` | text | NOT NULL | JSON string[] |
-| `currentStep` | integer | NOT NULL, DEFAULT 1 | 1–8 |
-| `filters` | text | NOT NULL, DEFAULT '{}' | JSON (see planning-mode.md) |
-| `compositionRules` | text | NOT NULL, DEFAULT '[]' | JSON array |
+| `currentStep` | integer | NOT NULL, DEFAULT 1 | 1–4 |
+| `slotStates` | text | NOT NULL, DEFAULT '{}' | JSON Record<slotKey, 'plan' \| 'skip' \| 'one-off' \| 'keep'> |
+| `removedPlanEntryIds` | text | NOT NULL, DEFAULT '[]' | JSON integer[] — existing entries marked for deletion on finalize |
+| `pendingOneOffEntries` | text | NOT NULL, DEFAULT '[]' | JSON array of `{date, mealType, text}` |
+| `sessionVirtualTags` | text | NOT NULL, DEFAULT '[]' | JSON string[] — virtual tag IDs (e.g. `['v:quick','v:dairy-free']`) |
+| `pinnedTags` | text | NOT NULL, DEFAULT '[]' | JSON array of `{date, mealType, tagRef}` where `tagRef` is `{kind:'real',tagId}` or `{kind:'virtual',id}` |
+| `wishlistTags` | text | NOT NULL, DEFAULT '[]' | JSON integer[] — real tag IDs only |
 | `draftPlan` | text | NOT NULL, DEFAULT '{}' | JSON keyed by `date:mealType` |
-| `confirmedEntryIds` | text | NOT NULL, DEFAULT '[]' | JSON integer[] |
-| `pendingOneOffEntries` | text | NOT NULL, DEFAULT '[]' | JSON array |
-| `usedDishIds` | text | NOT NULL, DEFAULT '[]' | JSON integer[] |
 | `shownDishIdsBySlot` | text | NOT NULL, DEFAULT '{}' | JSON Record<slotKey, integer[]> |
+| `leftoverToggles` | text | NOT NULL, DEFAULT '{}' | JSON Record<slotKey, boolean> — toggles set in Step 4 on originating dinner slots |
 | `status` | text | NOT NULL, DEFAULT 'in_progress' | 'in_progress' \| 'finalizing' |
 | `createdAt` | text | NOT NULL | |
 | `updatedAt` | text | NOT NULL | |
@@ -215,7 +217,7 @@ Note: Nitro scheduled tasks use the [croner](https://croner.56k.guru/) engine on
 ## Design Notes
 
 **Why JSON arrays in SQLite?**
-Fields like `allergens`, `season`, `mealTypes` are stored as JSON text rather than junction tables
+Fields like `freeFrom`, `season`, `mealTypes` are stored as JSON text rather than junction tables
 because: (1) they are never queried by individual element in complex joins, (2) the sets are small
 and bounded, and (3) it simplifies reads. Tag filtering uses the junction table because tags are
 user-defined and queried by ID.

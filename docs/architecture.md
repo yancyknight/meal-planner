@@ -138,27 +138,14 @@ When a user types a new raw ingredient text on a Dish:
 
 ## Planning Engine
 
-Stateless function in `planningEngineService.ts`. Inputs:
+Stateless functions in `planningEngineService.ts`:
 
-```typescript
-{
-  openSlots: { date: string, mealType: MealType }[]
-  filters: SessionFilters
-  compositionRules: CompositionRule[]
-  usedDishIds: number[]
-  shownDishIdsBySlot: Record<string, number[]>   // for reroll depletion tracking
-  householdSize: number
-}
-```
+- `generateDraft(input) → draftPlan` — builds a full draft for a session.
+- `reroll(input, slotKey) → dishId` — replaces a single slot, honoring its stored constraints.
 
-For each open slot (in chronological order):
-1. Apply session filters and drop dishes with `excludedFromSuggestions = true`
-2. Apply cooldown eligibility — drop dishes whose most recent Fresh Plan Entry is within `cooldownDays` of the slot date (counting both committed entries and already-placed Fresh slots earlier in this draft). Never-served dishes use `daysSinceLastServedFresh = 1.5 × targetIntervalDays`.
-3. Apply composition rule if one exists for this date+mealType (best-effort relaxation)
-4. Compute `selectionWeight = min(daysSinceLastServedFresh / targetIntervalDays, 3.0)` for each eligible dish
-5. Exclude already-used dishes from primary pool (but keep in fallback pool)
-6. Select by weighted random from primary pool; use fallback if primary is empty
-7. Return selection or `{ noEligible: true, reason }` if nothing qualifies (reason distinguishes "no filter matches" from "all matches in cooldown")
+The engine never mutates state; callers persist results to `planning_sessions`. Virtual tag IDs (prefixed `v:`) are detected at predicate-build time and substituted with their SQL filter instead of a `dish_tags` join.
+
+Inputs, per-slot eligibility, selection scoring, and generation order live in **[`planning-mode.md`](./planning-mode.md#algorithm)** — that document is canonical.
 
 ## Shopping List Generation
 

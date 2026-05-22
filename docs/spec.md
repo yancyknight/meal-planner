@@ -27,7 +27,7 @@ A self-hosted meal planning web app for a two-person household. No authenticatio
 | `sourceUrl` | string \| null | Link to original recipe online |
 | `sourceName` | string \| null | Website name or cookbook title |
 | `difficulty` | `easy` \| `medium` \| `hard` \| null | |
-| `allergens` | string[] | Presets: gluten, dairy, nuts, shellfish, eggs, soy, peanuts. Plus freeform entries. |
+| `freeFrom` | string[] | Dietary claims this dish is certified free from. Presets: `gluten-free`, `dairy-free`, `nut-free`, `shellfish-free`, `egg-free`, `soy-free`, `peanut-free`. Skipping all = no claims (not assumed allergen-free). |
 | `season` | string[] | Any combination of: spring, summer, fall, winter. Empty = year-round. |
 | `notes` | string \| null | Freeform internal notes |
 | `cooldownDays` | integer | Hard floor. Dish is ineligible for planning suggestions if it was last cooked fresh within this many days. Default 7. |
@@ -49,7 +49,7 @@ A self-hosted meal planning web app for a two-person household. No authenticatio
 
 - Default: shows non-archived dishes
 - Search: by name (full text)
-- Filters: tags, difficulty, allergens, season, max time, archived toggle
+- Filters: tags (including virtual tags — see §3), archived toggle
 - Sort: name A–Z, date added, last planned
 
 ### Dish Detail View
@@ -105,6 +105,26 @@ Global tag list. Created on the fly when typing in a dish form. Reused across di
 Usage examples: cuisine type (italian, mexican), course (main, side, soup), occasion (weeknight, weekend), dietary (vegetarian, vegan), style (quick, comfort food).
 
 No dedicated tag management view in v1 — managed inline on dish forms.
+
+### Virtual Tags
+
+Filter tokens computed from dish fields at query time, not stored in the `tags` table. Cannot be assigned manually on a dish form — they appear in *filtering* contexts only (planning anchors, dish library filter).
+
+| ID | Display | Rule |
+|---|---|---|
+| `v:quick` | ⚡ quick | `dish.timeEstimateMinutes ≤ 20` |
+| `v:easy` | 🟢 easy | `dish.difficulty = 'easy'` |
+| `v:dairy-free` | 🥛 dairy-free | `'dairy-free' ∈ dish.freeFrom` |
+| `v:gluten-free` | 🌾 gluten-free | `'gluten-free' ∈ dish.freeFrom` |
+| `v:nut-free` | 🥜 nut-free | `'nut-free' ∈ dish.freeFrom` |
+| `v:shellfish-free` | 🦐 shellfish-free | `'shellfish-free' ∈ dish.freeFrom` |
+| `v:egg-free` | 🥚 egg-free | `'egg-free' ∈ dish.freeFrom` |
+| `v:soy-free` | 🫘 soy-free | `'soy-free' ∈ dish.freeFrom` |
+| `v:peanut-free` | 🥜 peanut-free | `'peanut-free' ∈ dish.freeFrom` |
+
+Virtual tag IDs use a `v:` prefix so they're trivially distinguishable from real tag IDs (numeric). Dishes with a `null` field that a virtual tag references are not in that tag's set — no "unknown = maybe" ambiguity.
+
+Dietary virtual tags respect the `showAllergens` setting (M8.5): when `showAllergens` is false, dietary virtual tags are hidden from pickers but still functional if previously selected.
 
 ---
 

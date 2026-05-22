@@ -243,32 +243,56 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
+## Milestone 8.6 — Allergen Semantic Fix
+*Pre-M9. Inverts the `allergens` field from "contains" to "free from" semantics so that skipping the field doesn't falsely imply allergen safety. Lays the groundwork for virtual tags in M9. See `docs/spec.md` §1 and `docs/data-model.md`.*
+
+- `[ ]` Schema migration: rename `dishes.allergens` → `dishes.freeFrom` (keep NOT NULL DEFAULT '[]'). Migration **clears existing values** (`UPDATE dishes SET freeFrom = '[]'`) — the semantic is flipping so prior data would mean the opposite.
+- `[ ]` Update `shared/schemas/dish.ts`: rename field; presets become `gluten-free`, `dairy-free`, `nut-free`, `shellfish-free`, `egg-free`, `soy-free`, `peanut-free`.
+- `[ ]` Update `shared/types/dish.ts`: rename field.
+- `[ ]` Update `server/services/dishService.ts` create/update/list field handling and any allergen-aware filter logic.
+- `[ ]` `DishForm.vue`: relabel section "Free from" with the new preset chips. Each chip clearly reads e.g. "Dairy-Free." No freeform entries in v1.
+- `[ ]` Dish detail page: relabel chip group; subject to existing `showAllergens` setting.
+- `[ ]` Dish library filter: replace "exclude allergen X" control with "must be X-free" virtual-tag style filter (use the virtual tag IDs from M9 scaffolding if landed; otherwise inline the same predicate temporarily).
+- `[ ]` Recipe import: do **not** auto-populate `freeFrom`. The source rarely makes that claim explicitly; safer to leave empty.
+- `[ ]` Tests: Zod accepts/rejects expected preset names; service round-trips; existing `dishService.test.ts` allergen assertions updated; settings `showAllergens` still hides chips on detail.
+
+---
+
 ## Milestone 9 — Planning Mode
-*Most complex feature. Depends on almost everything above. Split into three sessions. Build each step's layout responsive from the start per the M6.6 constraint — do not retrofit. Respect the `showAllergens` setting from M8.5 — when off, omit allergen filters from Step 4.*
+*Most complex feature. Depends on M8.6 (free-from field) and everything above. Split into three sessions. Build each step's layout responsive from the start per the M6.6 constraint — do not retrofit. Respect the `showAllergens` setting from M8.5 — when off, hide dietary virtual tags from pickers (already-selected ones stay functional).*
 
-### Session A — Session Setup + Steps 1–3
-- `[ ]` Add `planning_sessions` table; migration
-- `[ ]` Implement `planningSessionService`: create, read, update step state, delete
-- `[ ]` API routes for planning sessions
-- `[ ]` Planning sessions list page (`/planning`): active sessions, resume/delete
-- `[ ]` Wizard shell at `/planning/[id]`: step indicator, back/forward navigation, state persistence
-- `[ ]` Step 1: date range + meal type selection
-- `[ ]` Step 2: review existing entries (keep/remove per entry, bulk actions)
-- `[ ]` Step 3: one-off event entry (add/remove free-text entries with date + meal type)
-- `[ ]` Tests: session CRUD, step state serialization, step 2 entry query, step 3 one-off accumulation
+**Design reference:** `docs/planning-mode.md` (4-step flow, virtual tags, pinned tags, wishlist tags, tag-overlap diversity, season multiplier).
 
-### Session B — Steps 4–6 (Filters, Composition Rules, Leftover Suggestions)
-- `[ ]` Step 4: filter UI (time, difficulty, tags, allergens, season) — no minimum-weight filter
-- `[ ]` Step 5: composition rule builder (add/remove rules, date + meal type + tag/ingredient constraint)
-- `[ ]` Composition rule conflict detection (warn if filters exclude all dishes matching a rule's constraint)
-- `[ ]` Step 6: leftover suggestion UI (per-dinner entry, opt-in toggle for next-day lunch). Leftover placements are queued as `type: 'leftover'` in `draftPlan` and finalized as `entryKind: 'leftover'` plan entries.
-- `[ ]` Tests: filter application against dish pool, composition rule validation, leftover eligibility detection
+### Session A — Session Setup + Steps 1–2
+- `[ ]` Add `planning_sessions` table per `docs/data-model.md` (new shape: `slotStates`, `removedPlanEntryIds`, `pendingOneOffEntries`, `sessionVirtualTags`, `pinnedTags`, `wishlistTags`, `draftPlan`, `shownDishIdsBySlot`, `leftoverToggles`); migration.
+- `[ ]` Implement `planningSessionService`: create, read, update step state, delete.
+- `[ ]` API routes for planning sessions (list, get, patch, finalize, delete).
+- `[ ]` Planning sessions list page (`/planning`): active sessions, resume/delete.
+- `[ ]` Wizard shell at `/planning/[id]`: 4-step indicator, back/forward navigation, state persistence on every advance.
+- `[ ]` **Step 1 — When & What:** date range + meal types (default: Dinner only).
+- `[ ]` **Step 2 — Slot Setup:** grid of every slot in range; per-slot state selector (`plan` / `skip` / `one-off` (+ text) / `keep` (existing entries)); bulk actions ("Plan all empty," "Skip all empty," "Keep all existing").
+- `[ ]` Tests: session CRUD, step state serialization, slot state transitions, removedPlanEntryIds and pendingOneOffEntries accumulation.
 
-### Session C — Steps 7–8 (Draft Generation, Reroll, Finalize)
-- `[ ]` Implement full Draft Plan generation in `planningEngineService`: chronological slot iteration, filter + cooldown eligibility + rule application, best-effort rule relaxation with warning labels, weighted-random selection by `selectionWeight` (from M7), in-draft used-dish tracking, treating already-placed Fresh slots as fresh history for later slots in the same draft
-- `[ ]` Step 7: draft review UI — per-slot dish display, reroll button, reroll depletion warning, override (manual pick), clear slot. Slot warnings differentiate "no filter-matching dishes" vs "all matching dishes still in cooldown."
-- `[ ]` Step 8: finalize summary + confirm; write all entries to calendar with correct `entryKind` (`'dish' → 'fresh'`, `'leftover' → 'leftover'`, `'one-off' → 'one-off'`); delete session
-- `[ ]` Tests: generation algorithm (selection weight distribution matches target intervals in expectation, cooldown enforced across draft, best-effort relaxation, depletion handling), finalize write logic with correct entryKind mapping, session cleanup on finalize
+### Session B — Step 3 (Anchors) + Virtual Tag Scaffolding
+- `[ ]` Implement virtual tag registry (server-side): tag IDs `v:quick`, `v:easy`, `v:dairy-free`, `v:gluten-free`, `v:nut-free`, `v:shellfish-free`, `v:egg-free`, `v:soy-free`, `v:peanut-free`. Each maps to a SQL predicate.
+- `[ ]` Tag-matching helper `matchesTag(dish, tagRef)`: detects `v:` prefix and applies predicate; otherwise joins on `dish_tags`.
+- `[ ]` Tag picker component that surfaces real + virtual tags with visual distinction (chip style for virtual; respect `showAllergens` for dietary virtual tags).
+- `[ ]` **Step 3 — Anchors UI:** three optional sections:
+  - Session-wide constraints (virtual tags only)
+  - Pin tag to slot (date + mealType + tag, real or virtual; multiple pins allowed; AND-combined per slot)
+  - Wishlist tags (real tags only)
+- `[ ]` Pinned-tag conflict detection: warn if a session-wide virtual tag excludes all dishes carrying a pinned/wishlist tag.
+- `[ ]` Tests: virtual tag predicate correctness, tag matching across real/virtual, pinned tag CRUD, wishlist tag CRUD, conflict detection.
+
+### Session C — Step 4 (Draft, Reroll, Finalize) + Engine
+- `[ ]` Implement full Draft Plan generation in `planningEngineService` per `docs/planning-mode.md` Algorithm: virtual-tag prefilter, pinned-slot pass first (with best-effort relaxation + warning labels), wishlist pass (uniform-random slot, weighted by `score` within tag), chronological remaining pass; weighted-random by `selectionWeight × seasonMultiplier × diversityFactor`. Honor in-draft Fresh history for cooldown.
+- `[ ]` Implement `reroll(slotKey)` that preserves pin/wishlist tag and honors `shownDishIdsBySlot`; depletion warning + restart prompt when exhausted.
+- `[ ]` **Step 4 — Draft & Finalize UI:**
+  - Per-slot card: dish, difficulty/time chips, warning labels, Reroll / Swap (manual pick) / Clear
+  - Inline leftover toggle on high-yield dinners (queues `entryKind: 'leftover'` for next-day lunch; respects slot occupancy)
+  - Summary bar (planned / skipped / one-offs / leftover lunches)
+  - Confirm: writes draft + pending one-offs + leftover-queued entries; deletes `removedPlanEntryIds`; deletes session row; redirects to calendar
+- `[ ]` Tests: generation algorithm (selection weight × season multiplier × diversity factor distribution matches expectations; cooldown enforced across draft; pinned relaxation; wishlist placement + reroll preserves tag; depletion handling), finalize write logic with correct `entryKind` mapping, session cleanup on finalize.
 
 ---
 
