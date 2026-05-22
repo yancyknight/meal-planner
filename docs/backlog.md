@@ -243,18 +243,18 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 8.6 — Allergen Semantic Fix
+## Milestone 8.6 — Allergen Semantic Fix ✅
 *Pre-M9. Inverts the `allergens` field from "contains" to "free from" semantics so that skipping the field doesn't falsely imply allergen safety. Lays the groundwork for virtual tags in M9. See `docs/spec.md` §1 and `docs/data-model.md`.*
 
-- `[ ]` Schema migration: rename `dishes.allergens` → `dishes.freeFrom` (keep NOT NULL DEFAULT '[]'). Migration **clears existing values** (`UPDATE dishes SET freeFrom = '[]'`) — the semantic is flipping so prior data would mean the opposite.
-- `[ ]` Update `shared/schemas/dish.ts`: rename field; presets become `gluten-free`, `dairy-free`, `nut-free`, `shellfish-free`, `egg-free`, `soy-free`, `peanut-free`.
-- `[ ]` Update `shared/types/dish.ts`: rename field.
-- `[ ]` Update `server/services/dishService.ts` create/update/list field handling and any allergen-aware filter logic.
-- `[ ]` `DishForm.vue`: relabel section "Free from" with the new preset chips. Each chip clearly reads e.g. "Dairy-Free." No freeform entries in v1.
-- `[ ]` Dish detail page: relabel chip group; subject to existing `showAllergens` setting.
-- `[ ]` Dish library filter: replace "exclude allergen X" control with "must be X-free" virtual-tag style filter (use the virtual tag IDs from M9 scaffolding if landed; otherwise inline the same predicate temporarily).
-- `[ ]` Recipe import: do **not** auto-populate `freeFrom`. The source rarely makes that claim explicitly; safer to leave empty.
-- `[ ]` Tests: Zod accepts/rejects expected preset names; service round-trips; existing `dishService.test.ts` allergen assertions updated; settings `showAllergens` still hides chips on detail.
+- `[x]` Schema migration: rename `dishes.allergens` → `dishes.freeFrom` (keep NOT NULL DEFAULT '[]'). Migration **clears existing values** (`UPDATE dishes SET freeFrom = '[]'`) — the semantic is flipping so prior data would mean the opposite.
+- `[x]` Update `shared/schemas/dish.ts`: rename field; presets become `gluten-free`, `dairy-free`, `nut-free`, `shellfish-free`, `egg-free`, `soy-free`, `peanut-free`.
+- `[x]` Update `shared/types/dish.ts`: rename field.
+- `[x]` Update `server/services/dishService.ts` create/update/list field handling and any allergen-aware filter logic.
+- `[x]` `DishForm.vue`: relabel section "Free from" with the new preset chips. Each chip clearly reads e.g. "Dairy-Free." No freeform entries in v1.
+- `[x]` Dish detail page: relabel chip group; subject to existing `showAllergens` setting.
+- `[x]` Dish library filter: replace "exclude allergen X" control with "must be X-free" virtual-tag style filter (use the virtual tag IDs from M9 scaffolding if landed; otherwise inline the same predicate temporarily).
+- `[x]` Recipe import: do **not** auto-populate `freeFrom`. The source rarely makes that claim explicitly; safer to leave empty.
+- `[x]` Tests: Zod accepts/rejects expected preset names; service round-trips; existing `dishService.test.ts` allergen assertions updated; settings `showAllergens` still hides chips on detail.
 
 ---
 
@@ -263,15 +263,15 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 **Design reference:** `docs/planning-mode.md` (4-step flow, virtual tags, pinned tags, wishlist tags, tag-overlap diversity, season multiplier).
 
-### Session A — Session Setup + Steps 1–2
-- `[ ]` Add `planning_sessions` table per `docs/data-model.md` (new shape: `weekStart` (Monday date, not a range), `slotStates`, `removedPlanEntryIds`, `pendingOneOffEntries`, `sessionVirtualTags`, `pinnedTags`, `wishlistTags`, `draftPlan`, `shownDishIdsBySlot`, `leftoverToggles`); migration.
-- `[ ]` Implement `planningSessionService`: create, read, update step state, delete.
-- `[ ]` API routes for planning sessions (list, get, patch, finalize, delete).
-- `[ ]` Planning sessions list page (`/planning`): active sessions, resume/delete.
-- `[ ]` Wizard shell at `/planning/[id]`: persistent header (`Planning session #<id> — draft — auto-saved`, Discard), left sidebar with 4-step status list, footer with Back / progress / Continue. State persists on every advance.
-- `[ ]` **Step 1 — When & What:** week picker (Monday-anchored, prev/next arrows, contextual hint *this week / next week / in N weeks*) + meal-type toggle chips (default: Dinner only) + info banner with slot count.
-- `[ ]` **Step 2 — Slot Setup:** one card per day in a two-column grid (single column on mobile); per-slot state pills (`plan` / `skip` / `one-off` (+ text) / `keep` (existing entries)); bulk actions (*Skip all Plan*, *Plan all Skip*, *Keep all existing*); live state-count summary.
-- `[ ]` Tests: session CRUD, step state serialization, slot state transitions, removedPlanEntryIds and pendingOneOffEntries accumulation.
+### Session A — Session Setup + Steps 1–2 ✅
+- `[x]` Add `planning_sessions` table per `docs/data-model.md` (new shape: `weekStart` (Monday date, not a range), `slotStates`, `removedPlanEntryIds`, `pendingOneOffEntries`, `sessionVirtualTags`, `pinnedTags`, `wishlistTags`, `draftPlan`, `shownDishIdsBySlot`, `leftoverToggles`); migration.
+- `[x]` Implement `planningSessionService`: create, read, update step state, delete.
+- `[x]` API routes for planning sessions (list, get, patch, finalize, delete).
+- `[x]` Planning sessions list page (`/planning`): active sessions, resume/delete.
+- `[x]` Wizard shell at `/planning/[id]`: persistent header (`Planning session #<id> — draft — auto-saved`, Discard), left sidebar with 4-step status list, footer with Back / progress / Continue. State persists on every advance.
+- `[x]` **Step 1 — When & What:** week picker (Monday-anchored, prev/next arrows, contextual hint *this week / next week / in N weeks*) + meal-type toggle chips (default: Dinner only) + info banner with slot count.
+- `[x]` **Step 2 — Slot Setup:** one card per day in a two-column grid (single column on mobile); per-slot state pills (`plan` / `skip` / `one-off` (+ text) / `keep` (existing entries)); bulk actions (*Skip all Plan*, *Plan all Skip*, *Keep all existing*); live state-count summary.
+- `[x]` Tests: session CRUD, step state serialization, slot state transitions, removedPlanEntryIds and pendingOneOffEntries accumulation.
 
 ### Session B — Step 3 (Anchors) + Virtual Tag Scaffolding
 - `[ ]` Implement virtual tag registry (server-side): tag IDs `v:quick`, `v:easy`, `v:dairy-free`, `v:gluten-free`, `v:nut-free`, `v:shellfish-free`, `v:egg-free`, `v:soy-free`, `v:peanut-free`. Each maps to a SQL predicate.
