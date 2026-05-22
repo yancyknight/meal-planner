@@ -45,7 +45,7 @@
             <div
               v-for="row in day.rows"
               :key="row.slotKey"
-              class="px-4 py-3 flex items-start gap-3"
+              class="px-4 py-3 flex flex-wrap items-start gap-x-3 gap-y-2"
               :class="rowBgClass(row)"
             >
               <!-- Meal label -->
@@ -124,7 +124,7 @@
               </div>
 
               <!-- Actions -->
-              <div class="shrink-0 flex items-center gap-1.5 pt-0.5">
+              <div class="w-full sm:w-auto shrink-0 flex items-center gap-1.5 sm:pt-0.5 justify-end">
                 <template v-if="row.state === 'no-match'">
                   <button
                     type="button"
