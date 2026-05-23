@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { queryKeys } from '../composables/queryKeys'
 import type { CanonicalIngredient, FuzzyMatch } from '../../shared/types/ingredient'
@@ -27,6 +27,18 @@ const searchQuery = ref('')
 const showSuggestions = ref(false)
 const showManualSearch = ref(false)
 const debounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+
+// Trigger suggestion immediately for pre-filled rows (e.g. recipe import)
+onMounted(() => {
+  if (rawText.value.trim() && !linkedCanonical.value) {
+    const extracted = extractIngredientName(rawText.value)
+    if (extracted.length >= 2) {
+      searchQuery.value = extracted
+      manualSearchQuery.value = extracted
+      showSuggestions.value = true
+    }
+  }
+})
 
 // Auto-suggest when raw text changes (debounced)
 watch(rawText, (val) => {
