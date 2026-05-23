@@ -55,4 +55,34 @@ describe('extractIngredientName', () => {
   it('handles extra whitespace', () => {
     expect(extractIngredientName('  2   cloves   garlic  ')).toBe('Garlic')
   })
+
+  // Unicode fractions
+  it('strips unicode fraction ½ + unit', () => {
+    expect(extractIngredientName('½ cup extra virgin olive oil')).toBe('Extra Virgin Olive Oil')
+  })
+
+  it('strips unicode fraction ¼ + unit', () => {
+    expect(extractIngredientName('¼ teaspoon pepper')).toBe('Pepper')
+  })
+
+  it('strips unicode fraction ¾ + unit', () => {
+    expect(extractIngredientName('¾ cup milk')).toBe('Milk')
+  })
+
+  it('handles integer followed by unicode fraction (1½)', () => {
+    expect(extractIngredientName('1½ cups flour')).toBe('Flour')
+  })
+
+  // Parenthesized content
+  it('strips parenthesized content', () => {
+    expect(extractIngredientName('creamy balsamic dressing (store bought OR see recipe below)')).toBe('Creamy Balsamic Dressing')
+  })
+
+  it('strips parenthesized prep note inline', () => {
+    expect(extractIngredientName('butter (softened)')).toBe('Butter')
+  })
+
+  it('strips parens and quantity together', () => {
+    expect(extractIngredientName('2 tablespoons olive oil (extra virgin)')).toBe('Olive Oil')
+  })
 })
