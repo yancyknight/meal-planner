@@ -36,6 +36,7 @@ watch(rawText, (val) => {
     const extracted = extractIngredientName(val)
     if (extracted.length >= 2) {
       searchQuery.value = extracted
+      manualSearchQuery.value = extracted
       showSuggestions.value = true
     }
     else {
@@ -177,7 +178,7 @@ function onRawTextBlur() {
         class="self-start rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700"
         @click="createAndLink"
       >
-        + Create "{{ manualSearchQuery.trim() || rawText.trim() }}"
+        + Create "{{ manualSearchQuery.trim() || extractIngredientName(rawText) }}"
       </button>
     </div>
 
