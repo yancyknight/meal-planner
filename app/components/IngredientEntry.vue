@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { queryKeys } from '../composables/queryKeys'
 import type { CanonicalIngredient, FuzzyMatch } from '../../shared/types/ingredient'
+import { extractIngredientName } from '#shared/utils/ingredientExtract'
 
 interface Props {
   rawText: string
@@ -27,13 +28,27 @@ const showSuggestions = ref(false)
 const showManualSearch = ref(false)
 const debounceTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 
+// Trigger suggestion immediately for pre-filled rows (e.g. recipe import)
+onMounted(() => {
+  if (rawText.value.trim() && !linkedCanonical.value) {
+    const extracted = extractIngredientName(rawText.value)
+    if (extracted.length >= 2) {
+      searchQuery.value = extracted
+      manualSearchQuery.value = extracted
+      showSuggestions.value = true
+    }
+  }
+})
+
 // Auto-suggest when raw text changes (debounced)
 watch(rawText, (val) => {
   if (linkedCanonical.value) return
   if (debounceTimer.value) clearTimeout(debounceTimer.value)
   debounceTimer.value = setTimeout(() => {
-    if (val.trim().length >= 2) {
-      searchQuery.value = val.trim()
+    const extracted = extractIngredientName(val)
+    if (extracted.length >= 2) {
+      searchQuery.value = extracted
+      manualSearchQuery.value = extracted
       showSuggestions.value = true
     }
     else {
@@ -62,6 +77,11 @@ const { data: manualResults } = useQuery({
   },
   enabled: computed(() => showManualSearch.value && manualSearchQuery.value.length >= 1),
 })
+const exactManualMatch = computed(() => {
+  if (!manualSearchQuery.value.trim() || !manualResults.value?.length) return null
+  const q = manualSearchQuery.value.trim().toLowerCase()
+  return manualResults.value.find(m => m.canonical.name.toLowerCase() === q)?.canonical ?? null
+})
 
 function acceptSuggestion(canonical: CanonicalIngredient) {
   linkedCanonical.value = canonical
@@ -73,6 +93,7 @@ function acceptSuggestion(canonical: CanonicalIngredient) {
 function rejectSuggestion() {
   showSuggestions.value = false
   showManualSearch.value = true
+  manualSearchQuery.value = extractIngredientName(rawText.value)
 }
 
 function clearLink() {
@@ -82,8 +103,13 @@ function clearLink() {
   emit('update', { rawText: rawText.value, canonicalIngredientId: null })
 }
 
+function openManualSearch() {
+  manualSearchQuery.value = manualSearchQuery.value || extractIngredientName(rawText.value)
+  showManualSearch.value = true
+}
+
 async function createAndLink() {
-  const name = manualSearchQuery.value.trim() || rawText.value.trim()
+  const name = manualSearchQuery.value.trim() || extractIngredientName(rawText.value)
   if (!name) return
   const canonical = await $fetch<CanonicalIngredient>('/api/canonical-ingredients', {
     method: 'POST',
@@ -170,17 +196,26 @@ function onRawTextBlur() {
         </button>
       </div>
       <button
+        v-if="exactManualMatch"
+        type="button"
+        class="self-start rounded border border-emerald-500 px-2 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+        @click="acceptSuggestion(exactManualMatch)"
+      >
+        Link to existing "{{ exactManualMatch.name }}"
+      </button>
+      <button
+        v-else
         type="button"
         class="self-start rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700"
         @click="createAndLink"
       >
-        + Create "{{ manualSearchQuery.trim() || rawText.trim() }}"
+        + Create "{{ manualSearchQuery.trim() || extractIngredientName(rawText) }}"
       </button>
     </div>
 
     <!-- Prompt to link when raw text present but no canonical -->
     <div v-else-if="rawText.trim() && !linkedCanonical && !showSuggestions" class="text-xs text-amber-600">
-      <button type="button" class="underline hover:no-underline" @click="showManualSearch = true">
+      <button type="button" class="underline hover:no-underline" @click="openManualSearch">
         Link to ingredient
       </button>
     </div>
