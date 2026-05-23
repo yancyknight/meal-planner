@@ -3,6 +3,7 @@ import { ref, watch } from 'vue'
 import { useQuery } from '@tanstack/vue-query'
 import { queryKeys } from '../composables/queryKeys'
 import type { CanonicalIngredient, FuzzyMatch } from '../../shared/types/ingredient'
+import { extractIngredientName } from '#shared/utils/ingredientExtract'
 
 interface Props {
   rawText: string
@@ -32,8 +33,9 @@ watch(rawText, (val) => {
   if (linkedCanonical.value) return
   if (debounceTimer.value) clearTimeout(debounceTimer.value)
   debounceTimer.value = setTimeout(() => {
-    if (val.trim().length >= 2) {
-      searchQuery.value = val.trim()
+    const extracted = extractIngredientName(val)
+    if (extracted.length >= 2) {
+      searchQuery.value = extracted
       showSuggestions.value = true
     }
     else {
@@ -73,6 +75,7 @@ function acceptSuggestion(canonical: CanonicalIngredient) {
 function rejectSuggestion() {
   showSuggestions.value = false
   showManualSearch.value = true
+  manualSearchQuery.value = extractIngredientName(rawText.value)
 }
 
 function clearLink() {
@@ -83,7 +86,7 @@ function clearLink() {
 }
 
 async function createAndLink() {
-  const name = manualSearchQuery.value.trim() || rawText.value.trim()
+  const name = manualSearchQuery.value.trim() || extractIngredientName(rawText.value)
   if (!name) return
   const canonical = await $fetch<CanonicalIngredient>('/api/canonical-ingredients', {
     method: 'POST',

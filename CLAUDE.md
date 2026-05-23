@@ -110,9 +110,9 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-**M13 — CI/CD, Deployment Template & README** (`milestone-13-cicd-readme`)
+**Issue #37 — Improve ingredient matching/creation** (`milestone-14-ingredient-extraction`)
 
-- [x] **#26** — `.github/workflows/docker-publish.yml`: multi-arch build (`linux/amd64` + `linux/arm64`); push to GHCR on `v*.*.*` tags; build-only smoke test on `main` pushes
-- [x] **#28** — `deploy/compose.yml`: references GHCR image; two named volumes (`meal-planner-data`, `meal-planner-backups`); Watchtower with HTTP API update trigger + daily poll fallback; `deploy/backup.sh` hot backup helper; `deploy/update.sh` Watchtower API trigger; `deploy/README.md`
-- [x] **#29** — `README.md`: overview, features, screenshots, security disclaimer, Docker quick-start, config table, dev instructions
+- [x] `shared/utils/ingredientExtract.ts` — `extractIngredientName(raw)`: strips leading quantity (integer, fraction, mixed number, range), strips measurement unit, strips trailing comma-prep clause, title-cases result, falls back to original if empty
+- [x] `app/components/IngredientEntry.vue` — use `extractIngredientName` for auto-suggest search query; pre-populate manual search/create field on "none of these"; use extracted name as canonical-create fallback
+- [x] `test/unit/ingredientExtract.test.ts` — 13 tests covering all issue examples and edge cases; 100% coverage
 
