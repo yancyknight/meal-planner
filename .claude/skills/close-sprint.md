@@ -36,8 +36,12 @@ Paste the generated `![alt](url)` lines into the PR body. Never use relative pat
 
 ## 4. Create PR
 
+If this branch was opened to resolve a GitHub issue, add `Closes #<N>` as the first line of the PR body. GitHub will auto-close the issue on merge.
+
 ```bash
 gh pr create --title "<title>" --body "$(cat <<'EOF'
+Closes #<N>   ← include when working against a GitHub issue; omit otherwise
+
 ## What was built
 <summary>
 
