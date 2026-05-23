@@ -86,6 +86,11 @@ function clearLink() {
   emit('update', { rawText: rawText.value, canonicalIngredientId: null })
 }
 
+function openManualSearch() {
+  manualSearchQuery.value = manualSearchQuery.value || extractIngredientName(rawText.value)
+  showManualSearch.value = true
+}
+
 async function createAndLink() {
   const name = manualSearchQuery.value.trim() || extractIngredientName(rawText.value)
   if (!name) return
@@ -184,7 +189,7 @@ function onRawTextBlur() {
 
     <!-- Prompt to link when raw text present but no canonical -->
     <div v-else-if="rawText.trim() && !linkedCanonical && !showSuggestions" class="text-xs text-amber-600">
-      <button type="button" class="underline hover:no-underline" @click="showManualSearch = true">
+      <button type="button" class="underline hover:no-underline" @click="openManualSearch">
         Link to ingredient
       </button>
     </div>
