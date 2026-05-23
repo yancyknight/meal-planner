@@ -1,0 +1,36 @@
+services:
+  app:
+    image: ghcr.io/yancyknight/meal-planner:latest
+    container_name: meal-planner
+    ports:
+      - "3000:3000"
+    volumes:
+      - meal-planner-data:/data
+      - meal-planner-backups:/data/backups
+    environment:
+      DATABASE_URL: /data/app.db
+      IMAGE_DIR: /data/images
+      BACKUP_DIR: /data/backups
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower
+    container_name: meal-planner-watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Scope updates to just the app container
+      WATCHTOWER_SCOPE: meal-planner
+      # HTTP API lets you trigger an immediate update with deploy/update.sh
+      WATCHTOWER_HTTP_API_UPDATE: "true"
+      WATCHTOWER_HTTP_API_TOKEN: "${WATCHTOWER_TOKEN}"
+      # Fall back to a daily poll if the HTTP API is never called
+      WATCHTOWER_POLL_INTERVAL: "86400"
+      WATCHTOWER_CLEANUP: "true"
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+volumes:
+  meal-planner-data:
+  meal-planner-backups:

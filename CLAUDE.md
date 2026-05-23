@@ -110,19 +110,9 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-**M12 — Database Backups** (`milestone-12-database-backups`)
+**M13 — CI/CD, Deployment Template & README** (`milestone-13-cicd-readme`)
 
-- [x] Export raw `sqlite` instance from `server/database/index.ts`
-- [x] Add `BACKUP_DIR` (default `/data/backups`) to `.env.example` and env-var table in `CLAUDE.md`
-- [x] Schema migration: add `backupIntervalHours` (integer NOT NULL DEFAULT 24) and `backupRetainCount` (integer NOT NULL DEFAULT 7) to `app_settings`
-- [x] Update `settingsService.ts` and `AppSettings` type/schema to include the two new fields
-- [x] Create `server/services/backupService.ts`: `runBackup()` (interval guard, mkdir -p, sqlite.backup, prune), `getStatus()`, `pruneOldBackups()`
-- [x] Create `server/tasks/database/backup.ts`; register with `'0 * * * *'` cron in `nuxt.config.ts`
-- [x] Create `server/api/backups/status.get.ts`
-- [x] Add `backups.status()` key to `app/composables/queryKeys.ts`
-- [x] Update `app/pages/settings.vue`: add Backups card (editable interval + retain count; read-only last backup / next backup / file count)
-- [x] Write `test/unit/backupService.test.ts`: creates file with correct name, prunes oldest beyond retain count, no-dir graceful recovery (mkdir)
-
-**Upcoming milestones (see `docs/backlog.md` for full checklists):**
-- M13 — CI/CD, Deployment Template & README (GitHub issues #26, #28, #29)
+- [x] **#26** — `.github/workflows/docker-publish.yml`: multi-arch build (`linux/amd64` + `linux/arm64`); push to GHCR on `v*.*.*` tags; build-only smoke test on `main` pushes
+- [x] **#28** — `deploy/compose.yml`: references GHCR image; two named volumes (`meal-planner-data`, `meal-planner-backups`); Watchtower with HTTP API update trigger + daily poll fallback; `deploy/backup.sh` hot backup helper; `deploy/update.sh` Watchtower API trigger; `deploy/README.md`
+- [x] **#29** — `README.md`: overview, features, screenshots, security disclaimer, Docker quick-start, config table, dev instructions
 

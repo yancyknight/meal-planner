@@ -335,12 +335,12 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 13 — CI/CD, Deployment Template & README
+## Milestone 13 — CI/CD, Deployment Template & README ✅
 *Issue #26 (Docker image build) must land before #28 (deployment template) and #29 (README) can reference the image. All three are non-app-code changes.*
 
-- `[ ]` **#26 — GitHub Actions Docker build:** `.github/workflows/docker-publish.yml` — trigger on `v*.*.*` tag push; build multi-arch image (`linux/amd64` + `linux/arm64`) using `docker/build-push-action`; push to GitHub Container Registry (`ghcr.io/<owner>/<repo>`) tagged with the version and `latest`; no push on non-tag runs (build-only smoke test on `main`)
-- `[ ]` **#28 — Deployment compose template:** `deploy/compose.yml` — references the `ghcr.io` image; `/data` named volume; **add a second named volume for backups** (e.g. `meal-planner-backups`) mounted at `/data/backups` so backups survive independently of the main data volume and can be managed separately; includes a [Watchtower](https://containrrr.dev/watchtower/) service configured to poll the registry and redeploy on new image; includes a `deploy/backup.sh` helper script that runs a hot SQLite backup (`sqlite3 /data/app.db ".backup /data/backups/pre-deploy-$(date +%Y%m%dT%H%M%S).db"`) and is called manually or wired to a pre-update hook; `README` in `deploy/` explains the setup
-- `[ ]` **#29 — README.md:** project overview (what it does, key features, 2–3 screenshots); prominent disclaimer (personal/household use, no auth/authz, LAN or Tailscale VPN only, not designed for public internet); Docker quick-start using `deploy/compose.yml`; link to `docs/` for detailed spec; note that the app is opinionated/single-household and forks are welcome
+- `[x]` **#26 — GitHub Actions Docker build:** `.github/workflows/docker-publish.yml` — trigger on `v*.*.*` tag push; build multi-arch image (`linux/amd64` + `linux/arm64`) using `docker/build-push-action`; push to GitHub Container Registry (`ghcr.io/<owner>/<repo>`) tagged with the version and `latest`; no push on non-tag runs (build-only smoke test on `main`)
+- `[x]` **#28 — Deployment compose template:** `deploy/compose.yml` — references the `ghcr.io` image; two named volumes (`meal-planner-data`, `meal-planner-backups`); Watchtower with HTTP API update trigger + daily poll fallback; `deploy/backup.sh` hot backup via throwaway Alpine container; `deploy/update.sh` Watchtower API trigger script; `deploy/README.md` explains the setup
+- `[x]` **#29 — README.md:** project overview (what it does, key features, 4 screenshots); prominent disclaimer (personal/household use, no auth/authz, LAN or Tailscale VPN only, not designed for public internet); Docker quick-start using `deploy/compose.yml`; link to `docs/` for detailed spec; note that the app is opinionated/single-household and forks are welcome
 
 ---
 
