@@ -91,11 +91,21 @@ export async function fuzzySearch(query: string): Promise<FuzzyMatch[]> {
     threshold: FUZZY_THRESHOLD,
     includeScore: true,
   })
-  const results = fuse.search(query)
-  return results.map(r => ({
-    canonical: r.item,
-    score: r.score ?? 1,
-  }))
+  const fuseResults = fuse.search(query)
+  const seenIds = new Set(fuseResults.map(r => r.item.id))
+
+  // Fuse.js matches the query pattern against each item, so a long query
+  // ("Extra Virgin Olive Oil") won't match a shorter canonical ("Olive Oil").
+  // Also surface any canonical whose name is contained within the query.
+  const queryLower = query.toLowerCase()
+  const substringMatches = all.filter(c =>
+    !seenIds.has(c.id) && queryLower.includes(c.name.toLowerCase()),
+  )
+
+  return [
+    ...fuseResults.map(r => ({ canonical: r.item, score: r.score ?? 1 })),
+    ...substringMatches.map(c => ({ canonical: c, score: 0.05 })),
+  ]
 }
 
 export async function getDishIngredients(dishId: number): Promise<DishIngredient[]> {

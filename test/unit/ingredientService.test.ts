@@ -219,4 +219,16 @@ describe('fuzzySearch', () => {
     const results = await fuzzySearch('olive oil')
     expect(results.length).toBeGreaterThan(0)
   })
+
+  it('surfaces canonical when query is longer (bidirectional)', async () => {
+    await findOrCreateCanonical('Olive Oil')
+    const results = await fuzzySearch('Extra Virgin Olive Oil')
+    expect(results.map(r => r.canonical.name)).toContain('Olive Oil')
+  })
+
+  it('surfaces canonical on exact match', async () => {
+    await findOrCreateCanonical('Olive Oil')
+    const results = await fuzzySearch('Olive Oil')
+    expect(results.map(r => r.canonical.name)).toContain('Olive Oil')
+  })
 })

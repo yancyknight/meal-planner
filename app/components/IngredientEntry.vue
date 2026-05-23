@@ -77,6 +77,11 @@ const { data: manualResults } = useQuery({
   },
   enabled: computed(() => showManualSearch.value && manualSearchQuery.value.length >= 1),
 })
+const exactManualMatch = computed(() => {
+  if (!manualSearchQuery.value.trim() || !manualResults.value?.length) return null
+  const q = manualSearchQuery.value.trim().toLowerCase()
+  return manualResults.value.find(m => m.canonical.name.toLowerCase() === q)?.canonical ?? null
+})
 
 function acceptSuggestion(canonical: CanonicalIngredient) {
   linkedCanonical.value = canonical
@@ -191,6 +196,15 @@ function onRawTextBlur() {
         </button>
       </div>
       <button
+        v-if="exactManualMatch"
+        type="button"
+        class="self-start rounded border border-emerald-500 px-2 py-0.5 text-xs font-medium text-emerald-700 hover:bg-emerald-50"
+        @click="acceptSuggestion(exactManualMatch)"
+      >
+        Link to existing "{{ exactManualMatch.name }}"
+      </button>
+      <button
+        v-else
         type="button"
         class="self-start rounded bg-indigo-600 px-2 py-0.5 text-xs text-white hover:bg-indigo-700"
         @click="createAndLink"
