@@ -143,6 +143,58 @@ Persisted state for in-progress Planning Mode wizards. See `docs/planning-mode.m
 | `createdAt` | text | NOT NULL | |
 | `updatedAt` | text | NOT NULL | |
 
+### `freezers`
+
+Physical freezers. Small table (typically 1–3 rows).
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | integer | PK, autoincrement | |
+| `name` | text | NOT NULL | Display name |
+| `lastAuditedAt` | text | nullable | ISO 8601. Updated when an audit walk-through finishes. |
+| `createdAt` | text | NOT NULL | |
+| `updatedAt` | text | NOT NULL | |
+
+### `freezer_categories`
+
+Storage classifications. Seeded on first run; editable; custom categories allowed.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | integer | PK, autoincrement | |
+| `name` | text | NOT NULL, UNIQUE | |
+| `defaultLifetimeDays` | integer | NOT NULL | Default lifetime applied to new items in this category. |
+| `isSystem` | integer | NOT NULL, DEFAULT 0 | Hint that the row was seeded. Does not prevent edit/delete. |
+| `createdAt` | text | NOT NULL | |
+| `updatedAt` | text | NOT NULL | |
+
+Seeded rows (see [`freezer-mode.md` §Data Model](./freezer-mode.md#seeded-defaults) for the full table): *Raw Poultry · 270*, *Raw Red Meat · 365*, *Raw Ground Meat · 120*, *Raw Fish (Lean) · 180*, *Raw Fish (Fatty) · 90*, *Cooked Leftovers · 90*, *Soups & Stews · 90*, *Bread & Baked Goods · 90*, *Prepared Meals & Pizza · 60*, *Vegetables (Frozen) · 240*, *Fruit · 365*, *Stock & Broth · 180*, *Sauces · 180*, *Butter · 270*, *Hard Cheese · 180*, *Ice Cream · 60*, *Other · 90*.
+
+### `freezer_items`
+
+Individual items in a freezer.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | integer | PK, autoincrement | |
+| `freezerId` | integer | NOT NULL, FK → freezers.id | No cascade — freezers with active items can't be deleted. |
+| `categoryId` | integer | NOT NULL, FK → freezer_categories.id | No cascade — categories with active items can't be deleted. |
+| `name` | text | NOT NULL | |
+| `notes` | text | nullable | Freeform |
+| `dishId` | integer | nullable, FK → dishes.id ON DELETE SET NULL | Planner anchor when set. |
+| `canonicalIngredientId` | integer | nullable, FK → canonical_ingredients.id ON DELETE SET NULL | Informational link. |
+| `addedAt` | text | NOT NULL | YYYY-MM-DD |
+| `lifetimeDaysOverride` | integer | nullable | When set, overrides the category's `defaultLifetimeDays` for this item's `tossByDate` math. |
+| `tossByDate` | text | NOT NULL | YYYY-MM-DD. Computed and **stored** at creation: `addedAt + lifetimeDays`. |
+| `targetUseDate` | text | NOT NULL | YYYY-MM-DD. Computed and **stored** at creation: midpoint of `addedAt` and `tossByDate`. **Never recomputed**; user-editable. |
+| `status` | text | NOT NULL, DEFAULT 'active' | 'active' \| 'used' \| 'wasted' |
+| `statusChangedAt` | text | nullable | ISO 8601. Set when status moves off 'active'. |
+| `createdAt` | text | NOT NULL | |
+| `updatedAt` | text | NOT NULL | |
+
+Check (enforced in the Zod schema): `lifetimeDaysOverride >= 1`; `tossByDate > addedAt`;
+`addedAt <= targetUseDate <= tossByDate`.
+
 ### `app_settings`
 
 Key-value store for global app configuration.
@@ -155,6 +207,14 @@ Key-value store for global app configuration.
 Default rows seeded on first run:
 - `householdSize` → `"2"`
 - `appName` → `"Meal Planner"`
+- `freezerApproachingWindowDays` → `14`
+- `freezerAuditOverdueDays` → `60`
+- `freezerNotificationsEnabled` → `false`
+- `ntfyServerUrl` → `"https://ntfy.sh"`
+- `ntfyTopic` → `""`
+- `ntfyAuthToken` → `null`
+- `freezerWeeklyDigestDay` → `0`
+- `freezerWeeklyDigestHour` → `9`
 
 ---
 
@@ -169,6 +229,10 @@ CREATE INDEX idx_dish_ingredients_canonical_id ON dish_ingredients(canonicalIngr
 CREATE INDEX idx_shopping_list_items_list_id ON shopping_list_items(shoppingListId);
 CREATE INDEX idx_canonical_ingredients_name ON canonical_ingredients(name);
 CREATE INDEX idx_dishes_archived ON dishes(archived);
+CREATE INDEX idx_freezer_items_freezer_id ON freezer_items(freezerId);
+CREATE INDEX idx_freezer_items_status ON freezer_items(status);
+CREATE INDEX idx_freezer_items_toss_by ON freezer_items(tossByDate) WHERE status = 'active';
+CREATE INDEX idx_freezer_items_dish_id ON freezer_items(dishId) WHERE status = 'active' AND dishId IS NOT NULL;
 ```
 
 The partial index `idx_plan_entries_dish_fresh` accelerates the `daysSinceLastServedFresh` lookup used by the planning engine: "most recent fresh entry for this dish before this date."
@@ -182,6 +246,9 @@ dishes ──< dish_ingredients >── canonical_ingredients
 dishes ──< dish_tags >── tags
 plan_entries >── dishes (nullable; null = one-off)
 shopping_lists ──< shopping_list_items >── canonical_ingredients
+freezers ──< freezer_items >── freezer_categories
+freezer_items >── dishes (nullable; planner anchor)
+freezer_items >── canonical_ingredients (nullable; informational)
 ```
 
 ---

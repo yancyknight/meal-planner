@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Freezer · Meal Planner</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&family=Geist:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="freezer-styles.css" />
+  <style>
+    body { background: #f0eee9; }
+  </style>
+</head>
+<body class="density-balanced">
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="freezer-dashboard.jsx"></script>
+  <script type="text/babel" src="freezer-add.jsx"></script>
+  <script type="text/babel" src="freezer-screens.jsx"></script>
+
+  <script type="text/babel">
+    // Design canvas root — lays out all freezer-module screens for review.
+    const M = { w: 390, h: 780 }; // mobile artboard
+    const D = { w: 1200, h: 820 }; // desktop artboard
+
+    function App() {
+      return (
+        <DesignCanvas
+          title="Freezer module"
+          subtitle="A new section of the meal planner — dashboard, add, detail, audit, settings, plus the calendar-chip change."
+        >
+          <DCSection
+            id="dashboard"
+            title="/freezer · Dashboard"
+            subtitle="The home base. Editorial header band, three buckets — Expired / Approaching / Recently added — grouped by freezer. Mobile collapses the + Add into a FAB."
+          >
+            <DCArtboard id="dash-d" label="Desktop · populated" width={D.w} height={D.h}>
+              <FzDashboardDesktop />
+            </DCArtboard>
+            <DCArtboard id="dash-m" label="Mobile · populated" width={M.w} height={M.h}>
+              <FzDashboardMobile />
+            </DCArtboard>
+            <DCArtboard id="dash-m-exp" label="Mobile · row expanded" width={M.w} height={M.h}>
+              <FzDashboardMobileExpanded />
+            </DCArtboard>
+            <DCArtboard id="dash-d-empty" label="Desktop · empty" width={D.w} height={D.h}>
+              <FzDashboardDesktopEmpty />
+            </DCArtboard>
+            <DCArtboard id="dash-m-empty" label="Mobile · empty" width={M.w} height={M.h}>
+              <FzDashboardMobileEmpty />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="add"
+            title="/freezer/add · Add item"
+            subtitle="Friction-critical. Mobile-first, designed for cold hands at an open freezer. Field order: Freezer → Name (autofocus) → Category pills → date → collapsibles → preview chip → submit."
+          >
+            <DCArtboard id="add-nfc" label="Mobile · from NFC tag" width={M.w} height={M.h + 220}>
+              <FzAddMobile fromNFC={true} />
+            </DCArtboard>
+            <DCArtboard id="add-direct" label="Mobile · opened directly" width={M.w} height={M.h + 220}>
+              <FzAddMobile fromNFC={false} />
+            </DCArtboard>
+            <DCArtboard id="add-firstrun" label="Mobile · first-run (no freezers yet)" width={M.w} height={M.h}>
+              <FzAddFirstRun />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="detail"
+            title="/freezer/[id] · One freezer"
+            subtitle="Less editorial, more list-y. Sorted by toss-by ascending. Bulk-select mode appears via long-press on mobile or an Edit toggle on desktop."
+          >
+            <DCArtboard id="det-d" label="Desktop · populated + filters" width={D.w} height={D.h}>
+              <FzDetailDesktop />
+            </DCArtboard>
+            <DCArtboard id="det-m" label="Mobile · bulk select" width={M.w} height={M.h}>
+              <FzDetailMobileBulk />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="audit"
+            title="/freezer/[id]/audit · Audit walkthrough"
+            subtitle="Focused, single-purpose. One item per screen. 64px-tall action buttons. Resume banner persists a partial walk-through; finish screen tallies the result."
+          >
+            <DCArtboard id="audit-card" label="Mobile · per-item card" width={M.w} height={M.h}>
+              <FzAuditCard />
+            </DCArtboard>
+            <DCArtboard id="audit-resume" label="Mobile · resuming" width={M.w} height={M.h}>
+              <FzAuditCard withResume={true} />
+            </DCArtboard>
+            <DCArtboard id="audit-finish" label="Mobile · finish state" width={M.w} height={M.h}>
+              <FzAuditFinish />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="settings"
+            title="/settings · Freezer card"
+            subtitle="A new card inside Household settings. Four subsections — General, Categories, Notifications (ntfy.sh), Export — in editorial section order."
+          >
+            <DCArtboard id="settings-d" label="Desktop · full card" width={D.w} height={1380}>
+              <FzSettings />
+            </DCArtboard>
+          </DCSection>
+
+          <DCSection
+            id="chips"
+            title="Calendar chip · the ❄ badge"
+            subtitle="The only change to existing chrome. Same chip footprint, with an added frost-tinted ❄ badge when the dish has any active linked freezer item."
+          >
+            <DCArtboard id="chip-sheet" label="Chip variants + hover affordance" width={1100} height={520}>
+              <FzChipSheet />
+            </DCArtboard>
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+  </script>
+</body>
+</html>

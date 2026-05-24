@@ -309,7 +309,61 @@ Fields populated when available: name, imageUrl, timeEstimateMinutes, yieldServi
 
 ---
 
-## 10. Pages & Navigation
+## 10. Freezer
+
+A logging-style freezer-inventory module. Users log items as they go in, see what's expiring or
+already past its toss-by date, and optionally link items to Dishes so the planning engine can
+pull a Dish forward when there's a corresponding item in the freezer.
+
+No quantities, no partial use — an item is either in the freezer or it isn't.
+
+Detailed spec: **[`freezer-mode.md`](./freezer-mode.md)**.
+
+### Concepts (summary)
+
+- **Freezer** — a physical freezer; the household may have multiple.
+- **Freezer Category** — classification with a default lifetime in days (e.g. *Raw Poultry* → 270 days). Seeded list, editable, custom categories allowed.
+- **Freezer Item** — name, category, freezer, `addedAt`, `tossByDate` (computed from category lifetime), `targetUseDate` (midpoint between `addedAt` and `tossByDate`, frozen at creation), optional link to a Dish, optional link to a Canonical Ingredient.
+- **Status** — `active`, `used`, `wasted`. Both terminal states are tracked separately for later category-tuning insight.
+- **Audit** — a per-freezer walk-through that confirms what's actually still there and updates the freezer's `lastAuditedAt` timestamp.
+
+### Dashboard
+
+`/freezer` shows three buckets, grouped by freezer: **Expired** (past `tossByDate`),
+**Approaching** (within the configurable approaching-window, default 14 days), **Recently
+Added** (last 7 days). `targetUseDate` shows on each item but is not its own bucket — it's a
+planner weighting input, not a user-facing urgency signal.
+
+### NFC entry
+
+Two URL patterns per freezer, designed to survive renames (IDs not slugs):
+
+- `/freezer/add?freezerId=<id>` — pre-selects the freezer on the add form.
+- `/freezer/<id>/audit` — jumps straight into audit mode.
+
+### Notifications (ntfy.sh)
+
+Configurable per-household ntfy server + topic. Triggers: daily expiry check, weekly digest,
+audit-overdue per freezer. Best-effort delivery; failures are logged and skipped.
+
+### Planner integration
+
+A Freezer Item with a non-null `dishId` becomes a hint to the planning engine: the linked Dish
+gets a score boost that ramps up as a slot date approaches (or passes) the item's
+`targetUseDate`. Calendar chips for those dishes carry a small ❄ badge. The user always marks
+items as used manually — the planner suggests, it does not consume.
+
+See [`freezer-mode.md` §Planner Integration](./freezer-mode.md#planner-integration) for the
+contract and the multiplier curve.
+
+### Phasing
+
+The feature ships in four phases (Milestones 14–17): Core (CRUD + dashboard) → Audit + NFC +
+Export → Notifications → Planner Integration. Phase 1 is independently usable as a freezer log.
+
+---
+
+## 11. Pages & Navigation
 
 | Route | Page |
 |---|---|
@@ -324,4 +378,8 @@ Fields populated when available: name, imageUrl, timeEstimateMinutes, yieldServi
 | `/shopping-lists/[id]` | Shopping list detail (combined + by-dish toggle) |
 | `/planning` | Active planning sessions list + start new |
 | `/planning/[id]` | Planning session wizard |
-| `/settings` | App settings |
+| `/freezer` | Freezer dashboard (Expired / Approaching / Recently Added) |
+| `/freezer/add` | Add freezer item (accepts `?freezerId=<id>` from NFC) |
+| `/freezer/[id]` | One freezer's item list; audit entry point |
+| `/freezer/[id]/audit` | Per-freezer audit walk-through |
+| `/settings` | App settings (includes Freezer card) |
