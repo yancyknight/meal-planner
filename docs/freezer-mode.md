@@ -223,7 +223,7 @@ is the planner-feed query.
 | `/freezer/[id]/audit` | Audit walk-through for one freezer. Direct deep link (NFC entry). |
 | `/settings` | Existing settings page; gains a Freezer card (categories, window, ntfy). |
 
-Top nav gets a `Freezer` link inserted between `Shopping Lists` and `Dishes` once the dashboard
+Top nav gets a `Freezer` link inserted between `Dishes` and `Planning` once the dashboard
 exists. (Phase 1.)
 
 ### Dashboard layout (`/freezer`)
@@ -509,17 +509,17 @@ able to dominate the whole week.
 
 ### Standalone item recommendations
 
-The planner UI surfaces `standaloneHints` as a sidebar or inline recommendation list alongside
-the normal planning flow — *"❄ You have [item name] in the freezer — add it to a day?"* with a
-one-tap "Add" action. Tapping Add drops a one-off entry onto the selected date/meal slot with the
-freezer item's name as text and the `freezerItemId` set on the entry. The entry behaves exactly
-like any other one-off (no dish cooldown, no scoring) except it carries the freezer link for the
-❄ badge and the mark-used affordance.
+The planner UI surfaces `standaloneHints` as an inline recommendation list — *"❄ You have
+[item name] in the freezer — add it to a day?"* with a one-tap "Add" action. Tapping Add drops
+a one-off entry onto the selected date/meal slot with the freezer item's name as text and the
+`freezerItemId` set on the entry. The entry behaves exactly like any other one-off (no dish
+cooldown, no scoring) except it carries the freezer link for the ❄ badge and the mark-used
+affordance.
 
 The standalone recommendations are shown in order of urgency (`targetUseDate` ascending, with
 items past `targetUseDate` shown first). Items that already have a one-off entry linking to them
-in the current calendar week are filtered out of the recommendation list to avoid duplicate
-nudges.
+in the week being planned are filtered out of the recommendation list to avoid scheduling the
+same freezer item twice in one week.
 
 ### Calendar display
 
@@ -634,7 +634,7 @@ planner change.
 - Services: `freezerService`, `freezerCategoryService`, `freezerItemService`.
 - API routes (see [API Surface](#api-surface), minus audit / export / planner-feed).
 - Pages: `/freezer`, `/freezer/add`, `/freezer/[id]`.
-- Add `Freezer` to top nav between `Shopping Lists` and `Dishes`.
+- Add `Freezer` to top nav between `Dishes` and `Planning`.
 - Settings: Freezer card with approaching-window + categories editor (categories CRUD via the
   existing Freezer settings UI).
 - Tests: service unit tests for `tossByDate` / `targetUseDate` computation and status

@@ -112,9 +112,9 @@ function FzAddFirstRun() {
       <MobileTop right={<span style={{ fontSize: 13, color: "var(--ink-3)" }}>Cancel</span>} />
       <div className="fz-mobile-scroll">
         <div className="fz-header mobile">
-          <div className="fz-eyebrow">SET UP · 1 OF 2</div>
+          <div className="fz-eyebrow">SET UP</div>
           <h1 className="fz-headline mobile" style={{ marginTop: 6, fontSize: 26 }}>
-            First, name your <em>freezer</em>.
+            Name your <em>freezer</em>.
           </h1>
           <p className="fz-subhead mobile">You can add more later. Most homes start with one.</p>
         </div>

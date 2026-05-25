@@ -182,7 +182,7 @@ The engine never mutates state; callers persist results to `planning_sessions`. 
 
 Inputs, per-slot eligibility, selection scoring, and generation order live in **[`planning-mode.md`](./planning-mode.md#algorithm)** — that document is canonical.
 
-The engine optionally accepts `freezerHints: Map<dishId, { earliestTargetUseDate }>` (Phase 4 of the Freezer module — see [`freezer-mode.md` §Planner Integration](./freezer-mode.md#planner-integration)). When present, the score is multiplied by an additional `freezerUrgencyMultiplier(slotDate, earliestTargetUseDate)` factor that ramps up as the slot approaches or passes the target use date. The contract is consumed via `GET /api/freezer/planner-feed`.
+The engine optionally accepts `freezerHints: Map<dishId, { earliestTargetUseDate }>` (Phase 4 of the Freezer module — see [`freezer-mode.md` §Planner Integration](./freezer-mode.md#planner-integration)). When present, the score is multiplied by an additional `freezerUrgencyMultiplier(slotDate, earliestTargetUseDate)` factor that ramps up as the slot approaches or passes the target use date. The contract is consumed via `GET /api/freezer/planner-feed`, which returns both dish-linked `hints` and `standaloneHints` for active items with no dish link (surfaced as inline one-off entry recommendations).
 
 ## Shopping List Generation
 

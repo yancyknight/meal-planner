@@ -208,14 +208,14 @@ Key-value store for global app configuration.
 Default rows seeded on first run:
 - `householdSize` → `"2"`
 - `appName` → `"Meal Planner"`
-- `freezerApproachingWindowDays` → `14`
-- `freezerAuditOverdueDays` → `60`
-- `freezerNotificationsEnabled` → `false`
+- `freezerApproachingWindowDays` → `"14"`
+- `freezerAuditOverdueDays` → `"60"`
+- `freezerNotificationsEnabled` → `"false"`
 - `ntfyServerUrl` → `"https://ntfy.sh"`
 - `ntfyTopic` → `""`
-- `ntfyAuthToken` → `null`
-- `freezerWeeklyDigestDay` → `0`
-- `freezerWeeklyDigestHour` → `9`
+- `ntfyAuthToken` → `""`
+- `freezerWeeklyDigestDay` → `"0"`
+- `freezerWeeklyDigestHour` → `"9"`
 
 ---
 
