@@ -88,10 +88,11 @@ Individual scheduled items on the calendar.
 | `entryKind` | text | NOT NULL, DEFAULT 'fresh' | 'fresh' \| 'leftover' \| 'one-off'. Only `fresh` rows count toward a Dish's cooldown / overdueness. |
 | `dishId` | integer | nullable, FK → dishes.id | Set for 'fresh' and 'leftover'; NULL for 'one-off'. |
 | `oneOffText` | text | nullable | Set for 'one-off'; NULL otherwise. |
+| `freezerItemId` | integer | nullable, FK → freezer_items.id ON DELETE SET NULL | Only set on 'one-off' entries created from a standalone freezer recommendation. Drives the ❄ badge and mark-used affordance. |
 | `guestCount` | integer | NOT NULL, DEFAULT 0 | Extra guests beyond household size. Affects leftover calc. Only meaningful on 'fresh' entries. |
 | `createdAt` | text | NOT NULL | |
 
-Check (enforced in application layer): `entryKind = 'one-off'` ↔ `oneOffText` non-null AND `dishId` null. `entryKind ∈ {'fresh', 'leftover'}` ↔ `dishId` non-null AND `oneOffText` null.
+Check (enforced in application layer): `entryKind = 'one-off'` ↔ `oneOffText` non-null AND `dishId` null. `entryKind ∈ {'fresh', 'leftover'}` ↔ `dishId` non-null AND `oneOffText` null AND `freezerItemId` null. `freezerItemId` may only be set when `entryKind = 'one-off'`.
 
 ### `shopping_lists`
 
@@ -224,6 +225,7 @@ Default rows seeded on first run:
 CREATE INDEX idx_plan_entries_date ON plan_entries(date);
 CREATE INDEX idx_plan_entries_dish_id ON plan_entries(dishId);
 CREATE INDEX idx_plan_entries_dish_fresh ON plan_entries(dishId, date) WHERE entryKind = 'fresh';
+CREATE INDEX idx_plan_entries_freezer_item_id ON plan_entries(freezerItemId) WHERE freezerItemId IS NOT NULL;
 CREATE INDEX idx_dish_ingredients_dish_id ON dish_ingredients(dishId);
 CREATE INDEX idx_dish_ingredients_canonical_id ON dish_ingredients(canonicalIngredientId);
 CREATE INDEX idx_shopping_list_items_list_id ON shopping_list_items(shoppingListId);
@@ -233,6 +235,7 @@ CREATE INDEX idx_freezer_items_freezer_id ON freezer_items(freezerId);
 CREATE INDEX idx_freezer_items_status ON freezer_items(status);
 CREATE INDEX idx_freezer_items_toss_by ON freezer_items(tossByDate) WHERE status = 'active';
 CREATE INDEX idx_freezer_items_dish_id ON freezer_items(dishId) WHERE status = 'active' AND dishId IS NOT NULL;
+CREATE INDEX idx_freezer_items_standalone ON freezer_items(targetUseDate) WHERE status = 'active' AND dishId IS NULL;
 ```
 
 The partial index `idx_plan_entries_dish_fresh` accelerates the `daysSinceLastServedFresh` lookup used by the planning engine: "most recent fresh entry for this dish before this date."
@@ -245,6 +248,7 @@ The partial index `idx_plan_entries_dish_fresh` accelerates the `daysSinceLastSe
 dishes ──< dish_ingredients >── canonical_ingredients
 dishes ──< dish_tags >── tags
 plan_entries >── dishes (nullable; null = one-off)
+plan_entries >── freezer_items (nullable; set on one-off entries created from standalone freezer recommendations)
 shopping_lists ──< shopping_list_items >── canonical_ingredients
 freezers ──< freezer_items >── freezer_categories
 freezer_items >── dishes (nullable; planner anchor)

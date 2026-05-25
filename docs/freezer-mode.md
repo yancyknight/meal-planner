@@ -93,8 +93,9 @@ These differ from or clarify the original spec text:
    Category defaults are doing the work.
 4. **Freezer identity is stable.** NFC tags written today must still work after a freezer is
    renamed. Freezer IDs are forever; names are display labels.
-5. **Planner integration is opt-in per item.** Items linked to a Dish bias the planner. Items
-   linked to a Canonical Ingredient or nothing at all stay inventory-only.
+5. **Planner integration is opt-in per item.** Items linked to a Dish bias the planning engine's
+   scoring. Items without a dish link can still surface as recommendations and be manually added
+   to the calendar as one-off entries linked to the freezer item.
 
 ---
 
@@ -445,15 +446,25 @@ GET /api/freezer/planner-feed
       itemCount: number                // active items linked to this dish
       freezerNames: string[]           // distinct freezers holding linked items
     }
+  ],
+  standaloneHints: [
+    {
+      freezerItemId: number
+      name: string                     // freezer item name, used as the one-off entry text
+      targetUseDate: string            // YYYY-MM-DD
+      tossByDate: string               // YYYY-MM-DD — shown alongside recommendation
+      freezerName: string
+    }
   ]
 }
 ```
 
-- Only returns rows for **active** items with a non-null `dishId`. Used / wasted / unlinked items
-  are not in the feed.
-- One entry per dish (not per item). If three items in two freezers link to the same dish, that
-  dish gets one hint whose `earliestTargetUseDate` is the earliest among them and whose
-  `freezerNames` is the union.
+- `hints` — one entry per dish, deduplicated across items. Only active items with a non-null
+  `dishId`. If three items in two freezers link to the same dish, that dish gets one hint whose
+  `earliestTargetUseDate` is the earliest among them and whose `freezerNames` is the union.
+- `standaloneHints` — one entry per active item with a **null `dishId`**, ordered by
+  `targetUseDate` ascending. These are surfaced as manual-add recommendations in the planner;
+  the user adds them to the calendar as one-off entries. Used / wasted items are excluded.
 
 ### Engine consumption
 
@@ -496,10 +507,25 @@ able to dominate the whole week.
 > is more urgent, which is what *"use the freezer item use date or the dish use date, whichever
 > is sooner"* maps to in the engine's idiom.
 
+### Standalone item recommendations
+
+The planner UI surfaces `standaloneHints` as a sidebar or inline recommendation list alongside
+the normal planning flow — *"❄ You have [item name] in the freezer — add it to a day?"* with a
+one-tap "Add" action. Tapping Add drops a one-off entry onto the selected date/meal slot with the
+freezer item's name as text and the `freezerItemId` set on the entry. The entry behaves exactly
+like any other one-off (no dish cooldown, no scoring) except it carries the freezer link for the
+❄ badge and the mark-used affordance.
+
+The standalone recommendations are shown in order of urgency (`targetUseDate` ascending, with
+items past `targetUseDate` shown first). Items that already have a one-off entry linking to them
+in the current calendar week are filtered out of the recommendation list to avoid duplicate
+nudges.
+
 ### Calendar display
 
-Plan entries for dishes that currently have any active linked freezer item display a small ❄
-badge on the chip. Driven by the same `planner-feed` query, called from the calendar pages.
+Plan entries for dishes with active linked freezer items display a small ❄ badge on the chip.
+One-off entries with a `freezerItemId` also display a ❄ badge. Both are driven by the same
+`planner-feed` query, called from the calendar pages.
 
 ### Auto-clear on cook
 
@@ -634,13 +660,20 @@ planner change.
 
 ### Phase 4 — Planner Integration (Milestone 17)
 
-- `GET /api/freezer/planner-feed` endpoint.
+- `GET /api/freezer/planner-feed` endpoint — returns both `hints` (dish-linked) and
+  `standaloneHints` (no dish link), ordered by urgency.
 - Engine: `planningEngineService.computeScore` accepts `freezerHints`; new
   `freezerUrgencyMultiplier`.
-- Calendar: ❄ badge on `PlanEntryChip` for dish entries with active linked freezer items.
-- "Mark from freezer as used" inline action on the calendar chip.
-- Tests: feed dedup by dish, multiplier curve at key dates (far / at-target / past-target),
-  engine end-to-end pulling a freezer-linked dish forward.
+- Calendar: ❄ badge on `PlanEntryChip` for dish entries with active linked freezer items, and
+  for one-off entries with a `freezerItemId`.
+- Standalone recommendations UI: surfaces `standaloneHints` with one-tap "Add" to drop a
+  one-off calendar entry linked to the freezer item.
+- `plan_entries.freezerItemId` FK: allows one-off entries to carry a freezer item link.
+- "Mark from freezer as used" inline action on the calendar chip (both dish entries and
+  freezer-linked one-off entries).
+- Tests: feed dedup by dish, standalone hints ordering, multiplier curve at key dates (far /
+  at-target / past-target), engine end-to-end pulling a freezer-linked dish forward, one-off
+  entry creation with freezerItemId, recommendation filtering for already-linked weeks.
 
 ---
 
@@ -661,3 +694,5 @@ planner change.
 | Item enters the approaching window, exits via mark-used, then a new item enters the same window | Each entry is a fresh transition relative to the prior snapshot — both notify. The snapshot tracks ids, not counts. |
 | NFC tag points to a deleted freezer | Add page: freezer-picker is shown with a note. Audit page: redirect to `/freezer` with a toast. |
 | Plan-entry-driven freezer auto-use | Not in v1. The planner suggests; the user marks. |
+| One-off entry's linked freezer item deleted | `freezerItemId` set to NULL via cascade; entry survives as a plain one-off. ❄ badge disappears; "mark as used" affordance disappears. |
+| Standalone freezer item already linked to a plan entry this week | Filtered from the recommendation list for that week to avoid duplicate nudges. The item still appears on the dashboard. |
