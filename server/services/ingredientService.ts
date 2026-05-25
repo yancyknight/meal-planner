@@ -1,7 +1,7 @@
 import { eq, asc, inArray, sql } from 'drizzle-orm'
 import Fuse from 'fuse.js'
 import { db } from '../database'
-import { canonicalIngredients, dishIngredients, dishes } from '../database/schema'
+import { canonicalIngredients, dishIngredients, dishes, freezerItems } from '../database/schema'
 import type { CanonicalIngredient, DishIngredient, FuzzyMatch } from '../../shared/types/ingredient'
 import type { DishIngredientInput } from '../../shared/schemas/ingredient'
 
@@ -59,6 +59,10 @@ export async function mergeCanonicals(primaryId: number, secondaryId: number): P
     .update(dishIngredients)
     .set({ canonicalIngredientId: primaryId })
     .where(eq(dishIngredients.canonicalIngredientId, secondaryId))
+  await db
+    .update(freezerItems)
+    .set({ canonicalIngredientId: primaryId })
+    .where(eq(freezerItems.canonicalIngredientId, secondaryId))
   await db.delete(canonicalIngredients).where(eq(canonicalIngredients.id, secondaryId))
 }
 

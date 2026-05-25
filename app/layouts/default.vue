@@ -72,6 +72,7 @@ const navLinks = [
   { to: '/planning', label: 'Planning' },
   { to: '/shopping-lists', label: 'Shopping Lists' },
   { to: '/dishes', label: 'Dishes' },
+  { to: '/freezer', label: 'Freezer' },
   { to: '/ingredients', label: 'Ingredients' },
   { to: '/settings', label: 'Settings' },
 ]

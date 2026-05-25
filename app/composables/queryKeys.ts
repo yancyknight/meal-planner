@@ -38,4 +38,17 @@ export const queryKeys = {
   backups: {
     status: () => ['backups', 'status'] as const,
   },
+  freezers: {
+    all: () => ['freezers'] as const,
+    detail: (id: number) => ['freezers', id] as const,
+  },
+  freezerCategories: {
+    all: () => ['freezer-categories'] as const,
+  },
+  freezerItems: {
+    all: () => ['freezer-items'] as const,
+    list: (filters?: Record<string, unknown>) => ['freezer-items', 'list', filters] as const,
+    detail: (id: number) => ['freezer-items', id] as const,
+    dashboard: () => ['freezer-items', 'dashboard'] as const,
+  },
 }

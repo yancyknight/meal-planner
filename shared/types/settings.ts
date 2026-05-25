@@ -3,4 +3,12 @@ export interface AppSettings {
   showAllergens: boolean
   backupIntervalHours: number
   backupRetainCount: number
+  freezerApproachingWindowDays: number
+  freezerAuditOverdueDays: number
+  freezerNotificationsEnabled: boolean
+  ntfyServerUrl: string
+  ntfyTopic: string
+  ntfyAuthToken: string
+  freezerWeeklyDigestDay: number
+  freezerWeeklyDigestHour: number
 }

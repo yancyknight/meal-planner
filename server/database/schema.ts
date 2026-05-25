@@ -1,5 +1,6 @@
 import { integer, sqliteTable, text, index, primaryKey } from 'drizzle-orm/sqlite-core'
 import { sql } from 'drizzle-orm'
+import type { FreezerItemStatus } from '../../shared/types/freezer'
 
 export const shoppingLists = sqliteTable('shopping_lists', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -123,4 +124,45 @@ export const planEntries = sqliteTable('plan_entries', {
   index('idx_plan_entries_date').on(table.date),
   index('idx_plan_entries_dish_id').on(table.dishId),
   index('idx_plan_entries_dish_fresh').on(table.dishId, table.date).where(sql`entryKind = 'fresh'`),
+])
+
+export const freezers = sqliteTable('freezers', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  lastAuditedAt: text('lastAuditedAt'),
+  createdAt: text('createdAt').notNull(),
+  updatedAt: text('updatedAt').notNull(),
+})
+
+export const freezerCategories = sqliteTable('freezer_categories', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique(),
+  defaultLifetimeDays: integer('defaultLifetimeDays').notNull(),
+  isSystem: integer('isSystem').notNull().default(0),
+  createdAt: text('createdAt').notNull(),
+  updatedAt: text('updatedAt').notNull(),
+})
+
+export const freezerItems = sqliteTable('freezer_items', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  freezerId: integer('freezerId').notNull().references(() => freezers.id),
+  categoryId: integer('categoryId').notNull().references(() => freezerCategories.id),
+  name: text('name').notNull(),
+  notes: text('notes'),
+  dishId: integer('dishId').references(() => dishes.id, { onDelete: 'set null' }),
+  canonicalIngredientId: integer('canonicalIngredientId').references(() => canonicalIngredients.id, { onDelete: 'set null' }),
+  addedAt: text('addedAt').notNull(),
+  lifetimeDaysOverride: integer('lifetimeDaysOverride'),
+  tossByDate: text('tossByDate').notNull(),
+  targetUseDate: text('targetUseDate').notNull(),
+  status: text('status').notNull().default('active').$type<FreezerItemStatus>(),
+  statusChangedAt: text('statusChangedAt'),
+  createdAt: text('createdAt').notNull(),
+  updatedAt: text('updatedAt').notNull(),
+}, (table) => [
+  index('idx_freezer_items_freezer_id').on(table.freezerId),
+  index('idx_freezer_items_status').on(table.status),
+  index('idx_freezer_items_toss_by').on(table.tossByDate).where(sql`status = 'active'`),
+  index('idx_freezer_items_dish_id').on(table.dishId).where(sql`status = 'active' AND dishId IS NOT NULL`),
+  index('idx_freezer_items_standalone').on(table.targetUseDate).where(sql`status = 'active' AND dishId IS NULL`),
 ])

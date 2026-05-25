@@ -14,7 +14,7 @@ vi.mock('../../server/database/index', async () => {
 })
 
 import { db } from '../../server/database/index'
-import { canonicalIngredients, dishIngredients, dishes } from '../../server/database/schema'
+import { canonicalIngredients, dishIngredients, dishes, freezerItems, freezerCategories, freezers } from '../../server/database/schema'
 import {
   listCanonicalIngredients,
   findOrCreateCanonical,
@@ -30,6 +30,7 @@ import { createDish } from '../../server/services/dishService'
 
 beforeEach(async () => {
   await db.delete(dishIngredients)
+  await db.delete(freezerItems)
   await db.delete(canonicalIngredients)
   await db.delete(dishes)
 })
@@ -230,5 +231,42 @@ describe('fuzzySearch', () => {
     await findOrCreateCanonical('Olive Oil')
     const results = await fuzzySearch('Olive Oil')
     expect(results.map(r => r.canonical.name)).toContain('Olive Oil')
+  })
+})
+
+describe('mergeCanonicals — freezer_items relink', () => {
+  it('relinks freezer_items.canonicalIngredientId to the primary', async () => {
+    const now = new Date().toISOString()
+    const primary = await findOrCreateCanonical('Chicken')
+    const secondary = await findOrCreateCanonical('chicken pieces')
+
+    // Seed a freezer + category so we can insert a freezer item
+    const [freezer] = await db.insert(freezers).values({ name: 'Test Freezer', createdAt: now, updatedAt: now }).returning()
+    const [category] = await db.insert(freezerCategories).values({
+      name: 'Raw Poultry', defaultLifetimeDays: 270, isSystem: 0, createdAt: now, updatedAt: now,
+    }).returning()
+
+    const [item] = await db.insert(freezerItems).values({
+      freezerId: freezer!.id,
+      categoryId: category!.id,
+      name: 'Chicken thighs',
+      canonicalIngredientId: secondary.id,
+      addedAt: '2026-06-01',
+      tossByDate: '2027-02-26',
+      targetUseDate: '2026-10-14',
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    }).returning()
+
+    await mergeCanonicals(primary.id, secondary.id)
+
+    const [updated] = await db.select().from(freezerItems).where(
+      (await import('drizzle-orm')).eq(freezerItems.id, item!.id),
+    )
+    expect(updated!.canonicalIngredientId).toBe(primary.id)
+
+    const all = await listCanonicalIngredients()
+    expect(all.find(c => c.id === secondary.id)).toBeUndefined()
   })
 })
