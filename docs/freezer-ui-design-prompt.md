@@ -254,9 +254,6 @@ etc.). Subsections:
    - "Weekly digest hour" — hour picker (0–23)
    - A small `Send test push` button on the right of the enable toggle
 
-4. **Export**
-   - One button: `Download freezer data (.json)` — downloads the full export
-
 ### 6. Calendar chip — small change to existing component
 
 The app's existing calendar shows planned dishes as chips. When a dish has any active linked

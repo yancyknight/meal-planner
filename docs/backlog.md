@@ -351,19 +351,19 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 - `[ ]` Service: `freezerService` (CRUD; reject delete when active items present)
 - `[ ]` Service: `freezerCategoryService` (CRUD; first-run seed; reject delete when active items present)
 - `[ ]` Service: `freezerItemService` — create computes and **stores** `tossByDate` and `targetUseDate` (midpoint); status transitions; dashboard bucketing query
-- `[ ]` API routes for freezers, categories, items (excluding audit-complete, export, planner-feed)
+- `[ ]` API routes for freezers, categories, items (excluding audit-complete, planner-feed)
 - `[ ]` Zod schemas in `shared/schemas/freezer.ts`; types in `shared/types/freezer.ts`; query keys in `app/composables/queryKeys.ts`
 - `[ ]` Pages: `/freezer` (dashboard with Expired / Approaching / Recently Added buckets, grouped by freezer), `/freezer/add`, `/freezer/[id]`
 - `[ ]` Components: `FreezerItemRow`, `FreezerItemForm`, `FreezerCategorySelect`, `FreezerDashboardBucket`
-- `[ ]` Add `Freezer` link to top nav between `Shopping Lists` and `Dishes`
+- `[ ]` Add `Freezer` link to top nav between `Dishes` and `Planning`
 - `[ ]` Settings: Freezer card with `freezerApproachingWindowDays` input + Categories editor (rename, edit `defaultLifetimeDays`, add custom). Add the new settings keys to `settingsService.DEFAULTS` and the Zod settings schema.
 - `[ ]` `ingredientService.merge` extended to relink `freezer_items.canonicalIngredientId` alongside `dish_ingredients`
 - `[ ]` Tests: `tossByDate` / `targetUseDate` computation (incl. category default vs override); status transitions; dashboard bucketing query; merge-relink behavior
 
 ---
 
-## Milestone 15 — Freezer Audit, NFC, Export (Phase 2)
-*Adds the per-freezer audit flow, NFC-friendly deep links, and JSON export. Depends on M14.*
+## Milestone 15 — Freezer Audit, NFC (Phase 2)
+*Adds the per-freezer audit flow and NFC-friendly deep links. Depends on M14.*
 
 - `[ ]` `freezers.lastAuditedAt` column already exists from M14; add `POST /api/freezers/[id]/audit-complete` and the service write
 - `[ ]` Page: `/freezer/[id]/audit` — mobile-first walk-through, three-button card per item (Still here / Used / Wasted), Skip option, progress indicator
@@ -371,10 +371,8 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 - `[ ]` Items added mid-audit append to the queue
 - `[ ]` `/freezer/add` page reads `?freezerId=` query and pre-selects; handles missing/invalid id by falling back to a picker
 - `[ ]` `/freezer/[id]/audit` handles deleted freezer with a redirect-to-`/freezer` + toast
-- `[ ]` `GET /api/freezer/export` — single JSON document covering freezers, categories, items (all statuses); `Content-Disposition: attachment` with timestamped filename
-- `[ ]` Settings: "Export freezer data" button on the Freezer card
 - `[ ]` README addendum: NFC URL scheme (one add tag + one audit tag per freezer)
-- `[ ]` Tests: audit transitions persist per decision; `lastAuditedAt` updates only on finish; export shape matches schema; deep-link fallbacks
+- `[ ]` Tests: audit transitions persist per decision; `lastAuditedAt` updates only on finish; deep-link fallbacks
 
 ---
 

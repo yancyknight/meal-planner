@@ -418,15 +418,6 @@ skip message and return. No partial sends.
 
 ---
 
-## JSON Export
-
-`GET /api/freezer/export` returns a single JSON document containing every freezer, every
-category, and every item (active and historical) for backup. Mirrors the structure of the
-database tables. Content type `application/json`, content-disposition `attachment` with a
-timestamped filename.
-
-Lands in Phase 2 alongside audit mode — both are "I want to manage my freezer offline" features.
-
 ---
 
 ## Planner Integration
@@ -566,7 +557,6 @@ POST   /api/freezer-items/[id]/waste       # Mark wasted
 
 POST   /api/freezers/[id]/audit-complete   # Sets lastAuditedAt = now; called when audit finishes
 
-GET    /api/freezer/export                 # JSON export of everything
 GET    /api/freezer/planner-feed           # Planner consumption contract (Phase 4)
 ```
 
@@ -632,7 +622,7 @@ planner change.
 
 - Schema migration: `freezers`, `freezer_categories`, `freezer_items`. Seed default categories.
 - Services: `freezerService`, `freezerCategoryService`, `freezerItemService`.
-- API routes (see [API Surface](#api-surface), minus audit / export / planner-feed).
+- API routes (see [API Surface](#api-surface), minus audit / planner-feed).
 - Pages: `/freezer`, `/freezer/add`, `/freezer/[id]`.
 - Add `Freezer` to top nav between `Dishes` and `Planning`.
 - Settings: Freezer card with approaching-window + categories editor (categories CRUD via the
@@ -640,13 +630,12 @@ planner change.
 - Tests: service unit tests for `tossByDate` / `targetUseDate` computation and status
   transitions; API validation; dashboard bucketing.
 
-### Phase 2 — Audit Mode, NFC, Export (Milestone 15)
+### Phase 2 — Audit Mode, NFC (Milestone 15)
 
 - Audit page + per-freezer `lastAuditedAt` writes.
 - `/freezer/add?freezerId=<id>` and `/freezer/[id]/audit` deep-link handling for NFC.
-- JSON export endpoint.
 - Document the NFC scheme in the README and `docs/`.
-- Tests: audit transitions, lastAuditedAt persistence, export shape.
+- Tests: audit transitions, lastAuditedAt persistence, deep-link fallbacks.
 
 ### Phase 3 — Notifications (Milestone 16)
 

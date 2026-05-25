@@ -97,7 +97,6 @@ DELETE /api/freezer-items/[id]
 POST   /api/freezer-items/[id]/use
 POST   /api/freezer-items/[id]/waste
 
-GET    /api/freezer/export                  # JSON export of all freezer state (Phase 2)
 GET    /api/freezer/planner-feed            # Planner consumption contract (Phase 4)
 ```
 
@@ -117,7 +116,7 @@ Key services:
 - `imageService.ts` — upload, serve, and cleanup of dish images
 - `freezerService.ts` — freezer CRUD + audit-complete writes
 - `freezerCategoryService.ts` — category CRUD + first-run seeding
-- `freezerItemService.ts` — item CRUD, status transitions, dashboard bucketing, planner-feed query, JSON export
+- `freezerItemService.ts` — item CRUD, status transitions, dashboard bucketing, planner-feed query
 - `notificationService.ts` — generic ntfy POST. Best-effort delivery; logs and swallows errors. Reusable beyond freezer.
 - `freezerNotificationService.ts` — composes expiry / digest / audit-overdue messages from current freezer state
 

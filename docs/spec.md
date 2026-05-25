@@ -358,8 +358,8 @@ contract and the multiplier curve.
 
 ### Phasing
 
-The feature ships in four phases (Milestones 14–17): Core (CRUD + dashboard) → Audit + NFC +
-Export → Notifications → Planner Integration. Phase 1 is independently usable as a freezer log.
+The feature ships in four phases (Milestones 14–17): Core (CRUD + dashboard) → Audit + NFC →
+Notifications → Planner Integration. Phase 1 is independently usable as a freezer log.
 
 ---
 
