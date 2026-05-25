@@ -344,6 +344,78 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
+## Milestone 14 — Freezer Core (Phase 1)
+*Standalone module. Independently usable as a freezer log. No NFC, no audit, no notifications, no planner change. See `docs/freezer-mode.md`.*
+
+- `[ ]` Schema: `freezers`, `freezer_categories`, `freezer_items` tables; migration; seeded category rows
+- `[ ]` Service: `freezerService` (CRUD; reject delete when active items present)
+- `[ ]` Service: `freezerCategoryService` (CRUD; first-run seed; reject delete when active items present)
+- `[ ]` Service: `freezerItemService` — create computes and **stores** `tossByDate` and `targetUseDate` (midpoint); status transitions; dashboard bucketing query
+- `[ ]` API routes for freezers, categories, items (excluding audit-complete, planner-feed)
+- `[ ]` Zod schemas in `shared/schemas/freezer.ts`; types in `shared/types/freezer.ts`; query keys in `app/composables/queryKeys.ts`
+- `[ ]` Pages: `/freezer` (dashboard with Expired / Approaching / Recently Added buckets, grouped by freezer), `/freezer/add`, `/freezer/[id]`
+- `[ ]` Components: `FreezerItemRow`, `FreezerItemForm`, `FreezerCategorySelect`, `FreezerDashboardBucket`
+- `[ ]` Add `Freezer` link to top nav between `Dishes` and `Planning`
+- `[ ]` Settings: Freezer card with `freezerApproachingWindowDays` input + Categories editor (rename, edit `defaultLifetimeDays`, add custom). Add the new settings keys to `settingsService.DEFAULTS` and the Zod settings schema.
+- `[ ]` `ingredientService.merge` extended to relink `freezer_items.canonicalIngredientId` alongside `dish_ingredients`
+- `[ ]` Tests: `tossByDate` / `targetUseDate` computation (incl. category default vs override); status transitions; dashboard bucketing query; merge-relink behavior
+
+---
+
+## Milestone 15 — Freezer Audit, NFC (Phase 2)
+*Adds the per-freezer audit flow and NFC-friendly deep links. Depends on M14.*
+
+- `[ ]` `freezers.lastAuditedAt` column already exists from M14; add `POST /api/freezers/[id]/audit-complete` and the service write
+- `[ ]` Page: `/freezer/[id]/audit` — mobile-first walk-through, three-button card per item (Still here / Used / Wasted), Skip option, progress indicator
+- `[ ]` Component: `FreezerAuditCard`
+- `[ ]` Items added mid-audit append to the queue
+- `[ ]` `/freezer/add` page reads `?freezerId=` query and pre-selects; handles missing/invalid id by falling back to a picker
+- `[ ]` `/freezer/[id]/audit` handles deleted freezer with a redirect-to-`/freezer` + toast
+- `[ ]` README addendum: NFC URL scheme (one add tag + one audit tag per freezer)
+- `[ ]` Tests: audit transitions persist per decision; `lastAuditedAt` updates only on finish; deep-link fallbacks
+
+---
+
+## Milestone 16 — Freezer Notifications (Phase 3)
+*ntfy.sh push triggers for expiring items, weekly digest, audit-overdue. Depends on M14.*
+
+- `[ ]` Service: `notificationService.sendNtfy({ title, message, priority, click, tags })` — fetch POST, best-effort, log and swallow errors
+- `[ ]` Service: `freezerNotificationService` — composes expiry / digest / audit-overdue messages from current freezer state
+- `[ ]` Task: `server/tasks/freezer/expiry-check.ts` — daily; expiry message + audit-overdue check (per-freezer suppression window via `app_settings` JSON blob to avoid spam)
+- `[ ]` Task: `server/tasks/freezer/weekly-digest.ts` — hourly heartbeat; internal day-of-week + hour guard reading `freezerWeeklyDigestDay` / `freezerWeeklyDigestHour`
+- `[ ]` Register both crons in `nuxt.config.ts`
+- `[ ]` Settings: ntfy URL / topic / optional auth token; master "notifications enabled" toggle; weekly-digest day + hour; audit-overdue threshold days
+- `[ ]` Tests: message composition (counts and dish/item names correct); scheduled-task day/hour guard; ntfy POST mock when reachable and unreachable; suppression window writes/reads
+- `[ ]` Document the ntfy setup steps in the README
+
+---
+
+## Milestone 17 — Freezer + Planner Integration (Phase 4)
+*Adds freezer urgency as a planner score multiplier. Depends on M14 and M9 (planning engine).*
+
+- `[ ]` `GET /api/freezer/planner-feed` — returns `{ hints: [{ dishId, earliestTargetUseDate, itemCount, freezerNames }], standaloneHints: [{ freezerItemId, name, targetUseDate, tossByDate, freezerName }] }`; `hints` deduped by dish; `standaloneHints` are active items with null `dishId`, ordered by `targetUseDate` ascending
+- `[ ]` `freezerItemService.getPlannerHints()` implements the dish-linked query (driven by `idx_freezer_items_dish_id`); `freezerItemService.getStandaloneHints()` implements the standalone query (driven by `idx_freezer_items_standalone`)
+- `[ ]` Engine: `planningEngineService.computeScore` accepts optional `freezerHints` map; `freezerUrgencyMultiplier(slotDate, earliestTargetUseDate)` (1.0 far from target → 2.0 at target → 3.0 at-or-past, clamped)
+- `[ ]` Wire `freezerHints` through `generate.post.ts` and `reroll.post.ts` (both load the feed when the engine is invoked)
+- `[ ]` Schema migration: add `plan_entries.freezerItemId` (nullable FK → `freezer_items.id` ON DELETE SET NULL); add `idx_plan_entries_freezer_item_id` partial index
+- `[ ]` `PlanEntryChip.vue` shows a ❄ badge for fresh entries whose dish appears in the planner feed, and for one-off entries with a non-null `freezerItemId`
+- `[ ]` Standalone recommendations: inline list shown during planning (and on the calendar page) surfacing `standaloneHints` ordered by urgency; items already linked to a one-off entry in the week being planned are filtered out; one-tap Add creates a one-off entry with `freezerItemId` set
+- `[ ]` Calendar chip long-press / hover action: "Mark [item name] as used" — visible only when the dish has exactly one active linked freezer item; multi-item case shows "Manage from freezer" → links to `/freezer`; also visible on one-off entries with a `freezerItemId`
+- `[ ]` Tests: feed dedupes correctly (3 items, 2 freezers → 1 hint, earliest target use); standalone hints ordered by targetUseDate, already-linked items excluded for the planned week; multiplier values at key dates (target − 30 / target / target + 7); end-to-end engine test: a freezer-linked dish is pulled forward over its naturally-overdue alternative when the target date is closer; one-off entry creation with freezerItemId
+
+---
+
+## Post-MVP / Parking Lot
+
+*Ideas explicitly deferred until after the core feature ships. No commitment to build.*
+
+- **Calendar "show only freezer meals" filter.** With the ❄ chip badge in M17, a one-tap filter on the calendar that hides non-freezer entries would let the household quickly see what's already pencilled in from the freezer. Out of scope for M17 — small additive change after MVP.
+- **Per-category approaching-toss-by windows.** Today the window is a single global setting. Per-category (e.g. raw fish at 3 days, ice cream at 30) is more accurate but adds settings UI.
+- **Audit history per freezer.** A small log table to see "how often did we audit this freezer last year."
+- **Freezer item bulk import.** CSV/JSON paste-in for first-time setup.
+
+---
+
 ## Notes on Session Sizing
 
 If a milestone feels too large mid-session, it's fine to split it. Common split points:

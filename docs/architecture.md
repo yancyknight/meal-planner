@@ -75,6 +75,29 @@ PATCH  /api/settings
 
 GET    /api/images/[filename]   # Serve uploaded images
 POST   /api/images              # Upload image; returns filename
+
+GET    /api/freezers
+POST   /api/freezers
+GET    /api/freezers/[id]
+PATCH  /api/freezers/[id]
+DELETE /api/freezers/[id]
+POST   /api/freezers/[id]/audit-complete   # Updates lastAuditedAt
+
+GET    /api/freezer-categories
+POST   /api/freezer-categories
+PATCH  /api/freezer-categories/[id]
+DELETE /api/freezer-categories/[id]
+
+GET    /api/freezer-items                   # ?freezerId=&status=&categoryId=
+GET    /api/freezer-items/dashboard         # Bucketed payload for the dashboard
+POST   /api/freezer-items
+GET    /api/freezer-items/[id]
+PATCH  /api/freezer-items/[id]
+DELETE /api/freezer-items/[id]
+POST   /api/freezer-items/[id]/use
+POST   /api/freezer-items/[id]/waste
+
+GET    /api/freezer/planner-feed            # Planner consumption contract (Phase 4)
 ```
 
 ## Service Layer
@@ -91,6 +114,11 @@ Key services:
 - `shoppingListService.ts` — list generation and item management
 - `planningSessionService.ts` — session persistence and step management
 - `imageService.ts` — upload, serve, and cleanup of dish images
+- `freezerService.ts` — freezer CRUD + audit-complete writes
+- `freezerCategoryService.ts` — category CRUD + first-run seeding
+- `freezerItemService.ts` — item CRUD, status transitions, dashboard bucketing, planner-feed query
+- `notificationService.ts` — generic ntfy POST. Best-effort delivery; logs and swallows errors. Reusable beyond freezer.
+- `freezerNotificationService.ts` — composes expiry / digest / audit-overdue messages from current freezer state
 
 ## Scheduled Tasks
 
@@ -101,12 +129,18 @@ Nitro's scheduled task system (experimental — requires opt-in in `nuxt.config.
 nitro: {
   experimental: { tasks: true },
   scheduledTasks: {
-    '*/15 * * * *': ['shopping-lists:cleanup']
+    '*/15 * * * *': ['shopping-lists:cleanup'],
+    '0 0 * * *':    ['dishes:cleanup-cooldowns'],
+    '0 * * * *':    ['database:backup'],
+    '0 8 * * *':    ['freezer:expiry-check'],     // (Phase 3) daily expiry + audit-overdue
+    '0 * * * *':    ['freezer:weekly-digest'],    // (Phase 3) hourly heartbeat; task guards by day+hour
   }
 }
 ```
 
 Tasks use the `defineTask` helper and call service functions directly — no HTTP layer involved. On the `node_server` preset (used in Docker), scheduling is powered by the [croner](https://croner.56k.guru/) engine internally.
+
+For schedules that the user must be able to change from the UI (e.g. the freezer weekly-digest day/hour), the cron entry is a coarse heartbeat and the task itself reads the user-configured time from `app_settings` and exits early when the heartbeat doesn't match. This avoids touching `nuxt.config.ts` for runtime configuration. The existing `database:backup` task uses the same pattern (hourly heartbeat, internal interval guard).
 
 ## Recipe Auto-Import
 
@@ -146,6 +180,8 @@ Stateless functions in `planningEngineService.ts`:
 The engine never mutates state; callers persist results to `planning_sessions`. Virtual tag IDs (prefixed `v:`) are detected at predicate-build time and substituted with their SQL filter instead of a `dish_tags` join.
 
 Inputs, per-slot eligibility, selection scoring, and generation order live in **[`planning-mode.md`](./planning-mode.md#algorithm)** — that document is canonical.
+
+The engine optionally accepts `freezerHints: Map<dishId, { earliestTargetUseDate }>` (Phase 4 of the Freezer module — see [`freezer-mode.md` §Planner Integration](./freezer-mode.md#planner-integration)). When present, the score is multiplied by an additional `freezerUrgencyMultiplier(slotDate, earliestTargetUseDate)` factor that ramps up as the slot approaches or passes the target use date. The contract is consumed via `GET /api/freezer/planner-feed`, which returns both dish-linked `hints` and `standaloneHints` for active items with no dish link (surfaced as inline one-off entry recommendations).
 
 ## Shopping List Generation
 
