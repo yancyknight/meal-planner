@@ -362,17 +362,17 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 15 — Freezer Audit, NFC (Phase 2)
+## Milestone 15 — Freezer Audit, NFC (Phase 2) ✅
 *Adds the per-freezer audit flow and NFC-friendly deep links. Depends on M14.*
 
-- `[ ]` `freezers.lastAuditedAt` column already exists from M14; add `POST /api/freezers/[id]/audit-complete` and the service write
-- `[ ]` Page: `/freezer/[id]/audit` — mobile-first walk-through, three-button card per item (Still here / Used / Wasted), Skip option, progress indicator
-- `[ ]` Component: `FreezerAuditCard`
-- `[ ]` Items added mid-audit append to the queue
-- `[ ]` `/freezer/add` page reads `?freezerId=` query and pre-selects; handles missing/invalid id by falling back to a picker
-- `[ ]` `/freezer/[id]/audit` handles deleted freezer with a redirect-to-`/freezer` + toast
-- `[ ]` README addendum: NFC URL scheme (one add tag + one audit tag per freezer)
-- `[ ]` Tests: audit transitions persist per decision; `lastAuditedAt` updates only on finish; deep-link fallbacks
+- `[x]` `freezers.lastAuditedAt` column already exists from M14; add `POST /api/freezers/[id]/audit-complete` and the service write
+- `[x]` Page: `/freezer/[id]/audit` — mobile-first walk-through, three-button card per item (Still here / Used / Wasted), Skip option, progress indicator
+- `[x]` Component: `FreezerAuditCard`
+- `[x]` Items added mid-audit append to the queue
+- `[x]` `/freezer/add` page reads `?freezerId=` query and pre-selects; handles missing/invalid id by falling back to a picker
+- `[x]` `/freezer/[id]/audit` handles deleted freezer with a redirect-to-`/freezer` + toast
+- `[x]` README addendum: NFC URL scheme (one add tag + one audit tag per freezer)
+- `[x]` Tests: audit transitions persist per decision; `lastAuditedAt` updates only on finish; deep-link fallbacks
 
 ---
 
