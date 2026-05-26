@@ -12,7 +12,7 @@
       <div class="h-20 animate-pulse rounded-lg bg-surface-alt" />
     </div>
 
-    <div v-else class="max-w-lg space-y-6">
+    <div v-else class="space-y-6">
       <!-- Household size -->
       <div class="rounded-lg border border-border bg-surface p-6">
         <p class="mb-1 text-xs font-medium uppercase tracking-wider text-text-muted">Household</p>
@@ -121,134 +121,166 @@
       </div>
 
       <!-- Freezer -->
-      <div class="rounded-lg border border-border bg-surface p-6">
-        <p class="mb-1 text-xs font-medium uppercase tracking-wider text-text-muted">Freezer</p>
-        <h2 class="mb-4 font-serif text-xl font-semibold text-text">
-          Freezer <em class="font-normal italic text-accent-deep">settings</em>
-        </h2>
-
-        <!-- Approaching window -->
-        <div class="mb-6 flex items-center gap-3">
-          <label class="w-44 shrink-0 text-sm text-text-muted">Approaching window</label>
-          <input
-            v-model.number="form.freezerApproachingWindowDays"
-            type="number"
-            min="1"
-            class="w-20 rounded-lg border border-border bg-surface-alt px-3 py-1.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
-          />
-          <span class="text-sm text-text-muted">days before toss-by</span>
+      <div class="rounded-xl border border-border bg-surface overflow-hidden">
+        <!-- Card header -->
+        <div class="flex items-end justify-between border-b border-border px-7 py-5">
+          <div>
+            <h2 class="font-serif text-2xl font-medium leading-none text-text">
+              <span class="text-frost-ink">❄</span>&nbsp;<em class="font-normal italic text-accent-deep">Freezer</em>
+            </h2>
+            <p class="mt-1.5 font-serif italic text-sm text-text-muted">Toss-by windows, categories, push notifications.</p>
+          </div>
+          <div v-if="!freezersPending" class="text-xs font-medium uppercase tracking-widest text-text-muted">
+            {{ (freezers as Freezer[])?.length ?? 0 }} freezers · {{ totalActiveItems }} items
+          </div>
         </div>
 
-        <!-- Freezers list -->
-        <div class="mb-6">
-          <p class="mb-3 text-sm font-medium text-text">Freezers</p>
-          <div
-            v-if="freezersPending"
-            class="h-10 animate-pulse rounded-lg bg-surface-alt"
-          />
-          <div v-else class="space-y-2">
+        <!-- Freezers section -->
+        <div class="border-t border-dashed border-border px-7 py-5">
+          <p class="mb-3.5 text-xs font-medium uppercase tracking-widest text-text-muted">Freezers</p>
+          <div v-if="freezersPending" class="h-20 animate-pulse rounded-lg bg-surface-alt" />
+          <div v-else class="rounded-lg border border-border bg-surface-alt overflow-hidden">
             <div
               v-for="f in (freezers as Freezer[])"
               :key="f.id"
-              class="flex items-center gap-3 rounded-lg border border-border bg-surface-alt px-3 py-2"
+              class="border-t border-border first:border-0 flex flex-col gap-1.5 px-5 py-4"
             >
-              <input
-                v-if="renamingFreezerId === f.id"
-                v-model="renameValue"
-                type="text"
-                class="flex-1 rounded border border-border bg-surface px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-                @keydown.enter="saveRename(f.id)"
-                @keydown.escape="renamingFreezerId = null"
-              />
-              <span v-else class="flex-1 text-sm text-text">{{ f.name }}</span>
-              <button
-                v-if="renamingFreezerId === f.id"
-                type="button"
-                class="text-xs text-accent underline"
-                @click="saveRename(f.id)"
-              >Save</button>
-              <button
-                v-else
-                type="button"
-                class="text-xs text-text-muted underline hover:text-text"
-                @click="startRename(f)"
-              >Rename</button>
-              <button
-                type="button"
-                class="text-xs text-text-muted underline hover:text-warning"
-                @click="deleteFreezerConfirm(f.id)"
-              >Delete</button>
+              <div class="flex items-center justify-between gap-4">
+                <template v-if="renamingFreezerId === f.id">
+                  <div class="flex flex-1 items-center gap-2">
+                    <input
+                      v-model="renameValue"
+                      type="text"
+                      class="flex-1 rounded border border-border bg-surface px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
+                      @keydown.enter="saveRename(f.id)"
+                      @keydown.escape="renamingFreezerId = null"
+                    />
+                    <button type="button" class="text-xs text-accent underline" @click="saveRename(f.id)">Save</button>
+                    <button type="button" class="text-xs text-text-muted underline" @click="renamingFreezerId = null">Cancel</button>
+                  </div>
+                </template>
+                <template v-else>
+                  <div class="font-serif text-lg font-medium leading-none text-text">
+                    <span class="text-frost-ink">❄</span> {{ f.name }}
+                  </div>
+                  <div class="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      class="rounded border border-border bg-surface px-2.5 py-1 text-xs text-text-muted transition hover:bg-surface-alt"
+                      @click="startRename(f)"
+                    >Rename</button>
+                    <button
+                      type="button"
+                      class="flex h-7 w-7 items-center justify-center rounded-full text-base text-text-muted transition hover:bg-expired-soft hover:text-expired-ink"
+                      @click="deleteFreezerConfirm(f.id)"
+                    >×</button>
+                  </div>
+                </template>
+              </div>
+              <div class="flex items-center gap-2 text-sm text-text-muted">
+                <span><b class="font-medium text-text-muted">{{ f.activeItemCount ?? 0 }}</b> active items</span>
+                <span class="inline-block h-1 w-1 rounded-full bg-border" />
+                <span>{{ formatAudited(f.lastAuditedAt) }}</span>
+              </div>
             </div>
-
             <!-- Add freezer -->
-            <form class="flex gap-2" @submit.prevent="addFreezer">
+            <form
+              class="flex items-center gap-3 border-t border-dashed border-border px-5 py-3.5"
+              @submit.prevent="addFreezer"
+            >
+              <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-border bg-surface text-xs text-text-muted">+</span>
               <input
                 v-model="newFreezerName"
                 type="text"
-                class="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-                placeholder="New freezer name…"
+                class="flex-1 bg-transparent text-sm text-text placeholder:italic placeholder:text-text-muted focus:outline-none"
+                placeholder="Add a freezer…"
               />
               <button
                 type="submit"
                 :disabled="!newFreezerName.trim()"
-                class="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-text-muted transition hover:bg-surface-alt disabled:opacity-50"
+                class="rounded border border-border bg-surface px-3 py-1 text-xs text-text-muted transition hover:bg-surface-alt disabled:opacity-40"
               >Add</button>
             </form>
-            <p v-if="freezerError" class="text-xs text-warning">{{ freezerError }}</p>
+            <p v-if="freezerError" class="px-5 pb-2 text-xs text-warning">{{ freezerError }}</p>
           </div>
         </div>
 
-        <!-- Categories -->
-        <div>
-          <p class="mb-3 text-sm font-medium text-text">Categories</p>
-          <div
-            v-if="categoriesPending"
-            class="h-10 animate-pulse rounded-lg bg-surface-alt"
-          />
-          <div v-else class="space-y-2">
+        <!-- General section -->
+        <div class="border-t border-dashed border-border px-7 py-5">
+          <p class="mb-3.5 text-xs font-medium uppercase tracking-widest text-text-muted">General</p>
+          <div class="flex items-center justify-between gap-6 py-2">
+            <div>
+              <p class="text-sm text-text">Approaching toss-by window</p>
+              <p class="mt-0.5 text-xs text-text-muted">Items within this many days show up under Approaching on the dashboard.</p>
+            </div>
+            <div class="flex shrink-0 items-center overflow-hidden rounded border border-border bg-surface-alt font-mono">
+              <input
+                v-model.number="form.freezerApproachingWindowDays"
+                type="number"
+                min="1"
+                class="w-14 bg-transparent px-2.5 py-1.5 text-right text-sm text-text focus:outline-none"
+              />
+              <span class="pr-3 text-xs text-text-muted">days</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Categories section -->
+        <div class="border-t border-dashed border-border px-7 py-5">
+          <p class="mb-3.5 text-xs font-medium uppercase tracking-widest text-text-muted">Categories</p>
+          <div v-if="categoriesPending" class="h-20 animate-pulse rounded-lg bg-surface-alt" />
+          <div v-else class="rounded-lg border border-border bg-surface-alt overflow-hidden">
             <div
               v-for="cat in (categories as FreezerCategory[])"
               :key="cat.id"
-              class="flex items-center gap-3 rounded-lg border border-border bg-surface-alt px-3 py-2"
+              class="grid grid-cols-[1fr_7rem_4rem_2rem] items-center gap-3 border-t border-border first:border-0 px-4 py-2.5"
             >
-              <span class="flex-1 text-sm text-text">{{ cat.name }}</span>
-              <input
-                v-model.number="editingLifetimes[cat.id]"
-                type="number"
-                min="1"
-                class="w-16 rounded border border-border bg-surface px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-accent"
-                @change="saveCategoryLifetime(cat.id)"
-              />
-              <span class="text-xs text-text-muted">d</span>
+              <span class="truncate rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text">{{ cat.name }}</span>
+              <div class="flex items-center overflow-hidden rounded border border-border bg-surface font-mono">
+                <input
+                  v-model.number="editingLifetimes[cat.id]"
+                  type="number"
+                  min="1"
+                  class="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-right text-xs text-text focus:outline-none"
+                  @change="saveCategoryLifetime(cat.id)"
+                />
+                <span class="pr-2 text-xs text-text-muted">d</span>
+              </div>
+              <span
+                class="text-center text-xs italic text-text-muted"
+                :class="{ invisible: !cat.isSystem }"
+              >default</span>
               <button
                 type="button"
-                class="text-xs text-text-muted underline hover:text-warning"
+                class="flex h-6 w-6 items-center justify-center rounded-full text-sm text-text-muted transition hover:bg-expired-soft hover:text-expired-ink"
                 @click="deleteCategoryConfirm(cat.id)"
-              >Delete</button>
+              >×</button>
             </div>
-
-            <!-- Add category -->
-            <form class="flex gap-2" @submit.prevent="addCategory">
-              <input
-                v-model="newCategoryName"
-                type="text"
-                class="flex-1 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-                placeholder="Category name…"
-              />
-              <input
-                v-model.number="newCategoryLifetime"
-                type="number"
-                min="1"
-                class="w-16 rounded-lg border border-border bg-surface px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-                placeholder="days"
-              />
-              <button
-                type="submit"
-                :disabled="!newCategoryName.trim() || !newCategoryLifetime"
-                class="rounded-lg border border-border bg-surface px-3 py-1.5 text-xs text-text-muted transition hover:bg-surface-alt disabled:opacity-50"
-              >Add</button>
-            </form>
-            <p v-if="categoryError" class="text-xs text-warning">{{ categoryError }}</p>
+            <!-- Footer: add category -->
+            <div class="flex items-center justify-between border-t border-dashed border-border px-4 py-2.5">
+              <form class="flex items-center gap-2" @submit.prevent="addCategory">
+                <span class="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border border-border bg-surface text-xs text-text-muted">+</span>
+                <input
+                  v-model="newCategoryName"
+                  type="text"
+                  class="w-36 bg-transparent text-xs text-text placeholder:italic placeholder:text-text-muted focus:outline-none"
+                  placeholder="Category name…"
+                />
+                <input
+                  v-model.number="newCategoryLifetime"
+                  type="number"
+                  min="1"
+                  class="w-14 rounded border border-border bg-surface px-2 py-1 text-xs font-mono text-text focus:outline-none"
+                  placeholder="days"
+                />
+                <button
+                  type="submit"
+                  :disabled="!newCategoryName.trim() || !newCategoryLifetime"
+                  class="rounded border border-border bg-surface px-2.5 py-1 text-xs text-text-muted transition hover:bg-surface-alt disabled:opacity-40"
+                >Add</button>
+              </form>
+              <p v-if="categoryError" class="text-xs text-warning">{{ categoryError }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -269,6 +301,7 @@
 </template>
 
 <script setup lang="ts">
+import { differenceInDays } from 'date-fns'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { AppSettings } from '#shared/types/settings'
 import type { Freezer, FreezerCategory } from '#shared/types/freezer'
@@ -408,13 +441,31 @@ const newCategoryName = ref('')
 const newCategoryLifetime = ref<number | null>(null)
 const categoryError = ref('')
 
-const editingLifetimes = computed(() => {
-  const map: Record<number, number> = {}
-  for (const cat of (categories.value as FreezerCategory[] ?? [])) {
-    map[cat.id] = cat.defaultLifetimeDays
-  }
-  return map
-})
+const editingLifetimes = ref<Record<number, number>>({})
+watch(
+  categories,
+  (cats) => {
+    if (!cats) return
+    const updated: Record<number, number> = {}
+    for (const cat of cats as FreezerCategory[]) {
+      updated[cat.id] = cat.defaultLifetimeDays
+    }
+    editingLifetimes.value = updated
+  },
+  { immediate: true },
+)
+
+const totalActiveItems = computed(() =>
+  ((freezers.value as Freezer[]) ?? []).reduce((sum, f) => sum + (f.activeItemCount ?? 0), 0),
+)
+
+function formatAudited(lastAuditedAt: string | null): string {
+  if (!lastAuditedAt) return 'never audited'
+  const days = differenceInDays(new Date(), new Date(lastAuditedAt))
+  if (days === 0) return 'audited today'
+  if (days === 1) return 'audited yesterday'
+  return `audited ${days} days ago`
+}
 
 async function saveCategoryLifetime(id: number) {
   const val = editingLifetimes.value[id]

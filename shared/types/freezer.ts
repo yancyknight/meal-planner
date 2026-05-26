@@ -4,6 +4,7 @@ export interface Freezer {
   lastAuditedAt: string | null
   createdAt: string
   updatedAt: string
+  activeItemCount?: number
 }
 
 export interface FreezerCategory {
