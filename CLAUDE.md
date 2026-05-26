@@ -110,54 +110,24 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-**Milestone 14 — Freezer Core (Phase 1)** (`milestone-14-freezer-core`)
+**Milestone 15 — Freezer Audit, NFC (Phase 2)** (`milestone-15-freezer-audit-nfc`)
 
-### Schema + migration
-- [x] Add `freezers`, `freezer_categories`, `freezer_items` tables to `server/database/schema.ts`
-- [x] Add all freezer-specific indexes (5 partial + 2 standard, per `docs/data-model.md`)
-- [x] `pnpm db:generate` then `pnpm db:migrate`; confirm migration runs clean
-- [x] Seed the 17 default `freezer_categories` rows (names + `defaultLifetimeDays`, `isSystem=1`) — idempotent via `onConflictDoNothing` in `freezerCategoryService`
+### API / Service
+- [x] Add `completeAudit(freezerId)` to `freezerService.ts` — sets `lastAuditedAt = now`, returns updated freezer
+- [x] `POST /api/freezers/[id]/audit-complete` route
 
-### Zod schemas + types + query keys
-- [x] `shared/schemas/freezer.ts` — schemas for create/update/filter for all three resources; `FreezerItemStatusSchema`; computed-field validation
-- [x] `shared/types/freezer.ts` — `Freezer`, `FreezerCategory`, `FreezerItem`, `FreezerDashboardPayload` types
-- [x] Add freezer query keys to `app/composables/queryKeys.ts` (`freezers`, `freezerCategories`, `freezerItems` with `list`/`detail`/`dashboard` variants)
+### Audit Page + Component
+- [x] `app/components/FreezerAuditCard.vue` — per-item card with Still here / Used / Wasted buttons + Skip link; progress indicator
+- [x] `app/pages/freezer/[id]/audit.vue` — mobile-first walk-through; immediate per-decision writes; calls audit-complete on finish; handles deleted freezer (redirect + notice)
+- [x] Convert `app/pages/freezer/[id].vue` → `app/pages/freezer/[id]/index.vue` for sub-route support
+- [x] Add Audit button to per-freezer view header
 
-### Settings
-- [x] Add new keys to `settingsService.DEFAULTS` and Zod settings schema: `freezerApproachingWindowDays` (14), `freezerAuditOverdueDays` (60), `freezerNotificationsEnabled` (false), `ntfyServerUrl`, `ntfyTopic`, `ntfyAuthToken`, `freezerWeeklyDigestDay` (0), `freezerWeeklyDigestHour` (9)
+### NFC / Deep-link Robustness
+- [x] `app/pages/freezer/add.vue` — invalid `?freezerId=` shows inline notice + falls back to picker
 
-### Services
-- [x] `server/services/freezerService.ts` — `create`, `getById`, `list`, `update` (rename), `delete` (rejects with 409 if active items present)
-- [x] `server/services/freezerCategoryService.ts` — `create`, `list`, `update`, `delete` (rejects with 409 if active items present); `seed()` (idempotent via `onConflictDoNothing`)
-- [x] `server/services/freezerItemService.ts` — full CRUD, date computation, status transitions, dashboard bucketing
-- [x] Extend `server/services/ingredientService.ts` `merge()` to also relink `freezer_items.canonicalIngredientId`
-
-### API routes
-- [x] `GET /api/freezers`, `POST /api/freezers`
-- [x] `GET /api/freezers/[id]`, `PATCH /api/freezers/[id]`, `DELETE /api/freezers/[id]`
-- [x] `GET /api/freezer-categories`, `POST /api/freezer-categories`
-- [x] `PATCH /api/freezer-categories/[id]`, `DELETE /api/freezer-categories/[id]`
-- [x] `GET /api/freezer-items` (accepts `?freezerId=&categoryId=&status=`), `POST /api/freezer-items`
-- [x] `GET /api/freezer-items/dashboard`
-- [x] `GET /api/freezer-items/[id]`, `PATCH /api/freezer-items/[id]`, `DELETE /api/freezer-items/[id]`
-- [x] `POST /api/freezer-items/[id]/use`, `POST /api/freezer-items/[id]/waste`
-
-### Components
-- [x] `app/components/FreezerCategorySelect.vue` — pill grid (2-col, 8 most-used + "more…" tail per design); emits selected `categoryId`
-- [x] `app/components/FreezerItemForm.vue` — shared form for add/edit; live `tossByDate`/`targetUseDate` preview chip; collapsed sections for lifetime override, notes, dish link
-- [x] `app/components/FreezerItemRow.vue` — single item row; tap to expand inline actions (*Mark Used · Mark Wasted · Edit · Move to other freezer*)
-- [x] `app/components/FreezerDashboardBucket.vue` — Expired / Approaching / Recently Added section with per-freezer grouping header
-
-### Pages
-- [x] `app/pages/freezer/index.vue` — dashboard: headline stat, three buckets via `FreezerDashboardBucket`; empty state
-- [x] `app/pages/freezer/add.vue` — add-item form; reads `?freezerId` query (NFC entry); frost-tint treatment when `freezerId` present; redirects back to `?freezerId` page or `/freezer` on save
-- [x] `app/pages/freezer/[id].vue` — per-freezer item list; sorted by `tossByDate` asc; category + status filters; bulk mark-used / mark-wasted
-
-### Nav + Settings UI
-- [x] Add `Freezer` nav link between `Dishes` and `Planning` in `app/layouts/default.vue`
-- [x] Add Freezer card to `app/pages/settings.vue`: `freezerApproachingWindowDays` number input + inline Freezers + Categories editors
+### README
+- [x] NFC URL Scheme section added to `README.md`
 
 ### Tests
-- [x] `test/unit/freezerItemService.test.ts` — 21 tests covering date computation, status transitions, dashboard bucketing, seed idempotency
-- [x] `test/unit/ingredientService.test.ts` — merge-relink test added (now 25 tests)
+- [x] `test/unit/freezerAudit.test.ts` — 5 tests: `completeAudit` sets timestamp, returns null for unknown id, item decisions don't touch `lastAuditedAt`, explicit call updates it, repeated calls update timestamp
 

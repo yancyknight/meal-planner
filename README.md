@@ -103,6 +103,36 @@ docker compose run --rm test
 
 ---
 
+## NFC URL Scheme
+
+The freezer module supports NFC tags for low-friction entry. Each freezer gets two tag types, both using plain HTTPS URLs that open directly in your browser:
+
+### Add-to-freezer tag
+
+```
+https://<your-host>/freezer/add?freezerId=<id>
+```
+
+Stick one near the freezer door. Tap it to open the add-item form with that freezer pre-selected. The form shows a frost-tinted "from NFC tag" hint and returns to the add form after saving, making it easy to log multiple items in one session.
+
+### Audit tag
+
+```
+https://<your-host>/freezer/<id>/audit
+```
+
+Stick one near the same freezer door. Tap it to start the audit walk-through for that freezer — one item at a time with three large touch targets (Still here / Used / Wasted).
+
+### Notes
+
+- Use the `id` from the database row (visible in the URL when you navigate to the freezer in the app, or in **Settings → Freezer → Freezers**).
+- URLs are stable across freezer renames — the ID never changes.
+- If a freezer is deleted, the add tag shows a picker so you can still log the item to another freezer. The audit tag redirects to `/freezer` with a notice.
+- A typical household uses two tags per freezer (one add, one audit). Three freezers = six tags.
+- Use your LAN hostname or Tailscale name — whichever address the household normally browses on.
+
+---
+
 ## Notes
 
 This app is intentionally opinionated and built for a single household. There's no multi-user support, no per-user preferences, and no access control — all data is globally shared. If you want to adapt it for different household sizes, dietary constraints, or workflows, forks are welcome.

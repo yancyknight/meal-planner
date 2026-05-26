@@ -47,6 +47,15 @@ export async function updateFreezer(id: number, input: UpdateFreezerInput): Prom
   return rows[0] ?? null
 }
 
+export async function completeAudit(id: number): Promise<Freezer | null> {
+  const rows = await db
+    .update(freezers)
+    .set({ lastAuditedAt: now(), updatedAt: now() })
+    .where(eq(freezers.id, id))
+    .returning()
+  return rows[0] ?? null
+}
+
 export async function deleteFreezer(id: number): Promise<{ deleted: boolean; reason?: string }> {
   const active = await db
     .select({ id: freezerItems.id })
