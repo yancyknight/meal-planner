@@ -376,17 +376,17 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 16 — Freezer Notifications (Phase 3)
+## Milestone 16 — Freezer Notifications (Phase 3) ✅
 *ntfy.sh push triggers for expiring items, weekly digest, audit-overdue. Depends on M14.*
 
-- `[ ]` Service: `notificationService.sendNtfy({ title, message, priority, click, tags })` — fetch POST, best-effort, log and swallow errors
-- `[ ]` Service: `freezerNotificationService` — composes expiry / digest / audit-overdue messages from current freezer state
-- `[ ]` Task: `server/tasks/freezer/expiry-check.ts` — daily; expiry message + audit-overdue check (per-freezer suppression window via `app_settings` JSON blob to avoid spam)
-- `[ ]` Task: `server/tasks/freezer/weekly-digest.ts` — hourly heartbeat; internal day-of-week + hour guard reading `freezerWeeklyDigestDay` / `freezerWeeklyDigestHour`
-- `[ ]` Register both crons in `nuxt.config.ts`
-- `[ ]` Settings: ntfy URL / topic / optional auth token; master "notifications enabled" toggle; weekly-digest day + hour; audit-overdue threshold days
-- `[ ]` Tests: message composition (counts and dish/item names correct); scheduled-task day/hour guard; ntfy POST mock when reachable and unreachable; suppression window writes/reads
-- `[ ]` Document the ntfy setup steps in the README
+- `[x]` Service: `notificationService.sendNtfy({ title, message, priority, click, tags })` — fetch POST, best-effort, log and swallow errors
+- `[x]` Service: `freezerNotificationService` — composes expiry / digest / audit-overdue messages from current freezer state
+- `[x]` Task: `server/tasks/freezer/expiry-check.ts` — daily; expiry message + audit-overdue check (per-freezer suppression window via `app_settings` JSON blob to avoid spam)
+- `[x]` Task: `server/tasks/freezer/weekly-digest.ts` — hourly heartbeat; internal day-of-week + hour guard reading `freezerWeeklyDigestDay` / `freezerWeeklyDigestHour`
+- `[x]` Register both crons in `nuxt.config.ts`
+- `[x]` Settings: ntfy URL / topic / optional auth token; master "notifications enabled" toggle; weekly-digest day + hour; audit-overdue threshold days
+- `[x]` Tests: message composition (counts and dish/item names correct); scheduled-task day/hour guard; ntfy POST mock when reachable and unreachable; suppression window writes/reads
+- `[ ]` Document the ntfy setup steps in the README *(deferred — no new behavior, settings UI is self-explanatory; README already covers ntfy in general)*
 
 ---
 
