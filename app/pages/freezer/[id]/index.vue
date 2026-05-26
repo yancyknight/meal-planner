@@ -19,11 +19,11 @@
         <div class="flex items-center gap-2">
           <NuxtLink
             :to="`/freezer/${id}/audit`"
-            class="rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-text-muted transition hover:bg-surface-alt"
+            class="whitespace-nowrap rounded-full border border-border bg-surface px-4 py-2 text-sm font-medium text-text-muted transition hover:bg-surface-alt"
           >Audit</NuxtLink>
           <NuxtLink
             :to="`/freezer/add?freezerId=${id}`"
-            class="rounded-full bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-hover"
+            class="whitespace-nowrap rounded-full bg-accent px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-hover"
           >+ Add item</NuxtLink>
         </div>
       </div>
