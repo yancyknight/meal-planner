@@ -344,21 +344,21 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 14 — Freezer Core (Phase 1)
+## Milestone 14 — Freezer Core (Phase 1) ✅
 *Standalone module. Independently usable as a freezer log. No NFC, no audit, no notifications, no planner change. See `docs/freezer-mode.md`.*
 
-- `[ ]` Schema: `freezers`, `freezer_categories`, `freezer_items` tables; migration; seeded category rows
-- `[ ]` Service: `freezerService` (CRUD; reject delete when active items present)
-- `[ ]` Service: `freezerCategoryService` (CRUD; first-run seed; reject delete when active items present)
-- `[ ]` Service: `freezerItemService` — create computes and **stores** `tossByDate` and `targetUseDate` (midpoint); status transitions; dashboard bucketing query
-- `[ ]` API routes for freezers, categories, items (excluding audit-complete, planner-feed)
-- `[ ]` Zod schemas in `shared/schemas/freezer.ts`; types in `shared/types/freezer.ts`; query keys in `app/composables/queryKeys.ts`
-- `[ ]` Pages: `/freezer` (dashboard with Expired / Approaching / Recently Added buckets, grouped by freezer), `/freezer/add`, `/freezer/[id]`
-- `[ ]` Components: `FreezerItemRow`, `FreezerItemForm`, `FreezerCategorySelect`, `FreezerDashboardBucket`
-- `[ ]` Add `Freezer` link to top nav between `Dishes` and `Planning`
-- `[ ]` Settings: Freezer card with `freezerApproachingWindowDays` input + Categories editor (rename, edit `defaultLifetimeDays`, add custom). Add the new settings keys to `settingsService.DEFAULTS` and the Zod settings schema.
-- `[ ]` `ingredientService.merge` extended to relink `freezer_items.canonicalIngredientId` alongside `dish_ingredients`
-- `[ ]` Tests: `tossByDate` / `targetUseDate` computation (incl. category default vs override); status transitions; dashboard bucketing query; merge-relink behavior
+- `[x]` Schema: `freezers`, `freezer_categories`, `freezer_items` tables; migration; seeded category rows
+- `[x]` Service: `freezerService` (CRUD; reject delete when active items present)
+- `[x]` Service: `freezerCategoryService` (CRUD; first-run seed; reject delete when active items present)
+- `[x]` Service: `freezerItemService` — create computes and **stores** `tossByDate` and `targetUseDate` (midpoint); status transitions; dashboard bucketing query
+- `[x]` API routes for freezers, categories, items (excluding audit-complete, planner-feed)
+- `[x]` Zod schemas in `shared/schemas/freezer.ts`; types in `shared/types/freezer.ts`; query keys in `app/composables/queryKeys.ts`
+- `[x]` Pages: `/freezer` (dashboard with Expired / Approaching / Recently Added buckets, grouped by freezer), `/freezer/add`, `/freezer/[id]`
+- `[x]` Components: `FreezerItemRow`, `FreezerItemForm`, `FreezerCategorySelect`, `FreezerDashboardBucket`
+- `[x]` Add `Freezer` link to top nav between `Dishes` and `Planning`
+- `[x]` Settings: Freezer card with `freezerApproachingWindowDays` input + Categories editor (rename, edit `defaultLifetimeDays`, add custom). Add the new settings keys to `settingsService.DEFAULTS` and the Zod settings schema.
+- `[x]` `ingredientService.merge` extended to relink `freezer_items.canonicalIngredientId` alongside `dish_ingredients`
+- `[x]` Tests: `tossByDate` / `targetUseDate` computation (incl. category default vs override); status transitions; dashboard bucketing query; merge-relink behavior
 
 ---
 

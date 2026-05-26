@@ -44,7 +44,7 @@ function normalizeUnicodeFractions(s: string): string {
   return s.replace(/[¼½¾⅓⅔⅛⅜⅝⅞]/g, (ch, offset) => {
     const ascii = UNICODE_FRACTIONS[ch] ?? ''
     // "1½" → "1 1/2" (insert space when preceded by a digit)
-    return offset > 0 && /\d/.test(s[offset - 1]) ? ` ${ascii}` : ascii
+    return offset > 0 && /\d/.test(s.charAt(offset - 1)) ? ` ${ascii}` : ascii
   })
 }
 
