@@ -133,6 +133,44 @@ Stick one near the same freezer door. Tap it to start the audit walk-through for
 
 ---
 
+## Push Notifications (ntfy)
+
+The freezer module can send push alerts to your phone via [ntfy](https://ntfy.sh). Three trigger types:
+
+- **Expiry alert** (daily, 8 AM) — fires when items *newly* enter the approaching-toss-by window or *newly* cross their toss-by date. Items already flagged on a previous run are not re-notified.
+- **Audit overdue** (daily, piggybacked on expiry check) — fires once per overdue freezer, then suppresses for 7 days to avoid spam.
+- **Weekly digest** (configurable day + hour) — unconditional summary of active / approaching / expired counts and audit age.
+
+### Setup — ntfy.sh (no server required)
+
+1. Install the [ntfy app](https://ntfy.sh) on your phone (Android / iOS).
+2. Subscribe to a topic — pick any unique string, e.g. `my-freezer-a8f3k`. Topics are public by default on ntfy.sh; use something unguessable.
+3. In **Settings → Freezer → Notifications**:
+   - Set **Server URL** to `https://ntfy.sh`
+   - Set **Topic** to the string you chose
+   - Set **App base URL** to the address you browse the app on (e.g. `http://192.168.1.10:3000` or your Tailscale address) — this makes the notification tappable and links back to the app
+   - Toggle **Enable push notifications** on
+4. Save.
+
+### Setup — self-hosted ntfy
+
+If you want notifications to stay on your local network, run ntfy alongside the app:
+
+```yaml
+# add to your compose.yml
+ntfy:
+  image: binwiederhier/ntfy
+  command: serve
+  volumes:
+    - ntfy-data:/var/lib/ntfy
+  ports:
+    - "8080:80"
+```
+
+Then set **Server URL** to `http://<your-host>:8080` (or your Tailscale address for ntfy). For authenticated topics, generate a token in the ntfy admin and paste it into **Auth token**.
+
+---
+
 ## Notes
 
 This app is intentionally opinionated and built for a single household. There's no multi-user support, no per-user preferences, and no access control — all data is globally shared. If you want to adapt it for different household sizes, dietary constraints, or workflows, forks are welcome.

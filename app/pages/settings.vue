@@ -232,6 +232,120 @@
           </div>
         </div>
 
+        <!-- Notifications section -->
+        <div class="border-t border-dashed border-border px-7 py-5">
+          <p class="mb-3.5 text-xs font-medium uppercase tracking-widest text-text-muted">Notifications</p>
+          <div class="space-y-4">
+            <!-- Master toggle -->
+            <div class="flex items-center justify-between gap-6 py-1">
+              <div>
+                <p class="text-sm text-text">Enable push notifications</p>
+                <p class="mt-0.5 text-xs text-text-muted">Sends expiry alerts and digest to your ntfy server.</p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                :aria-checked="form.freezerNotificationsEnabled"
+                class="relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent/40"
+                :class="form.freezerNotificationsEnabled ? 'bg-accent' : 'bg-border'"
+                @click="form.freezerNotificationsEnabled = !form.freezerNotificationsEnabled"
+              >
+                <span
+                  class="pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform"
+                  :class="form.freezerNotificationsEnabled ? 'translate-x-4' : 'translate-x-0'"
+                />
+              </button>
+            </div>
+            <!-- ntfy config (always shown; required to configure before enabling) -->
+            <div class="rounded-lg border border-border bg-surface-alt px-4 py-3 space-y-3">
+              <div class="flex items-center gap-3">
+                <label class="w-28 shrink-0 text-xs text-text-muted">App base URL</label>
+                <input
+                  v-model="form.siteBaseUrl"
+                  type="url"
+                  class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="https://meals.home (used in notification links)"
+                />
+              </div>
+              <div class="flex items-center gap-3">
+                <label class="w-28 shrink-0 text-xs text-text-muted">Server URL</label>
+                <input
+                  v-model="form.ntfyServerUrl"
+                  type="url"
+                  class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="https://ntfy.sh"
+                />
+              </div>
+              <div class="flex items-center gap-3">
+                <label class="w-28 shrink-0 text-xs text-text-muted">Topic</label>
+                <input
+                  v-model="form.ntfyTopic"
+                  type="text"
+                  class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="my-freezer-alerts"
+                />
+              </div>
+              <div class="flex items-center gap-3">
+                <label class="w-28 shrink-0 text-xs text-text-muted">Auth token</label>
+                <input
+                  v-model="form.ntfyAuthToken"
+                  type="password"
+                  autocomplete="off"
+                  class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="Optional bearer token"
+                />
+              </div>
+            </div>
+            <!-- Audit overdue threshold -->
+            <div class="flex items-center justify-between gap-6 py-1">
+              <div>
+                <p class="text-sm text-text">Audit-overdue threshold</p>
+                <p class="mt-0.5 text-xs text-text-muted">Alert when a freezer hasn't been audited in this many days.</p>
+              </div>
+              <div class="flex shrink-0 items-center overflow-hidden rounded border border-border bg-surface-alt font-mono">
+                <input
+                  v-model.number="form.freezerAuditOverdueDays"
+                  type="number"
+                  min="1"
+                  class="w-14 bg-transparent px-2.5 py-1.5 text-right text-sm text-text focus:outline-none"
+                />
+                <span class="pr-3 text-xs text-text-muted">days</span>
+              </div>
+            </div>
+            <!-- Weekly digest schedule -->
+            <div class="flex items-center justify-between gap-6 py-1">
+              <div>
+                <p class="text-sm text-text">Weekly digest</p>
+                <p class="mt-0.5 text-xs text-text-muted">Day and hour (UTC) to send the summary push.</p>
+              </div>
+              <div class="flex shrink-0 items-center gap-2">
+                <select
+                  v-model.number="form.freezerWeeklyDigestDay"
+                  class="rounded border border-border bg-surface-alt px-2 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option :value="0">Sunday</option>
+                  <option :value="1">Monday</option>
+                  <option :value="2">Tuesday</option>
+                  <option :value="3">Wednesday</option>
+                  <option :value="4">Thursday</option>
+                  <option :value="5">Friday</option>
+                  <option :value="6">Saturday</option>
+                </select>
+                <div class="flex items-center overflow-hidden rounded border border-border bg-surface-alt font-mono">
+                  <input
+                    v-model.number="form.freezerWeeklyDigestHour"
+                    type="number"
+                    min="0"
+                    max="23"
+                    class="w-12 bg-transparent px-2 py-1.5 text-right text-sm text-text focus:outline-none"
+                  />
+                  <span class="pr-2 text-xs text-text-muted">h UTC</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Categories section -->
         <div class="border-t border-dashed border-border px-7 py-5">
           <p class="mb-3.5 text-xs font-medium uppercase tracking-widest text-text-muted">Categories</p>
@@ -336,6 +450,14 @@ const form = reactive({
   backupIntervalHours: 24,
   backupRetainCount: 7,
   freezerApproachingWindowDays: 14,
+  freezerAuditOverdueDays: 60,
+  freezerNotificationsEnabled: false,
+  ntfyServerUrl: 'https://ntfy.sh',
+  ntfyTopic: '',
+  ntfyAuthToken: '',
+  freezerWeeklyDigestDay: 0,
+  freezerWeeklyDigestHour: 9,
+  siteBaseUrl: '',
 })
 const saving = ref(false)
 const saved = ref(false)
@@ -348,6 +470,14 @@ watch(settings, (s) => {
     form.backupIntervalHours = s.backupIntervalHours
     form.backupRetainCount = s.backupRetainCount
     form.freezerApproachingWindowDays = s.freezerApproachingWindowDays
+    form.freezerAuditOverdueDays = s.freezerAuditOverdueDays
+    form.freezerNotificationsEnabled = s.freezerNotificationsEnabled
+    form.ntfyServerUrl = s.ntfyServerUrl
+    form.ntfyTopic = s.ntfyTopic
+    form.ntfyAuthToken = s.ntfyAuthToken
+    form.freezerWeeklyDigestDay = s.freezerWeeklyDigestDay
+    form.freezerWeeklyDigestHour = s.freezerWeeklyDigestHour
+    form.siteBaseUrl = s.siteBaseUrl
   }
 }, { immediate: true })
 
@@ -358,6 +488,14 @@ const isDirty = computed(() => {
     || form.backupIntervalHours !== settings.value.backupIntervalHours
     || form.backupRetainCount !== settings.value.backupRetainCount
     || form.freezerApproachingWindowDays !== settings.value.freezerApproachingWindowDays
+    || form.freezerAuditOverdueDays !== settings.value.freezerAuditOverdueDays
+    || form.freezerNotificationsEnabled !== settings.value.freezerNotificationsEnabled
+    || form.ntfyServerUrl !== settings.value.ntfyServerUrl
+    || form.ntfyTopic !== settings.value.ntfyTopic
+    || form.ntfyAuthToken !== settings.value.ntfyAuthToken
+    || form.freezerWeeklyDigestDay !== settings.value.freezerWeeklyDigestDay
+    || form.freezerWeeklyDigestHour !== settings.value.freezerWeeklyDigestHour
+    || form.siteBaseUrl !== settings.value.siteBaseUrl
 })
 
 const { mutateAsync } = useMutation({
@@ -377,6 +515,14 @@ async function save() {
       backupIntervalHours: form.backupIntervalHours,
       backupRetainCount: form.backupRetainCount,
       freezerApproachingWindowDays: form.freezerApproachingWindowDays,
+      freezerAuditOverdueDays: form.freezerAuditOverdueDays,
+      freezerNotificationsEnabled: form.freezerNotificationsEnabled,
+      ntfyServerUrl: form.ntfyServerUrl,
+      ntfyTopic: form.ntfyTopic,
+      ntfyAuthToken: form.ntfyAuthToken,
+      freezerWeeklyDigestDay: form.freezerWeeklyDigestDay,
+      freezerWeeklyDigestHour: form.freezerWeeklyDigestHour,
+      siteBaseUrl: form.siteBaseUrl,
     })
     saved.value = true
     setTimeout(() => { saved.value = false }, 3000)

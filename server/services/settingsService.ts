@@ -17,6 +17,7 @@ const DEFAULTS: AppSettings = {
   ntfyAuthToken: '',
   freezerWeeklyDigestDay: 0,
   freezerWeeklyDigestHour: 9,
+  siteBaseUrl: '',
 }
 
 export async function seedDefaults(): Promise<void> {
@@ -44,6 +45,7 @@ export async function getSettings(): Promise<AppSettings> {
     ntfyAuthToken: typeof map.ntfyAuthToken === 'string' ? map.ntfyAuthToken : DEFAULTS.ntfyAuthToken,
     freezerWeeklyDigestDay: typeof map.freezerWeeklyDigestDay === 'number' ? map.freezerWeeklyDigestDay : DEFAULTS.freezerWeeklyDigestDay,
     freezerWeeklyDigestHour: typeof map.freezerWeeklyDigestHour === 'number' ? map.freezerWeeklyDigestHour : DEFAULTS.freezerWeeklyDigestHour,
+    siteBaseUrl: typeof map.siteBaseUrl === 'string' ? map.siteBaseUrl : DEFAULTS.siteBaseUrl,
   }
 }
 

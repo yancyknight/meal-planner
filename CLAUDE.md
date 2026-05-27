@@ -110,24 +110,21 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-**Milestone 15 — Freezer Audit, NFC (Phase 2)** (`milestone-15-freezer-audit-nfc`)
+**Milestone 16 — Freezer Notifications (Phase 3)** (`milestone-16-freezer-notifications`)
 
-### API / Service
-- [x] Add `completeAudit(freezerId)` to `freezerService.ts` — sets `lastAuditedAt = now`, returns updated freezer
-- [x] `POST /api/freezers/[id]/audit-complete` route
+### Services
+- [x] `server/services/notificationService.ts` — generic `sendNtfy` returning `boolean`; skips when notifications disabled or topic empty; logs and swallows fetch errors
+- [x] `server/services/freezerNotificationService.ts` — pure builders + orchestrators; transition snapshot and audit-overdue suppression stored in `app_settings`; snapshot not updated on send failure
 
-### Audit Page + Component
-- [x] `app/components/FreezerAuditCard.vue` — per-item card with Still here / Used / Wasted buttons + Skip link; progress indicator
-- [x] `app/pages/freezer/[id]/audit.vue` — mobile-first walk-through; immediate per-decision writes; calls audit-complete on finish; handles deleted freezer (redirect + notice)
-- [x] Convert `app/pages/freezer/[id].vue` → `app/pages/freezer/[id]/index.vue` for sub-route support
-- [x] Add Audit button to per-freezer view header
+### Scheduled Tasks
+- [x] `server/tasks/freezer/expiry-check.ts` — calls `runExpiryCheck` + `runAuditOverdueCheck`
+- [x] `server/tasks/freezer/weekly-digest.ts` — hourly heartbeat with UTC day/hour guard
+- [x] Register both crons in `nuxt.config.ts`
 
-### NFC / Deep-link Robustness
-- [x] `app/pages/freezer/add.vue` — invalid `?freezerId=` shows inline notice + falls back to picker
-
-### README
-- [x] NFC URL Scheme section added to `README.md`
+### Settings UI
+- [x] Notifications subsection in Freezer card: enable toggle, ntfy server/topic/token, audit-overdue threshold, weekly digest day/hour
 
 ### Tests
-- [x] `test/unit/freezerAudit.test.ts` — 5 tests: `completeAudit` sets timestamp, returns null for unknown id, item decisions don't touch `lastAuditedAt`, explicit call updates it, repeated calls update timestamp
+- [x] `test/unit/notificationService.test.ts` — 6 tests
+- [x] `test/unit/freezerNotificationService.test.ts` — 21 tests
 

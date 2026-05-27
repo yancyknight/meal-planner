@@ -11,4 +11,5 @@ export interface AppSettings {
   ntfyAuthToken: string
   freezerWeeklyDigestDay: number
   freezerWeeklyDigestHour: number
+  siteBaseUrl: string
 }
