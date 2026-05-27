@@ -17,10 +17,22 @@ export default defineEventHandler(async (event) => {
 
   // 1. Write draft plan entries (fresh kind)
   for (const [slotKey, slot] of Object.entries(session.draftPlan)) {
-    if (slot.dishId <= 0) continue // no-match slots
     const [date, mealType] = slotKey.split(':')
     if (!date || !mealType) continue
 
+    if (slot.kind === 'standalone-freezer' && slot.freezerItemId != null) {
+      await createPlanEntry({
+        date,
+        mealType: mealType as 'breakfast' | 'lunch' | 'dinner' | 'uncategorized',
+        entryKind: 'one-off',
+        oneOffText: slot.oneOffText ?? 'Freezer item',
+        freezerItemId: slot.freezerItemId,
+        guestCount: 0,
+      })
+      continue
+    }
+
+    if (slot.dishId <= 0) continue // no-match slots
     const entryKind = slot.kind === 'leftover-suggestion' ? 'leftover' : 'fresh'
     await createPlanEntry({
       date,

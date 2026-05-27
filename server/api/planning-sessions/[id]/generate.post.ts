@@ -4,7 +4,7 @@ import { listByDateRange } from '../../../services/planEntryService'
 import { getSettings } from '../../../services/settingsService'
 import { generateDraft } from '../../../services/planningEngineService'
 import { getActiveDishIds } from '../../../services/dishCooldownService'
-import { getPlannerHints } from '../../../services/freezerItemService'
+import { getPlannerHints, getStandaloneHints } from '../../../services/freezerItemService'
 import { addDays, format } from 'date-fns'
 
 export default defineEventHandler(async (event) => {
@@ -21,11 +21,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const weekEnd = format(addDays(new Date(session.weekStart), 6), 'yyyy-MM-dd')
-  const [dishes, committedEntries, settings, plannerHints] = await Promise.all([
+  const [dishes, committedEntries, settings, plannerHints, standaloneHints] = await Promise.all([
     listDishes({ archived: false }),
     listByDateRange(session.weekStart, weekEnd),
     getSettings(),
     getPlannerHints(),
+    getStandaloneHints(),
   ])
   const activeCooldownDishIds = await getActiveDishIds(dishes.map((d) => d.id), session.weekStart)
 
@@ -55,6 +56,7 @@ export default defineEventHandler(async (event) => {
     householdSize: settings.householdSize,
     activeCooldownDishIds,
     freezerHints,
+    standaloneHints,
   })
 
   // Seed shownDishIdsBySlot with initial picks

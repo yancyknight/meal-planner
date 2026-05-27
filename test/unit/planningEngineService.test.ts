@@ -363,6 +363,110 @@ describe('generateDraft — freezer urgency scoring', () => {
   })
 })
 
+// ── generateDraft — standalone hints ─────────────────────────────────────────
+
+describe('generateDraft — standalone freezer hints', () => {
+  it('places a standalone hint when no dishes are eligible', () => {
+    const slotDate = '2026-06-08'
+    const standaloneHints = [{ freezerItemId: 99, name: 'Chicken Broth', targetUseDate: slotDate }]
+
+    // No eligible dishes (all in cooldown)
+    const inCooldown = makeDish({ id: 10, name: 'Dish A', cooldownDays: 7 })
+    const committedEntries = [
+      { id: 1, date: '2026-06-07', mealType: 'dinner', entryKind: 'fresh' as const, dishId: 10, dishName: 'Dish A', dishImageLocalPath: null, dishImageUrl: null, dishYieldServings: null, oneOffText: null, freezerItemId: null, guestCount: 0, createdAt: '' },
+    ]
+
+    const { draftPlan } = generateDraft({
+      slots: [{ date: slotDate, mealType: 'dinner', state: 'plan' }],
+      dishes: [inCooldown],
+      committedEntries,
+      sessionVirtualTags: [],
+      pinnedTags: [],
+      wishlistTags: [],
+      householdSize: 3,
+      standaloneHints,
+    })
+
+    const slot = draftPlan[`${slotDate}:dinner`]
+    expect(slot?.kind).toBe('standalone-freezer')
+    expect(slot?.freezerItemId).toBe(99)
+    expect(slot?.oneOffText).toBe('Chicken Broth')
+  })
+
+  it('never places the same standalone hint twice across two slots', () => {
+    const standaloneHints = [{ freezerItemId: 99, name: 'Chicken Broth', targetUseDate: '2026-06-10' }]
+
+    const { draftPlan } = generateDraft({
+      slots: [
+        { date: '2026-06-08', mealType: 'dinner', state: 'plan' },
+        { date: '2026-06-09', mealType: 'dinner', state: 'plan' },
+      ],
+      dishes: [],
+      committedEntries: [],
+      sessionVirtualTags: [],
+      pinnedTags: [],
+      wishlistTags: [],
+      householdSize: 3,
+      standaloneHints,
+    })
+
+    const placed = Object.values(draftPlan).filter(s => s.kind === 'standalone-freezer' && s.freezerItemId === 99)
+    expect(placed.length).toBe(1)
+  })
+
+  it('excludes standalone hints already committed in the week', () => {
+    const slotDate = '2026-06-08'
+    const standaloneHints = [{ freezerItemId: 99, name: 'Chicken Broth', targetUseDate: slotDate }]
+
+    const committedEntries = [
+      { id: 5, date: '2026-06-06', mealType: 'lunch', entryKind: 'one-off' as const, dishId: null, dishName: null, dishImageLocalPath: null, dishImageUrl: null, dishYieldServings: null, oneOffText: 'Chicken Broth', freezerItemId: 99, guestCount: 0, createdAt: '' },
+    ]
+
+    const { draftPlan } = generateDraft({
+      slots: [{ date: slotDate, mealType: 'dinner', state: 'plan' }],
+      dishes: [],
+      committedEntries,
+      sessionVirtualTags: [],
+      pinnedTags: [],
+      wishlistTags: [],
+      householdSize: 3,
+      standaloneHints,
+    })
+
+    const slot = draftPlan[`${slotDate}:dinner`]
+    expect(slot?.kind).not.toBe('standalone-freezer')
+  })
+
+  it('urgent standalone hint competes in combined pool with eligible dishes', () => {
+    const slotDate = '2026-06-08'
+    // Standalone at target date → multiplier 3.0, base 3.0 → weight 9.0
+    // Dish at 1× overdue (just eligible) → selectionWeight ~1.0, computeScore ~1.0
+    const standaloneHints = [{ freezerItemId: 99, name: 'Chicken Broth', targetUseDate: slotDate }]
+    const dish = makeDish({ id: 10, name: 'Pasta', targetIntervalDays: 14, selectionWeight: 1 })
+    const committedEntries = [
+      { id: 1, date: '2026-05-25', mealType: 'dinner', entryKind: 'fresh' as const, dishId: 10, dishName: 'Pasta', dishImageLocalPath: null, dishImageUrl: null, dishYieldServings: null, oneOffText: null, freezerItemId: null, guestCount: 0, createdAt: '' },
+    ]
+
+    let standaloneCount = 0
+    const TRIALS = 300
+    for (let i = 0; i < TRIALS; i++) {
+      const { draftPlan } = generateDraft({
+        slots: [{ date: slotDate, mealType: 'dinner', state: 'plan' }],
+        dishes: [dish],
+        committedEntries,
+        sessionVirtualTags: [],
+        pinnedTags: [],
+        wishlistTags: [],
+        householdSize: 3,
+        standaloneHints,
+      })
+      if (draftPlan[`${slotDate}:dinner`]?.kind === 'standalone-freezer') standaloneCount++
+    }
+    // Standalone weight ~9.0 vs dish weight ~1.0 → standalone wins ~90% of the time
+    expect(standaloneCount).toBeGreaterThan(TRIALS * 0.7)
+  })
+})
+
 // ── reroll ────────────────────────────────────────────────────────────────────
 
 describe('reroll', () => {

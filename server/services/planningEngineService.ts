@@ -3,6 +3,14 @@ import type { PlanEntry } from '../../shared/types/planEntry'
 import type { PinnedTag, DraftSlot } from '../../shared/types/planningSession'
 import { matchesVirtualTag, matchesTag } from '../../shared/virtualTags'
 
+export interface FreezerStandaloneHint {
+  freezerItemId: number
+  name: string
+  targetUseDate: string
+}
+
+const STANDALONE_TARGET_INTERVAL_DAYS = 14
+
 type DishFrequency = {
   cooldownDays: number
   targetIntervalDays: number
@@ -124,6 +132,8 @@ export interface GenerateDraftInput {
   activeCooldownDishIds?: Set<number>
   /** Map of dishId → freezer hint for urgency scoring. */
   freezerHints?: Map<number, { earliestTargetUseDate: string }>
+  /** Standalone freezer items (no dish) that compete as one-off candidates. */
+  standaloneHints?: FreezerStandaloneHint[]
 }
 
 export interface GenerateDraftResult {
@@ -161,12 +171,17 @@ function daysToSlot(
 }
 
 export function generateDraft(input: GenerateDraftInput): GenerateDraftResult {
-  const { slots, dishes, committedEntries, sessionVirtualTags, pinnedTags, wishlistTags, activeCooldownDishIds, freezerHints } = input
+  const { slots, dishes, committedEntries, sessionVirtualTags, pinnedTags, wishlistTags, activeCooldownDishIds, freezerHints, standaloneHints } = input
 
   const draftPlan: Record<string, DraftSlot> = {}
   const warnings: string[] = []
   const draftHistory: { dishId: number; date: string }[] = []
   const filledSlotKeys = new Set<string>()
+  const placedStandaloneIds = new Set<number>()
+
+  const committedFreezerItemIds = new Set(
+    committedEntries.filter(e => e.freezerItemId != null).map(e => e.freezerItemId!),
+  )
 
   // Eligible base pool: non-archived, non-excluded, passes session virtual tags
   function baseEligible(dish: Dish): boolean {
@@ -212,6 +227,29 @@ export function generateDraft(input: GenerateDraftInput): GenerateDraftResult {
     draftPlan[slotKey] = { kind: 'dish', dishId: dish.id, ...extra }
     draftHistory.push({ dishId: dish.id, date: date! })
     filledSlotKeys.add(slotKey)
+  }
+
+  function placeStandalone(slotKey: string, hint: FreezerStandaloneHint) {
+    draftPlan[slotKey] = { kind: 'standalone-freezer', dishId: -1, freezerItemId: hint.freezerItemId, oneOffText: hint.name }
+    placedStandaloneIds.add(hint.freezerItemId)
+    filledSlotKeys.add(slotKey)
+  }
+
+  type CombinedPick = { type: 'dish'; dish: Dish } | { type: 'standalone'; hint: FreezerStandaloneHint }
+
+  function pickCombined(dishCandidates: Dish[], availableStandalones: FreezerStandaloneHint[], slotDate: string): CombinedPick | null {
+    const alreadyPlaced = draftHistory.map((h) => dishes.find((d) => d.id === h.dishId)!).filter(Boolean)
+    const items: { item: CombinedPick; weight: number }[] = [
+      ...dishCandidates.map(dish => ({
+        item: { type: 'dish' as const, dish },
+        weight: computeScore(dish, daysToSlot(dish, slotDate, committedEntries, draftHistory), slotDate, alreadyPlaced, freezerHints?.get(dish.id)),
+      })),
+      ...availableStandalones.map(hint => ({
+        item: { type: 'standalone' as const, hint },
+        weight: 3.0 * freezerUrgencyMultiplier(slotDate, hint.targetUseDate, STANDALONE_TARGET_INTERVAL_DAYS),
+      })),
+    ]
+    return weightedRandom(items)
   }
 
   const planSlots = slots.filter((s) => s.state === 'plan')
@@ -335,21 +373,29 @@ export function generateDraft(input: GenerateDraftInput): GenerateDraftResult {
   for (const slotKey of sortedRemainingSlots) {
     const [slotDate] = slotKey.split(':')
 
+    const availableStandalones = (standaloneHints ?? []).filter(
+      h => !placedStandaloneIds.has(h.freezerItemId) && !committedFreezerItemIds.has(h.freezerItemId),
+    )
+
     // Primary pool: no repeats of already-placed dishes
     const placedIds = new Set(draftHistory.map((h) => h.dishId))
     const primary = candidatesForSlot(slotDate!, [], placedIds)
 
-    if (primary.length > 0) {
-      const picked = pickWeighted(primary, slotDate!)
-      if (picked) { placeDish(slotKey, picked); continue }
+    if (primary.length > 0 || availableStandalones.length > 0) {
+      const picked = pickCombined(primary, availableStandalones, slotDate!)
+      if (picked) {
+        if (picked.type === 'dish') placeDish(slotKey, picked.dish)
+        else placeStandalone(slotKey, picked.hint)
+        continue
+      }
     }
 
-    // Secondary pool: allow repeats
+    // Secondary pool: allow dish repeats (no standalones — they're each unique)
     const secondary = candidatesForSlot(slotDate!, [])
     if (secondary.length > 0) {
-      const picked = pickWeighted(secondary, slotDate!)
-      if (picked) {
-        placeDish(slotKey, picked, { warningLabels: ['Repeat dish — all others used or in cooldown'] })
+      const picked = pickCombined(secondary, [], slotDate!)
+      if (picked && picked.type === 'dish') {
+        placeDish(slotKey, picked.dish, { warningLabels: ['Repeat dish — all others used or in cooldown'] })
         continue
       }
     }
