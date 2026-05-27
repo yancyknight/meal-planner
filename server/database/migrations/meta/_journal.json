@@ -85,6 +85,13 @@
       "when": 1779850709836,
       "tag": "0011_lying_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1779916969212,
+      "tag": "0012_cheerful_omega_sentinel",
+      "breakpoints": true
     }
   ]
 }

@@ -23,27 +23,29 @@
           class="font-medium text-text transition"
           :class="item.checked ? 'line-through text-text-muted' : ''"
         >
-          {{ item.canonicalName }}
+          {{ item.canonicalName ?? item.rawTexts[0] ?? '—' }}
         </span>
-        <!-- Walmart link -->
-        <a
-          v-if="item.walmartUrl"
-          :href="item.walmartUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="rounded-full border border-border px-2 py-0.5 text-xs text-text-muted hover:bg-surface-alt transition shrink-0"
-          title="View on Walmart"
-        >
-          Walmart ↗
-        </a>
-        <button
-          v-else-if="!addingUrl"
-          type="button"
-          class="rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-text-subtle hover:border-accent hover:text-accent transition shrink-0"
-          @click="addingUrl = true"
-        >
-          + Walmart link
-        </button>
+        <!-- Walmart link (only for canonical ingredient items) -->
+        <template v-if="item.canonicalIngredientId != null">
+          <a
+            v-if="item.walmartUrl"
+            :href="item.walmartUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-full border border-border px-2 py-0.5 text-xs text-text-muted hover:bg-surface-alt transition shrink-0"
+            title="View on Walmart"
+          >
+            Walmart ↗
+          </a>
+          <button
+            v-else-if="!addingUrl"
+            type="button"
+            class="rounded-full border border-dashed border-border px-2 py-0.5 text-xs text-text-subtle hover:border-accent hover:text-accent transition shrink-0"
+            @click="addingUrl = true"
+          >
+            + Walmart link
+          </button>
+        </template>
       </div>
 
       <!-- Inline Walmart URL input -->
@@ -75,8 +77,8 @@
         </button>
       </form>
 
-      <!-- Raw texts -->
-      <p class="mt-0.5 text-xs text-text-subtle leading-relaxed">
+      <!-- Raw texts (only for canonical ingredient items) -->
+      <p v-if="item.canonicalName" class="mt-0.5 text-xs text-text-subtle leading-relaxed">
         {{ item.rawTexts.join(' · ') }}
       </p>
 
