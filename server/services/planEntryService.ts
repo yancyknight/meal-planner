@@ -21,6 +21,7 @@ function rowToPlanEntry(
     dishImageUrl: dish?.imageUrl ?? null,
     dishYieldServings: dish?.yieldServings ?? null,
     oneOffText: row.oneOffText,
+    freezerItemId: row.freezerItemId,
     guestCount: row.guestCount,
     createdAt: row.createdAt,
   }
@@ -60,6 +61,7 @@ export async function createPlanEntry(input: CreatePlanEntryInput): Promise<Plan
       entryKind: input.entryKind ?? 'fresh',
       dishId: input.dishId ?? null,
       oneOffText: input.oneOffText ?? null,
+      freezerItemId: input.freezerItemId ?? null,
       guestCount: input.guestCount ?? 0,
       createdAt: ts,
     })

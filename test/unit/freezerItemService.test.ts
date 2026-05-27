@@ -14,7 +14,7 @@ vi.mock('../../server/database/index', async () => {
 })
 
 import { db } from '../../server/database/index'
-import { freezerItems, freezerCategories, freezers } from '../../server/database/schema'
+import { freezerItems, freezerCategories, freezers, dishes } from '../../server/database/schema'
 import {
   createFreezerItem,
   getFreezerItem,
@@ -23,6 +23,9 @@ import {
   markFreezerItemWasted,
   getDashboard,
   computeDates,
+  updateFreezerItem,
+  getPlannerHints,
+  getStandaloneHints,
 } from '../../server/services/freezerItemService'
 import { seedCategories, listFreezerCategories } from '../../server/services/freezerCategoryService'
 
@@ -259,5 +262,148 @@ describe('seedCategories', () => {
     await seedCategories()
     const cats = await listFreezerCategories()
     expect(cats.length).toBe(17)
+  })
+})
+
+// ---- eligibleForPlanning round-trip ----
+
+describe('eligibleForPlanning', () => {
+  it('defaults to 0 on create', async () => {
+    const item = await createFreezerItem({ freezerId, categoryId, name: 'Test', addedAt: '2026-06-01' })
+    expect(item.eligibleForPlanning).toBe(0)
+  })
+
+  it('persists eligibleForPlanning = true on create', async () => {
+    const item = await createFreezerItem({ freezerId, categoryId, name: 'Test', addedAt: '2026-06-01', eligibleForPlanning: true })
+    expect(item.eligibleForPlanning).toBe(1)
+  })
+
+  it('round-trips eligibleForPlanning through update', async () => {
+    const item = await createFreezerItem({ freezerId, categoryId, name: 'Test', addedAt: '2026-06-01' })
+    expect(item.eligibleForPlanning).toBe(0)
+    const updated = await updateFreezerItem(item.id, { eligibleForPlanning: true })
+    expect(updated!.eligibleForPlanning).toBe(1)
+    const reset = await updateFreezerItem(item.id, { eligibleForPlanning: false })
+    expect(reset!.eligibleForPlanning).toBe(0)
+  })
+})
+
+// ---- getPlannerHints ----
+
+async function seedDish(name = 'Test Dish') {
+  const now = new Date().toISOString()
+  const [row] = await db.insert(dishes).values({
+    name, freeFrom: '[]', season: '[]', cooldownDays: 7, targetIntervalDays: 14,
+    excludedFromSuggestions: 0, archived: false, createdAt: now, updatedAt: now,
+  }).returning()
+  return row!
+}
+
+describe('getPlannerHints', () => {
+  it('returns empty array when no active dish-linked items', async () => {
+    const hints = await getPlannerHints()
+    expect(hints).toEqual([])
+  })
+
+  it('dedupes by dishId: 3 active items across 2 freezers, same dish → 1 hint', async () => {
+    const freezer2 = await (async () => {
+      const now = new Date().toISOString()
+      const [row] = await db.insert(freezers).values({ name: 'Garage', createdAt: now, updatedAt: now }).returning()
+      return row!
+    })()
+    const dish = await seedDish('Pasta')
+
+    // 3 items for same dish: 2 in kitchen, 1 in garage
+    await createFreezerItem({ freezerId, categoryId, name: 'Pasta A', addedAt: '2026-01-01', dishId: dish.id, targetUseDate: '2026-02-15' })
+    await createFreezerItem({ freezerId, categoryId, name: 'Pasta B', addedAt: '2026-01-05', dishId: dish.id, targetUseDate: '2026-01-20' })
+    await createFreezerItem({ freezerId: freezer2.id, categoryId, name: 'Pasta C', addedAt: '2026-01-03', dishId: dish.id, targetUseDate: '2026-03-01' })
+
+    const hints = await getPlannerHints()
+    expect(hints).toHaveLength(1)
+    const hint = hints[0]!
+    expect(hint.dishId).toBe(dish.id)
+    expect(hint.itemCount).toBe(3)
+    expect(hint.earliestTargetUseDate).toBe('2026-01-20') // minimum of the three
+    expect(hint.freezerNames.sort()).toEqual(['Garage', 'Kitchen Freezer'])
+  })
+
+  it('sets singleItemId and singleItemName when itemCount is 1', async () => {
+    const dish = await seedDish('Solo Dish')
+    await createFreezerItem({ freezerId, categoryId, name: 'Solo Item', addedAt: '2026-06-01', dishId: dish.id })
+
+    const hints = await getPlannerHints()
+    expect(hints).toHaveLength(1)
+    expect(hints[0]!.singleItemId).not.toBeNull()
+    expect(hints[0]!.singleItemName).toBe('Solo Item')
+  })
+
+  it('singleItemId is null when itemCount > 1', async () => {
+    const dish = await seedDish('Multi Dish')
+    await createFreezerItem({ freezerId, categoryId, name: 'A', addedAt: '2026-06-01', dishId: dish.id })
+    await createFreezerItem({ freezerId, categoryId, name: 'B', addedAt: '2026-06-01', dishId: dish.id })
+
+    const hints = await getPlannerHints()
+    expect(hints[0]!.singleItemId).toBeNull()
+    expect(hints[0]!.singleItemName).toBeNull()
+  })
+
+  it('excludes non-active items', async () => {
+    const dish = await seedDish('Exclusive Dish')
+    const item = await createFreezerItem({ freezerId, categoryId, name: 'Used up', addedAt: '2026-06-01', dishId: dish.id })
+    await markFreezerItemUsed(item.id)
+
+    const hints = await getPlannerHints()
+    expect(hints).toHaveLength(0)
+  })
+})
+
+// ---- getStandaloneHints ----
+
+describe('getStandaloneHints', () => {
+  it('returns empty array when no eligible standalone items', async () => {
+    const hints = await getStandaloneHints()
+    expect(hints).toEqual([])
+  })
+
+  it('excludes items with eligibleForPlanning = 0', async () => {
+    await createFreezerItem({ freezerId, categoryId, name: 'Not eligible', addedAt: '2026-06-01', eligibleForPlanning: false })
+    const hints = await getStandaloneHints()
+    expect(hints).toHaveLength(0)
+  })
+
+  it('includes items with eligibleForPlanning = 1', async () => {
+    await createFreezerItem({ freezerId, categoryId, name: 'Eligible', addedAt: '2026-06-01', eligibleForPlanning: true })
+    const hints = await getStandaloneHints()
+    expect(hints).toHaveLength(1)
+    expect(hints[0]!.name).toBe('Eligible')
+  })
+
+  it('orders by targetUseDate ascending', async () => {
+    await createFreezerItem({ freezerId, categoryId, name: 'Later', addedAt: '2026-06-01', targetUseDate: '2026-09-01', eligibleForPlanning: true })
+    await createFreezerItem({ freezerId, categoryId, name: 'Sooner', addedAt: '2026-06-01', targetUseDate: '2026-07-01', eligibleForPlanning: true })
+    await createFreezerItem({ freezerId, categoryId, name: 'Middle', addedAt: '2026-06-01', targetUseDate: '2026-08-01', eligibleForPlanning: true })
+
+    const hints = await getStandaloneHints()
+    expect(hints.map(h => h.name)).toEqual(['Sooner', 'Middle', 'Later'])
+  })
+
+  it('excludes non-active items', async () => {
+    const item = await createFreezerItem({ freezerId, categoryId, name: 'Used', addedAt: '2026-06-01', eligibleForPlanning: true })
+    await markFreezerItemUsed(item.id)
+    const hints = await getStandaloneHints()
+    expect(hints).toHaveLength(0)
+  })
+
+  it('excludes dish-linked items even when eligibleForPlanning = 1', async () => {
+    const dish = await seedDish('Linked Dish')
+    await createFreezerItem({ freezerId, categoryId, name: 'Dish-linked', addedAt: '2026-06-01', dishId: dish.id, eligibleForPlanning: true })
+    const hints = await getStandaloneHints()
+    expect(hints).toHaveLength(0)
+  })
+
+  it('includes freezerName from the joined freezer row', async () => {
+    await createFreezerItem({ freezerId, categoryId, name: 'Named item', addedAt: '2026-06-01', eligibleForPlanning: true })
+    const hints = await getStandaloneHints()
+    expect(hints[0]!.freezerName).toBe('Kitchen Freezer')
   })
 })

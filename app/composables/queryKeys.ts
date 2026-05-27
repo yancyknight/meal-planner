@@ -51,4 +51,7 @@ export const queryKeys = {
     detail: (id: number) => ['freezer-items', id] as const,
     dashboard: () => ['freezer-items', 'dashboard'] as const,
   },
+  freezerPlannerFeed: {
+    all: () => ['freezer', 'planner-feed'] as const,
+  },
 }

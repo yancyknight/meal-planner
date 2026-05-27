@@ -1,0 +1,1238 @@
+{
+  "version": "6",
+  "dialect": "sqlite",
+  "id": "94e1fc47-d8bc-4e3c-9a81-0e18abdfc472",
+  "prevId": "7ffe38ce-9fd4-40af-a9ea-0bdcf9cae3dc",
+  "tables": {
+    "app_settings": {
+      "name": "app_settings",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "canonical_ingredients": {
+      "name": "canonical_ingredients",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "walmartUrl": {
+          "name": "walmartUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "canonical_ingredients_name_unique": {
+          "name": "canonical_ingredients_name_unique",
+          "columns": [
+            "name"
+          ],
+          "isUnique": true
+        },
+        "idx_canonical_ingredients_name": {
+          "name": "idx_canonical_ingredients_name",
+          "columns": [
+            "name"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "dish_cooldowns": {
+      "name": "dish_cooldowns",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "dishId": {
+          "name": "dishId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "endsAt": {
+          "name": "endsAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "dish_cooldowns_dishId_unique": {
+          "name": "dish_cooldowns_dishId_unique",
+          "columns": [
+            "dishId"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "dish_cooldowns_dishId_dishes_id_fk": {
+          "name": "dish_cooldowns_dishId_dishes_id_fk",
+          "tableFrom": "dish_cooldowns",
+          "tableTo": "dishes",
+          "columnsFrom": [
+            "dishId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "dish_ingredients": {
+      "name": "dish_ingredients",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "dishId": {
+          "name": "dishId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "canonicalIngredientId": {
+          "name": "canonicalIngredientId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "rawText": {
+          "name": "rawText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sortOrder": {
+          "name": "sortOrder",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "idx_dish_ingredients_dish_id": {
+          "name": "idx_dish_ingredients_dish_id",
+          "columns": [
+            "dishId"
+          ],
+          "isUnique": false
+        },
+        "idx_dish_ingredients_canonical_id": {
+          "name": "idx_dish_ingredients_canonical_id",
+          "columns": [
+            "canonicalIngredientId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "dish_ingredients_dishId_dishes_id_fk": {
+          "name": "dish_ingredients_dishId_dishes_id_fk",
+          "tableFrom": "dish_ingredients",
+          "tableTo": "dishes",
+          "columnsFrom": [
+            "dishId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "dish_ingredients_canonicalIngredientId_canonical_ingredients_id_fk": {
+          "name": "dish_ingredients_canonicalIngredientId_canonical_ingredients_id_fk",
+          "tableFrom": "dish_ingredients",
+          "tableTo": "canonical_ingredients",
+          "columnsFrom": [
+            "canonicalIngredientId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "dish_tags": {
+      "name": "dish_tags",
+      "columns": {
+        "dishId": {
+          "name": "dishId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "tagId": {
+          "name": "tagId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "dish_tags_dishId_dishes_id_fk": {
+          "name": "dish_tags_dishId_dishes_id_fk",
+          "tableFrom": "dish_tags",
+          "tableTo": "dishes",
+          "columnsFrom": [
+            "dishId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "dish_tags_tagId_tags_id_fk": {
+          "name": "dish_tags_tagId_tags_id_fk",
+          "tableFrom": "dish_tags",
+          "tableTo": "tags",
+          "columnsFrom": [
+            "tagId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "dish_tags_dishId_tagId_pk": {
+          "columns": [
+            "dishId",
+            "tagId"
+          ],
+          "name": "dish_tags_dishId_tagId_pk"
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "dishes": {
+      "name": "dishes",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "imageUrl": {
+          "name": "imageUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "imageLocalPath": {
+          "name": "imageLocalPath",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "timeEstimateMinutes": {
+          "name": "timeEstimateMinutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "yieldServings": {
+          "name": "yieldServings",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceUrl": {
+          "name": "sourceUrl",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sourceName": {
+          "name": "sourceName",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "difficulty": {
+          "name": "difficulty",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "freeFrom": {
+          "name": "freeFrom",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "season": {
+          "name": "season",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cooldownDays": {
+          "name": "cooldownDays",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 7
+        },
+        "targetIntervalDays": {
+          "name": "targetIntervalDays",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 14
+        },
+        "excludedFromSuggestions": {
+          "name": "excludedFromSuggestions",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "archived": {
+          "name": "archived",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_dishes_archived": {
+          "name": "idx_dishes_archived",
+          "columns": [
+            "archived"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "freezer_categories": {
+      "name": "freezer_categories",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "defaultLifetimeDays": {
+          "name": "defaultLifetimeDays",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "isSystem": {
+          "name": "isSystem",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "freezer_categories_name_unique": {
+          "name": "freezer_categories_name_unique",
+          "columns": [
+            "name"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "freezer_items": {
+      "name": "freezer_items",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "freezerId": {
+          "name": "freezerId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "categoryId": {
+          "name": "categoryId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "dishId": {
+          "name": "dishId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "canonicalIngredientId": {
+          "name": "canonicalIngredientId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "addedAt": {
+          "name": "addedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lifetimeDaysOverride": {
+          "name": "lifetimeDaysOverride",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tossByDate": {
+          "name": "tossByDate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "targetUseDate": {
+          "name": "targetUseDate",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "eligibleForPlanning": {
+          "name": "eligibleForPlanning",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'active'"
+        },
+        "statusChangedAt": {
+          "name": "statusChangedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_freezer_items_freezer_id": {
+          "name": "idx_freezer_items_freezer_id",
+          "columns": [
+            "freezerId"
+          ],
+          "isUnique": false
+        },
+        "idx_freezer_items_status": {
+          "name": "idx_freezer_items_status",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "idx_freezer_items_toss_by": {
+          "name": "idx_freezer_items_toss_by",
+          "columns": [
+            "tossByDate"
+          ],
+          "isUnique": false,
+          "where": "status = 'active'"
+        },
+        "idx_freezer_items_dish_id": {
+          "name": "idx_freezer_items_dish_id",
+          "columns": [
+            "dishId"
+          ],
+          "isUnique": false,
+          "where": "status = 'active' AND dishId IS NOT NULL"
+        },
+        "idx_freezer_items_standalone": {
+          "name": "idx_freezer_items_standalone",
+          "columns": [
+            "targetUseDate"
+          ],
+          "isUnique": false,
+          "where": "status = 'active' AND dishId IS NULL AND eligibleForPlanning = 1"
+        }
+      },
+      "foreignKeys": {
+        "freezer_items_freezerId_freezers_id_fk": {
+          "name": "freezer_items_freezerId_freezers_id_fk",
+          "tableFrom": "freezer_items",
+          "tableTo": "freezers",
+          "columnsFrom": [
+            "freezerId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "freezer_items_categoryId_freezer_categories_id_fk": {
+          "name": "freezer_items_categoryId_freezer_categories_id_fk",
+          "tableFrom": "freezer_items",
+          "tableTo": "freezer_categories",
+          "columnsFrom": [
+            "categoryId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "freezer_items_dishId_dishes_id_fk": {
+          "name": "freezer_items_dishId_dishes_id_fk",
+          "tableFrom": "freezer_items",
+          "tableTo": "dishes",
+          "columnsFrom": [
+            "dishId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "freezer_items_canonicalIngredientId_canonical_ingredients_id_fk": {
+          "name": "freezer_items_canonicalIngredientId_canonical_ingredients_id_fk",
+          "tableFrom": "freezer_items",
+          "tableTo": "canonical_ingredients",
+          "columnsFrom": [
+            "canonicalIngredientId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "freezers": {
+      "name": "freezers",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "lastAuditedAt": {
+          "name": "lastAuditedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "plan_entries": {
+      "name": "plan_entries",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "date": {
+          "name": "date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mealType": {
+          "name": "mealType",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "entryKind": {
+          "name": "entryKind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'fresh'"
+        },
+        "dishId": {
+          "name": "dishId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "oneOffText": {
+          "name": "oneOffText",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "freezerItemId": {
+          "name": "freezerItemId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "guestCount": {
+          "name": "guestCount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "idx_plan_entries_date": {
+          "name": "idx_plan_entries_date",
+          "columns": [
+            "date"
+          ],
+          "isUnique": false
+        },
+        "idx_plan_entries_dish_id": {
+          "name": "idx_plan_entries_dish_id",
+          "columns": [
+            "dishId"
+          ],
+          "isUnique": false
+        },
+        "idx_plan_entries_dish_fresh": {
+          "name": "idx_plan_entries_dish_fresh",
+          "columns": [
+            "dishId",
+            "date"
+          ],
+          "isUnique": false,
+          "where": "entryKind = 'fresh'"
+        },
+        "idx_plan_entries_freezer_item_id": {
+          "name": "idx_plan_entries_freezer_item_id",
+          "columns": [
+            "freezerItemId"
+          ],
+          "isUnique": false,
+          "where": "freezerItemId IS NOT NULL"
+        }
+      },
+      "foreignKeys": {
+        "plan_entries_dishId_dishes_id_fk": {
+          "name": "plan_entries_dishId_dishes_id_fk",
+          "tableFrom": "plan_entries",
+          "tableTo": "dishes",
+          "columnsFrom": [
+            "dishId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "plan_entries_freezerItemId_freezer_items_id_fk": {
+          "name": "plan_entries_freezerItemId_freezer_items_id_fk",
+          "tableFrom": "plan_entries",
+          "tableTo": "freezer_items",
+          "columnsFrom": [
+            "freezerItemId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "planning_sessions": {
+      "name": "planning_sessions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "weekStart": {
+          "name": "weekStart",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "mealTypes": {
+          "name": "mealTypes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[\"dinner\"]'"
+        },
+        "currentStep": {
+          "name": "currentStep",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 1
+        },
+        "slotStates": {
+          "name": "slotStates",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "removedPlanEntryIds": {
+          "name": "removedPlanEntryIds",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "pendingOneOffEntries": {
+          "name": "pendingOneOffEntries",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "sessionVirtualTags": {
+          "name": "sessionVirtualTags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "pinnedTags": {
+          "name": "pinnedTags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "wishlistTags": {
+          "name": "wishlistTags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "draftPlan": {
+          "name": "draftPlan",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "shownDishIdsBySlot": {
+          "name": "shownDishIdsBySlot",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "leftoverToggles": {
+          "name": "leftoverToggles",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'in_progress'"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "shopping_list_items": {
+      "name": "shopping_list_items",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "shoppingListId": {
+          "name": "shoppingListId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "canonicalIngredientId": {
+          "name": "canonicalIngredientId",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sourceDishIds": {
+          "name": "sourceDishIds",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "rawTexts": {
+          "name": "rawTexts",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "checked": {
+          "name": "checked",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        }
+      },
+      "indexes": {
+        "idx_shopping_list_items_list_id": {
+          "name": "idx_shopping_list_items_list_id",
+          "columns": [
+            "shoppingListId"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "shopping_list_items_shoppingListId_shopping_lists_id_fk": {
+          "name": "shopping_list_items_shoppingListId_shopping_lists_id_fk",
+          "tableFrom": "shopping_list_items",
+          "tableTo": "shopping_lists",
+          "columnsFrom": [
+            "shoppingListId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "shopping_list_items_canonicalIngredientId_canonical_ingredients_id_fk": {
+          "name": "shopping_list_items_canonicalIngredientId_canonical_ingredients_id_fk",
+          "tableFrom": "shopping_list_items",
+          "tableTo": "canonical_ingredients",
+          "columnsFrom": [
+            "canonicalIngredientId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "shopping_lists": {
+      "name": "shopping_lists",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dateRangeStart": {
+          "name": "dateRangeStart",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "dateRangeEnd": {
+          "name": "dateRangeEnd",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "isDone": {
+          "name": "isDone",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "doneAt": {
+          "name": "doneAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "tags": {
+      "name": "tags",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "color": {
+          "name": "color",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "tags_name_unique": {
+          "name": "tags_name_unique",
+          "columns": [
+            "name"
+          ],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    }
+  },
+  "views": {},
+  "enums": {},
+  "_meta": {
+    "schemas": {},
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "indexes": {}
+  }
+}

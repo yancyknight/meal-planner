@@ -123,6 +123,7 @@
                     :key="element.id"
                     :entry="element"
                     :highlighted="recentlyMovedId === element.id"
+                    :freezer-link="getFreezerLink(element)"
                     @delete="deleteEntry(element.id)"
                     @move="openMove(element)"
                   />
@@ -172,6 +173,7 @@
                   v-for="entry in entriesFor(day.iso, mt)"
                   :key="entry.id"
                   :entry="entry"
+                  :freezer-link="getFreezerLink(entry)"
                   @delete="deleteEntry(entry.id)"
                   @move="openMove(entry)"
                 />
@@ -251,6 +253,7 @@
               :key="entry.id"
               :entry="entry"
               full
+              :freezer-link="getFreezerLink(entry)"
               @delete="deleteEntry(entry.id)"
               @move="openMove(entry)"
             />
@@ -302,6 +305,11 @@ import {
   startOfDay,
 } from 'date-fns'
 import type { PlanEntry, MealType } from '#shared/types/planEntry'
+
+interface PlannerFeed {
+  hints: { dishId: number; itemCount: number; singleItemId: number | null; singleItemName: string | null }[]
+  standaloneHints: { freezerItemId: number; name: string; targetUseDate: string; tossByDate: string; freezerName: string }[]
+}
 
 const VIEWS = ['week', 'month', 'day'] as const
 type View = typeof VIEWS[number]
@@ -369,6 +377,29 @@ const { data: entries, isPending } = useQuery({
   queryKey: computed(() => queryKeys.planEntries.range(rangeStart.value, rangeEnd.value)),
   queryFn: () => $fetch<PlanEntry[]>(`/api/plan-entries?start=${rangeStart.value}&end=${rangeEnd.value}`),
 })
+
+const { data: plannerFeed } = useQuery({
+  queryKey: computed(() => queryKeys.freezerPlannerFeed.all()),
+  queryFn: () => $fetch<PlannerFeed>('/api/freezer/planner-feed'),
+  staleTime: 60_000,
+})
+
+const freezerHintsByDishId = computed(() => {
+  const map = new Map<number, PlannerFeed['hints'][number]>()
+  for (const h of plannerFeed.value?.hints ?? []) map.set(h.dishId, h)
+  return map
+})
+
+function getFreezerLink(entry: PlanEntry) {
+  if (entry.dishId != null) {
+    const hint = freezerHintsByDishId.value.get(entry.dishId)
+    if (hint) return hint
+  }
+  if (entry.freezerItemId != null) {
+    return { itemCount: 1, singleItemId: entry.freezerItemId, singleItemName: entry.oneOffText }
+  }
+  return undefined
+}
 
 function entriesFor(date: string, mt: MealType): PlanEntry[] {
   return entries.value?.filter(e => e.date === date && e.mealType === mt) ?? []

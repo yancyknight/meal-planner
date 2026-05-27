@@ -19,8 +19,10 @@ export interface PendingOneOffEntry {
 }
 
 export interface DraftSlot {
-  kind: 'dish' | 'leftover-suggestion'
+  kind: 'dish' | 'leftover-suggestion' | 'standalone-freezer'
   dishId: number
+  freezerItemId?: number
+  oneOffText?: string
   isManualOverride?: boolean
   warningLabels?: string[]
   wishlistTag?: number

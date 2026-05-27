@@ -25,6 +25,13 @@
 
       <!-- Meta row -->
       <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-text-muted">
+        <!-- Freezer badge -->
+        <span
+          v-if="freezerLink"
+          class="font-medium"
+          style="color: var(--color-frost-ink, #3B82F6);"
+        >❄</span>
+
         <!-- Leftover badge -->
         <span v-if="entry.entryKind === 'leftover'" class="text-leftover font-medium">↻ leftover</span>
 
@@ -37,6 +44,25 @@
           class="text-leftover"
           title="Leftovers expected"
         >↻ leftovers</span>
+      </div>
+
+      <!-- Freezer mark-used affordance -->
+      <div v-if="freezerLink" class="mt-1.5">
+        <button
+          v-if="freezerLink.itemCount === 1 && freezerLink.singleItemId"
+          type="button"
+          class="text-xs font-medium transition"
+          style="color: var(--color-frost-ink, #3B82F6);"
+          :disabled="markingUsed"
+          @click.stop="markUsed"
+        >❄ Mark {{ freezerLink.singleItemName || 'item' }} as used</button>
+        <NuxtLink
+          v-else
+          :to="`/freezer`"
+          class="text-xs font-medium transition"
+          style="color: var(--color-frost-ink, #3B82F6);"
+          @click.stop
+        >❄ {{ freezerLink.itemCount }} linked items — open in Freezer ↗</NuxtLink>
       </div>
     </div>
 
@@ -60,17 +86,43 @@
 </template>
 
 <script setup lang="ts">
-import { useQuery } from '@tanstack/vue-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { PlanEntry } from '#shared/types/planEntry'
 import type { AppSettings } from '#shared/types/settings'
+
+interface FreezerLink {
+  itemCount: number
+  singleItemId: number | null
+  singleItemName: string | null
+}
 
 const props = defineProps<{
   entry: PlanEntry
   full?: boolean
   highlighted?: boolean
+  freezerLink?: FreezerLink
 }>()
 
 defineEmits<{ delete: [], move: [] }>()
+
+const queryClient = useQueryClient()
+const markingUsed = ref(false)
+
+const { mutate: doMarkUsed } = useMutation({
+  mutationFn: (id: number) => $fetch(`/api/freezer-items/${id}/use`, { method: 'POST' }),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.freezerItems.all() })
+    queryClient.invalidateQueries({ queryKey: queryKeys.freezerPlannerFeed.all() })
+  },
+  onSettled: () => { markingUsed.value = false },
+})
+
+function markUsed() {
+  const id = props.freezerLink?.singleItemId
+  if (!id) return
+  markingUsed.value = true
+  doMarkUsed(id)
+}
 
 const { data: settings } = useQuery({
   queryKey: computed(() => queryKeys.settings.all()),

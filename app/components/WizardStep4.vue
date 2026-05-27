@@ -80,6 +80,12 @@
                   <span v-if="row.isKept" class="inline-block mt-0.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">KEPT — LOCKED</span>
                 </template>
 
+                <!-- Standalone freezer state -->
+                <template v-else-if="row.state === 'standalone-freezer'">
+                  <p class="text-sm font-medium text-text truncate">{{ row.dishName }}</p>
+                  <p class="text-xs mt-0.5" style="color: var(--color-frost-ink, #3B82F6);">❄ from freezer</p>
+                </template>
+
                 <!-- Keep state -->
                 <template v-else-if="row.state === 'keep'">
                   <p class="text-sm font-medium text-text truncate">{{ row.dishName }}</p>
@@ -143,7 +149,7 @@
                     Clear
                   </button>
                 </template>
-                <template v-else-if="row.state === 'keep' || row.state === 'one-off' || row.state === 'leftover'">
+                <template v-else-if="row.state === 'keep' || row.state === 'one-off' || row.state === 'leftover' || row.state === 'standalone-freezer'">
                   <button
                     type="button"
                     class="text-xs px-2 py-1 rounded border border-border text-text-muted hover:bg-surface-alt transition"
@@ -230,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { format, addDays, parseISO } from 'date-fns'
 import type { PlanningSession } from '#shared/types/planningSession'
 import type { Dish } from '#shared/types/dish'
@@ -301,7 +307,7 @@ function abbr(name: string): string {
   return (words[0]![0]! + words[1]![0]!).toUpperCase()
 }
 
-type RowState = 'plan' | 'skip' | 'keep' | 'one-off' | 'leftover' | 'no-match'
+type RowState = 'plan' | 'skip' | 'keep' | 'one-off' | 'leftover' | 'no-match' | 'standalone-freezer'
 
 interface MealRow {
   slotKey: string
@@ -414,6 +420,19 @@ const dayCards = computed<DayCard[]>(() => {
         continue
       }
 
+      // Standalone freezer item
+      if (draftSlot.kind === 'standalone-freezer') {
+        rows.push({
+          slotKey,
+          mealType,
+          state: 'standalone-freezer',
+          abbr: '❄',
+          dishName: draftSlot.oneOffText ?? 'Freezer item',
+        })
+        otherCount++
+        continue
+      }
+
       // No-match
       if (draftSlot.dishId <= 0) {
         rows.push({
@@ -495,6 +514,7 @@ const stats = computed(() => {
       if (row.state === 'plan') s.filled++
       else if (row.state === 'leftover') s.leftover++
       else if (row.state === 'one-off') s.oneOff++
+      else if (row.state === 'standalone-freezer') s.oneOff++
       else if (row.state === 'keep') s.kept++
       else if (row.state === 'skip') s.skipped++
       else if (row.state === 'no-match') s.noMatch++
@@ -525,7 +545,8 @@ const confirmSummary = computed(() => {
   let blank = 0
 
   for (const [key, slot] of Object.entries(session.draftPlan)) {
-    if (slot.dishId > 0) written++
+    if (slot.kind === 'standalone-freezer') written++
+    else if (slot.dishId > 0) written++
     else blank++
   }
   for (const entry of session.pendingOneOffEntries) {
@@ -549,6 +570,7 @@ const confirmSummary = computed(() => {
 function rowBgClass(row: MealRow): string {
   if (row.state === 'keep') return 'bg-emerald-50/60'
   if (row.state === 'one-off') return 'bg-violet-50/60'
+  if (row.state === 'standalone-freezer') return 'bg-sky-50/60'
   if (row.state === 'leftover') return 'bg-amber-50/60'
   if (row.state === 'no-match') return 'bg-orange-50/60'
   if (row.state === 'skip') return 'bg-[repeating-linear-gradient(45deg,transparent,transparent_6px,rgba(0,0,0,0.03)_6px,rgba(0,0,0,0.03)_12px)]'
@@ -558,6 +580,7 @@ function rowBgClass(row: MealRow): string {
 function tileBgClass(row: MealRow): string {
   if (row.state === 'keep') return 'bg-emerald-100 text-emerald-700'
   if (row.state === 'one-off') return 'bg-violet-100 text-violet-700'
+  if (row.state === 'standalone-freezer') return 'bg-sky-100 text-sky-700'
   if (row.state === 'leftover') return 'bg-amber-100 text-amber-700'
   if (row.state === 'no-match') return 'bg-orange-100 text-orange-700'
   if (row.state === 'skip') return 'bg-surface-alt text-text-subtle'

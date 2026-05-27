@@ -44,6 +44,7 @@ export const createFreezerItemSchema = z.object({
   addedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   lifetimeDaysOverride: z.number().int().min(1).nullable().optional(),
   targetUseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  eligibleForPlanning: z.boolean().optional(),
 })
 
 export const updateFreezerItemSchema = z.object({
@@ -54,6 +55,7 @@ export const updateFreezerItemSchema = z.object({
   categoryId: z.number().int().positive().optional(),
   freezerId: z.number().int().positive().optional(),
   targetUseDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  eligibleForPlanning: z.boolean().optional(),
 })
 
 export const listFreezerItemsSchema = z.object({
