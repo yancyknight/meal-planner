@@ -110,21 +110,56 @@ Single-container deployment. `/data` is a named Docker volume containing both th
 
 ## Current Sprint
 
-**Milestone 16 — Freezer Notifications (Phase 3)** (`milestone-16-freezer-notifications`)
+**Milestone 17 — Freezer + Planner Integration (Phase 4)** (`milestone-17-freezer-planner-integration`)
 
-### Services
-- [x] `server/services/notificationService.ts` — generic `sendNtfy` returning `boolean`; skips when notifications disabled or topic empty; logs and swallows fetch errors
-- [x] `server/services/freezerNotificationService.ts` — pure builders + orchestrators; transition snapshot and audit-overdue suppression stored in `app_settings`; snapshot not updated on send failure
+### Schema Migration
+- [ ] Add `freezerItemId` (nullable integer FK → `freezer_items.id` ON DELETE SET NULL) to `plan_entries` table in `schema.ts`
+- [ ] Add `idx_plan_entries_freezer_item_id` partial index on `(freezerItemId)` WHERE `freezerItemId IS NOT NULL`
+- [ ] Add `eligibleForPlanning` (integer 0/1, default 0) to `freezer_items` table — opt-in flag for standalone (no-dish) items to appear as planner recommendations; dish-linked items remain implicitly eligible via the `dishId` path
+- [ ] Update the `idx_freezer_items_standalone` partial index to include `AND eligibleForPlanning = 1` so the standalone hints query stays index-driven
+- [ ] Generate and run migration (`pnpm db:generate && pnpm db:migrate`)
 
-### Scheduled Tasks
-- [x] `server/tasks/freezer/expiry-check.ts` — calls `runExpiryCheck` + `runAuditOverdueCheck`
-- [x] `server/tasks/freezer/weekly-digest.ts` — hourly heartbeat with UTC day/hour guard
-- [x] Register both crons in `nuxt.config.ts`
+### Shared Schemas & Types
+- [ ] `shared/schemas/planEntry.ts` — add `freezerItemId: z.number().int().nullable().optional()` to create schema; update Zod refinement to allow `freezerItemId` only when `entryKind = 'one-off'`
+- [ ] `shared/types/planEntry.ts` (or equivalent) — add `freezerItemId?: number | null` to `PlanEntry` type
+- [ ] `shared/schemas/freezer.ts` — add `eligibleForPlanning: z.boolean().optional()` to create/update schemas (defaults to false on create)
+- [ ] `shared/types/freezer.ts` — add `eligibleForPlanning: number` (0/1) to `FreezerItem` type
+- [ ] `app/composables/queryKeys.ts` — add `freezerPlannerFeed: { all: () => ['freezer', 'planner-feed'] as const }`
 
-### Settings UI
-- [x] Notifications subsection in Freezer card: enable toggle, ntfy server/topic/token, audit-overdue threshold, weekly digest day/hour
+### Service Additions
+- [ ] `freezerItemService.ts` — `createFreezerItem` / `updateFreezerItem` accept and persist `eligibleForPlanning`
+- [ ] `freezerItemService.ts` — add `getPlannerHints()`: dish-linked query (active items, non-null dishId), deduped by dishId; returns `{ dishId, earliestTargetUseDate, itemCount, freezerNames }[]`
+- [ ] `freezerItemService.ts` — add `getStandaloneHints()`: active items with null dishId AND `eligibleForPlanning = 1`, ordered by `targetUseDate` asc; returns `{ freezerItemId, name, targetUseDate, tossByDate, freezerName }[]`
+
+### Freezer Item Form
+- [ ] `FreezerItemForm.vue` — add "Include in planning recommendations" toggle, shown only when no dish is linked (the dish-link path implies eligibility; the explicit flag covers the standalone path)
+
+### API Route
+- [ ] `server/api/freezer/planner-feed.get.ts` — calls both service methods; returns `{ hints, standaloneHints }`
+
+### Planning Engine Update
+- [ ] `planningEngineService.ts` — add `freezerUrgencyMultiplier(slotDate, earliestTargetUseDate, targetIntervalDays)` pure function: returns 1.0 far from target, 3.0 at/past target, linear ramp 1.0→2.0 in between
+- [ ] Update `computeScore` to accept optional `freezerHint?: { earliestTargetUseDate: string }` and multiply by the urgency factor
+- [ ] Update `GenerateDraftInput` to accept optional `freezerHints?: Map<number, { earliestTargetUseDate: string }>`
+- [ ] Wire `freezerHints` through all `computeScore` call sites in `generateDraft` and `reroll`
+
+### Wire Engine Call Sites
+- [ ] `server/api/planning-sessions/[id]/generate.post.ts` — fetch `/api/freezer/planner-feed`, build `freezerHints` map, pass to engine
+- [ ] `server/api/planning-sessions/[id]/reroll.post.ts` — same
+
+### Calendar UI — ❄ Badge
+- [ ] `app/composables/queryKeys.ts` already updated above
+- [ ] Calendar page components (week/day/month views) — load `freezerPlannerFeed` query; pass hints set down to `PlanEntryChip`
+- [ ] `PlanEntryChip.vue` — accept `isFreezerLinked?: boolean` prop; show ❄ badge when true; driven by: chip's `dishId` is in the hints set OR chip has a `freezerItemId`
+- [ ] "Mark as used" hover/long-press affordance on ❄ chips — single-linked item shows "❄ Mark [name] as used" (one-tap POST to `/api/freezer-items/[id]/use`); multi-linked shows "❄ N linked items — open in Freezer ↗"
+
+### Planning Step 4 — Standalone Recommendations
+- [ ] Planning step 4 page — load `freezerPlannerFeed`; show standalone recommendations panel if any standaloneHints exist
+- [ ] Filter already-linked items: exclude hints whose `freezerItemId` matches a one-off entry already in the week's draft/existing entries
+- [ ] Each recommendation row: item name + urgency (target date), one-tap "Add" button drops a one-off entry on a date/meal picker; `freezerItemId` is set on the created plan entry
 
 ### Tests
-- [x] `test/unit/notificationService.test.ts` — 6 tests
-- [x] `test/unit/freezerNotificationService.test.ts` — 21 tests
+- [ ] `test/unit/freezerItemService.test.ts` — `getPlannerHints`: 3 active items (2 freezers, same dish) → 1 hint with earliest targetUseDate + both freezer names; `getStandaloneHints`: ordered by targetUseDate asc, excludes non-active items, excludes items with `eligibleForPlanning = 0`; create/update round-trips the `eligibleForPlanning` field
+- [ ] `test/unit/planningEngineService.test.ts` — `freezerUrgencyMultiplier`: 1.0 when far (diff > targetIntervalDays); 3.0 when diff ≤ 0; linear ramp at midpoint ≈ 1.5; end-to-end: freezer-linked dish scores higher than equally-overdue non-linked dish when near target date
+- [ ] `test/unit/planEntryService.test.ts` (or API test) — one-off entry created with `freezerItemId` is persisted and returned; Zod rejects `freezerItemId` on non-one-off entries
 
