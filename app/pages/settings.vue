@@ -259,6 +259,15 @@
             <!-- ntfy config (always shown; required to configure before enabling) -->
             <div class="rounded-lg border border-border bg-surface-alt px-4 py-3 space-y-3">
               <div class="flex items-center gap-3">
+                <label class="w-28 shrink-0 text-xs text-text-muted">App base URL</label>
+                <input
+                  v-model="form.siteBaseUrl"
+                  type="url"
+                  class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="https://meals.home (used in notification links)"
+                />
+              </div>
+              <div class="flex items-center gap-3">
                 <label class="w-28 shrink-0 text-xs text-text-muted">Server URL</label>
                 <input
                   v-model="form.ntfyServerUrl"
@@ -448,6 +457,7 @@ const form = reactive({
   ntfyAuthToken: '',
   freezerWeeklyDigestDay: 0,
   freezerWeeklyDigestHour: 9,
+  siteBaseUrl: '',
 })
 const saving = ref(false)
 const saved = ref(false)
@@ -467,6 +477,7 @@ watch(settings, (s) => {
     form.ntfyAuthToken = s.ntfyAuthToken
     form.freezerWeeklyDigestDay = s.freezerWeeklyDigestDay
     form.freezerWeeklyDigestHour = s.freezerWeeklyDigestHour
+    form.siteBaseUrl = s.siteBaseUrl
   }
 }, { immediate: true })
 
@@ -484,6 +495,7 @@ const isDirty = computed(() => {
     || form.ntfyAuthToken !== settings.value.ntfyAuthToken
     || form.freezerWeeklyDigestDay !== settings.value.freezerWeeklyDigestDay
     || form.freezerWeeklyDigestHour !== settings.value.freezerWeeklyDigestHour
+    || form.siteBaseUrl !== settings.value.siteBaseUrl
 })
 
 const { mutateAsync } = useMutation({
@@ -510,6 +522,7 @@ async function save() {
       ntfyAuthToken: form.ntfyAuthToken,
       freezerWeeklyDigestDay: form.freezerWeeklyDigestDay,
       freezerWeeklyDigestHour: form.freezerWeeklyDigestHour,
+      siteBaseUrl: form.siteBaseUrl,
     })
     saved.value = true
     setTimeout(() => { saved.value = false }, 3000)

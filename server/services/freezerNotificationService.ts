@@ -17,6 +17,11 @@ const SNAPSHOT_KEY = 'freezerExpiryLastSnapshot'
 const SUPPRESSION_KEY = 'freezerAuditOverdueSuppressionState'
 const SUPPRESSION_WINDOW_DAYS = 7
 
+function clickUrl(siteBaseUrl: string, path: string): string | undefined {
+  if (!siteBaseUrl) return undefined
+  return `${siteBaseUrl.replace(/\/+$/, '')}${path}`
+}
+
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10)
 }
@@ -120,7 +125,7 @@ export async function runExpiryCheck(): Promise<void> {
       title: 'Freezer alert',
       message,
       priority: 3,
-      click: '/freezer',
+      click: clickUrl(settings.siteBaseUrl, '/freezer'),
       tags: ['snowflake'],
     })
   }
@@ -162,7 +167,7 @@ export async function runAuditOverdueCheck(): Promise<void> {
       title: 'Freezer audit overdue',
       message: buildAuditOverdueMessage(freezer.name, daysSince),
       priority: 3,
-      click: `/freezer/${freezer.id}/audit`,
+      click: clickUrl(settings.siteBaseUrl, `/freezer/${freezer.id}/audit`),
       tags: ['snowflake'],
     })
 
@@ -222,7 +227,7 @@ export async function runWeeklyDigest(): Promise<void> {
       oldestDays >= 0 ? oldestDays : null,
     ),
     priority: 3,
-    click: '/freezer',
+    click: clickUrl(settings.siteBaseUrl, '/freezer'),
     tags: ['snowflake'],
   })
 }

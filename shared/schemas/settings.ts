@@ -13,6 +13,7 @@ export const updateSettingsSchema = z.object({
   ntfyAuthToken: z.string().optional(),
   freezerWeeklyDigestDay: z.number().int().min(0).max(6).optional(),
   freezerWeeklyDigestHour: z.number().int().min(0).max(23).optional(),
+  siteBaseUrl: z.string().optional(),
 }).strict()
 
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>
