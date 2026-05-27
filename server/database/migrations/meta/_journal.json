@@ -78,6 +78,13 @@
       "when": 1779684036173,
       "tag": "0010_nifty_gauntlet",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1779850709836,
+      "tag": "0011_lying_moonstone",
+      "breakpoints": true
     }
   ]
 }

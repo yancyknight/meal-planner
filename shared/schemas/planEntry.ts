@@ -9,6 +9,7 @@ const basePlanEntry = z.object({
   entryKind: z.enum(ENTRY_KINDS).default('fresh'),
   dishId: z.number().int().positive().nullable().optional(),
   oneOffText: z.string().min(1).nullable().optional(),
+  freezerItemId: z.number().int().positive().nullable().optional(),
   guestCount: z.number().int().min(0).default(0),
 })
 
@@ -26,6 +27,9 @@ export const createPlanEntrySchema = basePlanEntry.superRefine((val, ctx) => {
     }
     if (val.oneOffText != null) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'oneOffText must be null for fresh and leftover entries', path: ['oneOffText'] })
+    }
+    if (val.freezerItemId != null) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'freezerItemId may only be set on one-off entries', path: ['freezerItemId'] })
     }
   }
 })

@@ -118,12 +118,14 @@ export const planEntries = sqliteTable('plan_entries', {
   entryKind: text('entryKind').notNull().default('fresh'),
   dishId: integer('dishId').references(() => dishes.id),
   oneOffText: text('oneOffText'),
+  freezerItemId: integer('freezerItemId').references(() => freezerItems.id, { onDelete: 'set null' }),
   guestCount: integer('guestCount').notNull().default(0),
   createdAt: text('createdAt').notNull(),
 }, (table) => [
   index('idx_plan_entries_date').on(table.date),
   index('idx_plan_entries_dish_id').on(table.dishId),
   index('idx_plan_entries_dish_fresh').on(table.dishId, table.date).where(sql`entryKind = 'fresh'`),
+  index('idx_plan_entries_freezer_item_id').on(table.freezerItemId).where(sql`freezerItemId IS NOT NULL`),
 ])
 
 export const freezers = sqliteTable('freezers', {
@@ -155,6 +157,7 @@ export const freezerItems = sqliteTable('freezer_items', {
   lifetimeDaysOverride: integer('lifetimeDaysOverride'),
   tossByDate: text('tossByDate').notNull(),
   targetUseDate: text('targetUseDate').notNull(),
+  eligibleForPlanning: integer('eligibleForPlanning').notNull().default(0),
   status: text('status').notNull().default('active').$type<FreezerItemStatus>(),
   statusChangedAt: text('statusChangedAt'),
   createdAt: text('createdAt').notNull(),
@@ -164,5 +167,5 @@ export const freezerItems = sqliteTable('freezer_items', {
   index('idx_freezer_items_status').on(table.status),
   index('idx_freezer_items_toss_by').on(table.tossByDate).where(sql`status = 'active'`),
   index('idx_freezer_items_dish_id').on(table.dishId).where(sql`status = 'active' AND dishId IS NOT NULL`),
-  index('idx_freezer_items_standalone').on(table.targetUseDate).where(sql`status = 'active' AND dishId IS NULL`),
+  index('idx_freezer_items_standalone').on(table.targetUseDate).where(sql`status = 'active' AND dishId IS NULL AND eligibleForPlanning = 1`),
 ])

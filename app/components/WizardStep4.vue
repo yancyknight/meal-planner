@@ -182,6 +182,60 @@
         </div>
       </div>
 
+      <!-- Standalone freezer recommendations -->
+      <div
+        v-if="unlinkedStandaloneHints.length"
+        class="mt-6 rounded-xl border px-5 py-4"
+        style="border-color: var(--color-frost-line, #93C5FD); background: color-mix(in oklch, var(--color-frost-soft, #EFF6FF) 60%, white);"
+      >
+        <p class="mb-3 text-xs font-medium uppercase tracking-wider" style="color: var(--color-frost-ink, #1D4ED8);">
+          ❄ Freezer Recommendations
+        </p>
+        <div class="space-y-2">
+          <div
+            v-for="hint in unlinkedStandaloneHints"
+            :key="hint.freezerItemId"
+            class="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-border bg-surface px-3 py-2.5"
+          >
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-text truncate">{{ hint.name }}</p>
+              <p class="text-xs text-text-muted">{{ hint.freezerName }} · use by {{ hint.targetUseDate }}</p>
+            </div>
+            <div v-if="addingHintId === hint.freezerItemId" class="flex flex-wrap items-center gap-2">
+              <select
+                v-model="addingDate"
+                class="rounded border border-border bg-surface px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+              >
+                <option v-for="d in weekDateOptions" :key="d.iso" :value="d.iso">{{ d.label }}</option>
+              </select>
+              <select
+                v-model="addingMealType"
+                class="rounded border border-border bg-surface px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-accent"
+              >
+                <option v-for="mt in MEAL_TYPES_OPTIONS" :key="mt" :value="mt" class="capitalize">{{ mt }}</option>
+              </select>
+              <button
+                type="button"
+                class="rounded border border-accent bg-accent px-2.5 py-1 text-xs font-medium text-white hover:bg-accent-hover transition disabled:opacity-40"
+                :disabled="isAddingStandalone"
+                @click="confirmAddStandalone(hint)"
+              >{{ isAddingStandalone ? '…' : 'Add' }}</button>
+              <button
+                type="button"
+                class="text-xs text-text-muted hover:text-text"
+                @click="addingHintId = null"
+              >Cancel</button>
+            </div>
+            <button
+              v-else
+              type="button"
+              class="rounded border border-border px-2.5 py-1 text-xs font-medium text-text-muted hover:bg-surface-alt transition"
+              @click="startAddStandalone(hint)"
+            >+ Add to week</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Confirm footer -->
       <div class="mt-6 rounded-xl border border-border bg-surface-alt px-5 py-4">
         <p class="text-xs font-medium uppercase tracking-wider text-text-muted mb-1">On confirm</p>
@@ -230,10 +284,24 @@
 </template>
 
 <script setup lang="ts">
-import { useQuery, useQueryClient } from '@tanstack/vue-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { format, addDays, parseISO } from 'date-fns'
 import type { PlanningSession } from '#shared/types/planningSession'
 import type { Dish } from '#shared/types/dish'
+import type { PlanEntry } from '#shared/types/planEntry'
+
+interface StandaloneHint {
+  freezerItemId: number
+  name: string
+  targetUseDate: string
+  tossByDate: string
+  freezerName: string
+}
+
+interface PlannerFeed {
+  hints: unknown[]
+  standaloneHints: StandaloneHint[]
+}
 
 const props = defineProps<{
   session: PlanningSession
@@ -247,6 +315,80 @@ const emit = defineEmits<{
 const queryClient = useQueryClient()
 
 const isGenerating = ref(false)
+
+// ── Standalone freezer recommendations ───────────────────────────────────────
+
+const MEAL_TYPES_OPTIONS = ['breakfast', 'lunch', 'dinner', 'uncategorized'] as const
+
+const { data: plannerFeed } = useQuery({
+  queryKey: computed(() => queryKeys.freezerPlannerFeed.all()),
+  queryFn: () => $fetch<PlannerFeed>('/api/freezer/planner-feed'),
+  staleTime: 60_000,
+})
+
+const weekEnd = computed(() => format(addDays(parseISO(props.session.weekStart), 6), 'yyyy-MM-dd'))
+
+const { data: weekEntries } = useQuery({
+  queryKey: computed(() => queryKeys.planEntries.range(props.session.weekStart, weekEnd.value)),
+  queryFn: () => $fetch<PlanEntry[]>(`/api/plan-entries?start=${props.session.weekStart}&end=${weekEnd.value}`),
+})
+
+const linkedFreezerItemIds = computed(() => {
+  const ids = new Set<number>()
+  for (const e of weekEntries.value ?? []) {
+    if (e.freezerItemId != null) ids.add(e.freezerItemId)
+  }
+  return ids
+})
+
+const unlinkedStandaloneHints = computed(() =>
+  (plannerFeed.value?.standaloneHints ?? []).filter(
+    (h) => !linkedFreezerItemIds.value.has(h.freezerItemId),
+  ),
+)
+
+const weekDateOptions = computed(() => {
+  const opts: { iso: string; label: string }[] = []
+  for (let i = 0; i < 7; i++) {
+    const d = addDays(parseISO(props.session.weekStart), i)
+    opts.push({ iso: format(d, 'yyyy-MM-dd'), label: format(d, 'EEE MMM d') })
+  }
+  return opts
+})
+
+const addingHintId = ref<number | null>(null)
+const addingDate = ref('')
+const addingMealType = ref<string>('dinner')
+const isAddingStandalone = ref(false)
+
+function startAddStandalone(hint: StandaloneHint) {
+  addingHintId.value = hint.freezerItemId
+  addingDate.value = weekDateOptions.value[0]?.iso ?? props.session.weekStart
+  addingMealType.value = 'dinner'
+}
+
+async function confirmAddStandalone(hint: StandaloneHint) {
+  if (!addingDate.value || !addingMealType.value) return
+  isAddingStandalone.value = true
+  try {
+    await $fetch('/api/plan-entries', {
+      method: 'POST',
+      body: {
+        date: addingDate.value,
+        mealType: addingMealType.value,
+        entryKind: 'one-off',
+        oneOffText: hint.name,
+        freezerItemId: hint.freezerItemId,
+      },
+    })
+    queryClient.invalidateQueries({ queryKey: queryKeys.planEntries.all() })
+    queryClient.invalidateQueries({ queryKey: queryKeys.freezerPlannerFeed.all() })
+    addingHintId.value = null
+  }
+  finally {
+    isAddingStandalone.value = false
+  }
+}
 const isRerolling = ref<string | null>(null)
 const generationWarnings = ref<string[]>([])
 

@@ -390,18 +390,18 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 17 — Freezer + Planner Integration (Phase 4)
+## Milestone 17 — Freezer + Planner Integration (Phase 4) ✅
 *Adds freezer urgency as a planner score multiplier. Depends on M14 and M9 (planning engine).*
 
-- `[ ]` `GET /api/freezer/planner-feed` — returns `{ hints: [{ dishId, earliestTargetUseDate, itemCount, freezerNames }], standaloneHints: [{ freezerItemId, name, targetUseDate, tossByDate, freezerName }] }`; `hints` deduped by dish; `standaloneHints` are active items with null `dishId`, ordered by `targetUseDate` ascending
-- `[ ]` `freezerItemService.getPlannerHints()` implements the dish-linked query (driven by `idx_freezer_items_dish_id`); `freezerItemService.getStandaloneHints()` implements the standalone query (driven by `idx_freezer_items_standalone`)
-- `[ ]` Engine: `planningEngineService.computeScore` accepts optional `freezerHints` map; `freezerUrgencyMultiplier(slotDate, earliestTargetUseDate)` (1.0 far from target → 2.0 at target → 3.0 at-or-past, clamped)
-- `[ ]` Wire `freezerHints` through `generate.post.ts` and `reroll.post.ts` (both load the feed when the engine is invoked)
-- `[ ]` Schema migration: add `plan_entries.freezerItemId` (nullable FK → `freezer_items.id` ON DELETE SET NULL); add `idx_plan_entries_freezer_item_id` partial index
-- `[ ]` `PlanEntryChip.vue` shows a ❄ badge for fresh entries whose dish appears in the planner feed, and for one-off entries with a non-null `freezerItemId`
-- `[ ]` Standalone recommendations: inline list shown during planning (and on the calendar page) surfacing `standaloneHints` ordered by urgency; items already linked to a one-off entry in the week being planned are filtered out; one-tap Add creates a one-off entry with `freezerItemId` set
-- `[ ]` Calendar chip long-press / hover action: "Mark [item name] as used" — visible only when the dish has exactly one active linked freezer item; multi-item case shows "Manage from freezer" → links to `/freezer`; also visible on one-off entries with a `freezerItemId`
-- `[ ]` Tests: feed dedupes correctly (3 items, 2 freezers → 1 hint, earliest target use); standalone hints ordered by targetUseDate, already-linked items excluded for the planned week; multiplier values at key dates (target − 30 / target / target + 7); end-to-end engine test: a freezer-linked dish is pulled forward over its naturally-overdue alternative when the target date is closer; one-off entry creation with freezerItemId
+- `[x]` `GET /api/freezer/planner-feed` — returns `{ hints: [{ dishId, earliestTargetUseDate, itemCount, freezerNames }], standaloneHints: [{ freezerItemId, name, targetUseDate, tossByDate, freezerName }] }`; `hints` deduped by dish; `standaloneHints` are active items with null `dishId`, ordered by `targetUseDate` ascending
+- `[x]` `freezerItemService.getPlannerHints()` implements the dish-linked query (driven by `idx_freezer_items_dish_id`); `freezerItemService.getStandaloneHints()` implements the standalone query (driven by `idx_freezer_items_standalone`)
+- `[x]` Engine: `planningEngineService.computeScore` accepts optional `freezerHints` map; `freezerUrgencyMultiplier(slotDate, earliestTargetUseDate)` (1.0 far from target → 3.0 at-or-past, linear ramp with 2.0 at midpoint)
+- `[x]` Wire `freezerHints` through `generate.post.ts` and `reroll.post.ts` (both load the feed when the engine is invoked)
+- `[x]` Schema migration: add `plan_entries.freezerItemId` (nullable FK → `freezer_items.id` ON DELETE SET NULL); add `idx_plan_entries_freezer_item_id` partial index; add `freezer_items.eligibleForPlanning` opt-in flag for standalone items
+- `[x]` `PlanEntryChip.vue` shows a ❄ badge for fresh entries whose dish appears in the planner feed, and for one-off entries with a non-null `freezerItemId`
+- `[x]` Standalone recommendations: inline list shown during planning step 4 surfacing `standaloneHints` ordered by urgency; items already linked to a one-off entry in the week being planned are filtered out; one-tap Add creates a one-off entry with `freezerItemId` set
+- `[x]` Calendar chip long-press / hover action: "Mark [item name] as used" — visible only when the dish has exactly one active linked freezer item; multi-item case shows "Manage from freezer" → links to `/freezer`; also visible on one-off entries with a `freezerItemId`
+- `[x]` Tests: feed dedupes correctly (3 items, 2 freezers → 1 hint, earliest target use); standalone hints ordered by targetUseDate; multiplier values at key dates; end-to-end engine test: a freezer-linked dish is pulled forward over its naturally-overdue alternative when the target date is closer; one-off entry creation with freezerItemId
 
 ---
 

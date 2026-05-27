@@ -30,6 +30,7 @@ export interface FreezerItem {
   lifetimeDaysOverride: number | null
   tossByDate: string
   targetUseDate: string
+  eligibleForPlanning: number
   status: FreezerItemStatus
   statusChangedAt: string | null
   createdAt: string

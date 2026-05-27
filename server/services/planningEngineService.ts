@@ -38,6 +38,27 @@ export function isEligibleForSlot(
   return effective >= dish.cooldownDays
 }
 
+/**
+ * Returns a multiplier (1.0–3.0) based on how close slotDate is to the freezer item's target use date.
+ * - More than targetIntervalDays away → 1.0 (no urgency)
+ * - Linear ramp: 2.0 at the midpoint (targetIntervalDays/2 away)
+ * - At or past target → 3.0 (maximum urgency)
+ */
+export function freezerUrgencyMultiplier(
+  slotDate: string,
+  earliestTargetUseDate: string,
+  targetIntervalDays: number,
+): number {
+  const slotMs = new Date(slotDate + 'T00:00:00Z').getTime()
+  const targetMs = new Date(earliestTargetUseDate + 'T00:00:00Z').getTime()
+  const daysUntilTarget = (targetMs - slotMs) / (1000 * 60 * 60 * 24)
+
+  if (daysUntilTarget <= 0) return 3.0
+  if (daysUntilTarget >= targetIntervalDays) return 1.0
+  const t = daysUntilTarget / targetIntervalDays // 1.0 = far, 0.0 = at target
+  return 1.0 + (1 - t) * 2.0
+}
+
 /** Maps a calendar date to meteorological season. */
 export function seasonOf(date: string): 'spring' | 'summer' | 'fall' | 'winter' {
   const month = new Date(date).getUTCMonth() + 1 // 1-12
@@ -64,11 +85,16 @@ function computeScore(
   daysSince: number | null,
   slotDate: string,
   alreadyPlaced: Dish[],
+  freezerHint?: { earliestTargetUseDate: string },
 ): number {
+  const urgency = freezerHint
+    ? freezerUrgencyMultiplier(slotDate, freezerHint.earliestTargetUseDate, dish.targetIntervalDays)
+    : 1.0
   return (
     selectionWeight(dish, daysSince) *
     seasonMultiplier(dish, slotDate) *
-    diversityFactor(dish, alreadyPlaced)
+    diversityFactor(dish, alreadyPlaced) *
+    urgency
   )
 }
 
@@ -96,6 +122,8 @@ export interface GenerateDraftInput {
   householdSize: number
   /** Dish IDs that have an active one-off cooldown and must be excluded from suggestions. */
   activeCooldownDishIds?: Set<number>
+  /** Map of dishId → freezer hint for urgency scoring. */
+  freezerHints?: Map<number, { earliestTargetUseDate: string }>
 }
 
 export interface GenerateDraftResult {
@@ -133,7 +161,7 @@ function daysToSlot(
 }
 
 export function generateDraft(input: GenerateDraftInput): GenerateDraftResult {
-  const { slots, dishes, committedEntries, sessionVirtualTags, pinnedTags, wishlistTags, activeCooldownDishIds } = input
+  const { slots, dishes, committedEntries, sessionVirtualTags, pinnedTags, wishlistTags, activeCooldownDishIds, freezerHints } = input
 
   const draftPlan: Record<string, DraftSlot> = {}
   const warnings: string[] = []
@@ -168,7 +196,13 @@ export function generateDraft(input: GenerateDraftInput): GenerateDraftResult {
     const alreadyPlaced = draftHistory.map((h) => dishes.find((d) => d.id === h.dishId)!).filter(Boolean)
     const scored = candidates.map((dish) => ({
       item: dish,
-      weight: computeScore(dish, daysToSlot(dish, slotDate, committedEntries, draftHistory), slotDate, alreadyPlaced),
+      weight: computeScore(
+        dish,
+        daysToSlot(dish, slotDate, committedEntries, draftHistory),
+        slotDate,
+        alreadyPlaced,
+        freezerHints?.get(dish.id),
+      ),
     }))
     return weightedRandom(scored)
   }
@@ -346,10 +380,12 @@ export interface RerollInput {
   wishlistTagId?: number
   /** Dish IDs that have an active one-off cooldown and must be excluded from suggestions. */
   activeCooldownDishIds?: Set<number>
+  /** Map of dishId → freezer hint for urgency scoring. */
+  freezerHints?: Map<number, { earliestTargetUseDate: string }>
 }
 
 export function reroll(input: RerollInput): { dishId: number; shownDishIds: number[] } | 'exhausted' {
-  const { slotKey, dishes, committedEntries, currentDraftHistory, shownDishIds, sessionVirtualTags, pinTagRefs, wishlistTagId, activeCooldownDishIds } = input
+  const { slotKey, dishes, committedEntries, currentDraftHistory, shownDishIds, sessionVirtualTags, pinTagRefs, wishlistTagId, activeCooldownDishIds, freezerHints } = input
   const [slotDate] = slotKey.split(':')
 
   function baseEligible(dish: Dish): boolean {
@@ -378,7 +414,13 @@ export function reroll(input: RerollInput): { dishId: number; shownDishIds: numb
 
   const scored = candidates.map((dish) => ({
     item: dish,
-    weight: computeScore(dish, daysToSlot(dish, slotDate!, committedEntries, currentDraftHistory), slotDate!, alreadyPlaced),
+    weight: computeScore(
+      dish,
+      daysToSlot(dish, slotDate!, committedEntries, currentDraftHistory),
+      slotDate!,
+      alreadyPlaced,
+      freezerHints?.get(dish.id),
+    ),
   }))
 
   const picked = weightedRandom(scored)

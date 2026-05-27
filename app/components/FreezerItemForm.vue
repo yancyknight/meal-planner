@@ -144,6 +144,30 @@
       </div>
     </details>
 
+    <!-- Include in planning recommendations (standalone items only) -->
+    <div
+      v-if="!form.dishId"
+      class="flex items-center justify-between rounded-lg border border-border px-3 py-2.5"
+    >
+      <div>
+        <p class="text-sm font-medium text-text">Include in planning recommendations</p>
+        <p class="text-xs text-text-muted">Suggest this item during meal planning</p>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        :aria-checked="form.eligibleForPlanning"
+        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2"
+        :class="form.eligibleForPlanning ? 'bg-accent' : 'bg-gray-200'"
+        @click="form.eligibleForPlanning = !form.eligibleForPlanning"
+      >
+        <span
+          class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+          :class="form.eligibleForPlanning ? 'translate-x-5' : 'translate-x-0'"
+        />
+      </button>
+    </div>
+
     <!-- Submit -->
     <div class="flex items-center justify-end gap-3 pt-2">
       <slot name="cancel" />
@@ -192,6 +216,7 @@ const form = reactive<{
   notes: string
   dishId: number | null
   targetUseDate: string | null
+  eligibleForPlanning: boolean
 }>({
   freezerId: props.prefillFreezerId ?? props.initialValues?.freezerId ?? null,
   name: props.initialValues?.name ?? '',
@@ -201,6 +226,7 @@ const form = reactive<{
   notes: props.initialValues?.notes ?? '',
   dishId: props.initialValues?.dishId ?? null,
   targetUseDate: props.initialValues?.targetUseDate ?? null,
+  eligibleForPlanning: !!(props.initialValues?.eligibleForPlanning),
 })
 
 const nfcFreezer = computed(() =>
@@ -267,6 +293,7 @@ async function handleSubmit() {
     notes: form.notes || undefined,
     dishId: form.dishId ?? undefined,
     targetUseDate: form.targetUseDate ?? undefined,
+    eligibleForPlanning: form.dishId ? undefined : form.eligibleForPlanning,
   } as CreateFreezerItemInput)
 }
 

@@ -1,9 +1,27 @@
-import { eq, and, lt, gte, desc, asc, inArray } from 'drizzle-orm'
+import { eq, and, lt, gte, desc, asc, inArray, isNull, isNotNull } from 'drizzle-orm'
 import { db } from '../database'
 import { freezerItems, freezers, freezerCategories } from '../database/schema'
 import type { FreezerItem, FreezerDashboardPayload, FreezerBucketGroup, Freezer } from '../../shared/types/freezer'
 import type { CreateFreezerItemInput, UpdateFreezerItemInput, ListFreezerItemsInput } from '../../shared/schemas/freezer'
 import { getFreezerCategory } from './freezerCategoryService'
+
+export interface PlannerHint {
+  dishId: number
+  earliestTargetUseDate: string
+  itemCount: number
+  freezerNames: string[]
+  /** Set when itemCount === 1 — enables single-tap "Mark as used" in the calendar chip. */
+  singleItemId: number | null
+  singleItemName: string | null
+}
+
+export interface StandaloneHint {
+  freezerItemId: number
+  name: string
+  targetUseDate: string
+  tossByDate: string
+  freezerName: string
+}
 
 function now(): string {
   return new Date().toISOString()
@@ -57,6 +75,7 @@ export async function createFreezerItem(input: CreateFreezerItemInput): Promise<
       lifetimeDaysOverride: input.lifetimeDaysOverride ?? null,
       tossByDate,
       targetUseDate,
+      eligibleForPlanning: input.eligibleForPlanning ? 1 : 0,
       status: 'active',
       createdAt: ts,
       updatedAt: ts,
@@ -95,6 +114,7 @@ export async function updateFreezerItem(id: number, input: UpdateFreezerItemInpu
   if (input.categoryId !== undefined) set.categoryId = input.categoryId
   if (input.freezerId !== undefined) set.freezerId = input.freezerId
   if (input.targetUseDate !== undefined) set.targetUseDate = input.targetUseDate
+  if (input.eligibleForPlanning !== undefined) set.eligibleForPlanning = input.eligibleForPlanning ? 1 : 0
 
   const rows = await db
     .update(freezerItems)
@@ -102,6 +122,62 @@ export async function updateFreezerItem(id: number, input: UpdateFreezerItemInpu
     .where(eq(freezerItems.id, id))
     .returning()
   return rows[0] ?? null
+}
+
+export async function getPlannerHints(): Promise<PlannerHint[]> {
+  const [items, allFreezers] = await Promise.all([
+    db.select().from(freezerItems)
+      .where(and(eq(freezerItems.status, 'active'), isNotNull(freezerItems.dishId)))
+      .orderBy(asc(freezerItems.targetUseDate)),
+    db.select().from(freezers),
+  ])
+
+  const freezerMap = new Map(allFreezers.map(f => [f.id, f.name]))
+  const grouped = new Map<number, { items: typeof items; freezerIds: Set<number> }>()
+
+  for (const item of items) {
+    const dishId = item.dishId!
+    const group = grouped.get(dishId) ?? { items: [], freezerIds: new Set() }
+    group.items.push(item)
+    group.freezerIds.add(item.freezerId)
+    grouped.set(dishId, group)
+  }
+
+  return Array.from(grouped.entries()).map(([dishId, group]) => {
+    const earliest = group.items.reduce((a, b) => (a.targetUseDate < b.targetUseDate ? a : b))
+    const isSingle = group.items.length === 1
+    return {
+      dishId,
+      earliestTargetUseDate: earliest.targetUseDate,
+      itemCount: group.items.length,
+      freezerNames: Array.from(group.freezerIds).map(id => freezerMap.get(id) ?? 'Unknown'),
+      singleItemId: isSingle ? group.items[0]!.id : null,
+      singleItemName: isSingle ? group.items[0]!.name : null,
+    }
+  })
+}
+
+export async function getStandaloneHints(): Promise<StandaloneHint[]> {
+  const [items, allFreezers] = await Promise.all([
+    db.select().from(freezerItems)
+      .where(and(
+        eq(freezerItems.status, 'active'),
+        isNull(freezerItems.dishId),
+        eq(freezerItems.eligibleForPlanning, 1),
+      ))
+      .orderBy(asc(freezerItems.targetUseDate)),
+    db.select().from(freezers),
+  ])
+
+  const freezerMap = new Map(allFreezers.map(f => [f.id, f.name]))
+
+  return items.map(item => ({
+    freezerItemId: item.id,
+    name: item.name,
+    targetUseDate: item.targetUseDate,
+    tossByDate: item.tossByDate,
+    freezerName: freezerMap.get(item.freezerId) ?? 'Unknown',
+  }))
 }
 
 export async function deleteFreezerItem(id: number): Promise<boolean> {

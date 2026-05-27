@@ -4,6 +4,7 @@ import { listDishes } from '../../../services/dishService'
 import { listByDateRange } from '../../../services/planEntryService'
 import { reroll } from '../../../services/planningEngineService'
 import { getActiveDishIds } from '../../../services/dishCooldownService'
+import { getPlannerHints } from '../../../services/freezerItemService'
 import { addDays, format } from 'date-fns'
 
 export default defineEventHandler(async (event) => {
@@ -28,11 +29,16 @@ export default defineEventHandler(async (event) => {
   }
 
   const weekEnd = format(addDays(new Date(session.weekStart), 6), 'yyyy-MM-dd')
-  const [dishes, committedEntries] = await Promise.all([
+  const [dishes, committedEntries, plannerHints] = await Promise.all([
     listDishes({ archived: false }),
     listByDateRange(session.weekStart, weekEnd),
+    getPlannerHints(),
   ])
   const activeCooldownDishIds = await getActiveDishIds(dishes.map((d) => d.id), slotDate!)
+
+  const freezerHints = new Map(
+    plannerHints.map((h) => [h.dishId, { earliestTargetUseDate: h.earliestTargetUseDate }]),
+  )
 
   // Build current draft history (all fresh-placed dish ids and their dates, excluding the slot being rerolled)
   const currentDraftHistory: { dishId: number; date: string }[] = []
@@ -63,6 +69,7 @@ export default defineEventHandler(async (event) => {
     pinTagRefs: slotPins.map((p) => p.tagRef),
     wishlistTagId,
     activeCooldownDishIds,
+    freezerHints,
   })
 
   if (rerollResult === 'exhausted') {

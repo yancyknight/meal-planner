@@ -4,6 +4,7 @@ import { listByDateRange } from '../../../services/planEntryService'
 import { getSettings } from '../../../services/settingsService'
 import { generateDraft } from '../../../services/planningEngineService'
 import { getActiveDishIds } from '../../../services/dishCooldownService'
+import { getPlannerHints } from '../../../services/freezerItemService'
 import { addDays, format } from 'date-fns'
 
 export default defineEventHandler(async (event) => {
@@ -20,12 +21,17 @@ export default defineEventHandler(async (event) => {
   }
 
   const weekEnd = format(addDays(new Date(session.weekStart), 6), 'yyyy-MM-dd')
-  const [dishes, committedEntries, settings] = await Promise.all([
+  const [dishes, committedEntries, settings, plannerHints] = await Promise.all([
     listDishes({ archived: false }),
     listByDateRange(session.weekStart, weekEnd),
     getSettings(),
+    getPlannerHints(),
   ])
   const activeCooldownDishIds = await getActiveDishIds(dishes.map((d) => d.id), session.weekStart)
+
+  const freezerHints = new Map(
+    plannerHints.map((h) => [h.dishId, { earliestTargetUseDate: h.earliestTargetUseDate }]),
+  )
 
   // Build slot list from session state
   const slots = session.mealTypes.flatMap((mealType) => {
@@ -48,6 +54,7 @@ export default defineEventHandler(async (event) => {
     wishlistTags: session.wishlistTags,
     householdSize: settings.householdSize,
     activeCooldownDishIds,
+    freezerHints,
   })
 
   // Seed shownDishIdsBySlot with initial picks

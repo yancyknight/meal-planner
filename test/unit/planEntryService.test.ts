@@ -15,7 +15,7 @@ vi.mock('../../server/database/index', async () => {
 })
 
 import { db } from '../../server/database/index'
-import { dishes, planEntries } from '../../server/database/schema'
+import { dishes, planEntries, freezers, freezerCategories, freezerItems } from '../../server/database/schema'
 import {
   createPlanEntry,
   updatePlanEntry,
@@ -48,8 +48,23 @@ async function seedDish(name = 'Test Dish', yieldServings: number | null = null)
 
 beforeEach(async () => {
   await db.delete(planEntries)
+  await db.delete(freezerItems)
+  await db.delete(freezerCategories)
+  await db.delete(freezers)
   await db.delete(dishes)
 })
+
+async function seedFreezerItem(name = 'Test Freezer Item') {
+  const now = new Date().toISOString()
+  const [freezer] = await db.insert(freezers).values({ name: 'Test Freezer', createdAt: now, updatedAt: now }).returning()
+  const [cat] = await db.insert(freezerCategories).values({ name: 'Test Cat', defaultLifetimeDays: 90, isSystem: 0, createdAt: now, updatedAt: now }).returning()
+  const [item] = await db.insert(freezerItems).values({
+    freezerId: freezer!.id, categoryId: cat!.id, name,
+    addedAt: '2026-01-01', tossByDate: '2026-04-01', targetUseDate: '2026-02-15',
+    eligibleForPlanning: 0, status: 'active', createdAt: now, updatedAt: now,
+  }).returning()
+  return item!
+}
 
 // ── Zod schema validation ────────────────────────────────────────
 
@@ -314,5 +329,60 @@ describe('hasLeftovers', () => {
   it('respects a different householdSize', () => {
     expect(hasLeftovers(2, 0, 2)).toBe(false)
     expect(hasLeftovers(3, 0, 2)).toBe(true)
+  })
+})
+
+// ── freezerItemId on plan entries ─────────────────────────────────
+
+describe('createPlanEntrySchema — freezerItemId validation', () => {
+  it('accepts freezerItemId on a one-off entry', () => {
+    const r = createPlanEntrySchema.safeParse({
+      date: '2026-06-01', mealType: 'dinner', entryKind: 'one-off',
+      oneOffText: 'Chicken from freezer', freezerItemId: 42,
+    })
+    expect(r.success).toBe(true)
+  })
+
+  it('rejects freezerItemId on a fresh entry', () => {
+    const r = createPlanEntrySchema.safeParse({
+      date: '2026-06-01', mealType: 'dinner', entryKind: 'fresh',
+      dishId: 1, freezerItemId: 42,
+    })
+    expect(r.success).toBe(false)
+  })
+
+  it('rejects freezerItemId on a leftover entry', () => {
+    const r = createPlanEntrySchema.safeParse({
+      date: '2026-06-01', mealType: 'lunch', entryKind: 'leftover',
+      dishId: 1, freezerItemId: 42,
+    })
+    expect(r.success).toBe(false)
+  })
+
+  it('allows null freezerItemId on a one-off entry', () => {
+    const r = createPlanEntrySchema.safeParse({
+      date: '2026-06-01', mealType: 'dinner', entryKind: 'one-off',
+      oneOffText: 'Takeout', freezerItemId: null,
+    })
+    expect(r.success).toBe(true)
+  })
+})
+
+describe('createPlanEntry — freezerItemId persistence', () => {
+  it('persists freezerItemId and returns it in the result', async () => {
+    const fi = await seedFreezerItem('Pesto Chicken')
+    const entry = await createPlanEntry({
+      date: '2026-06-01', mealType: 'dinner', entryKind: 'one-off',
+      oneOffText: 'Pesto Chicken', freezerItemId: fi.id,
+    })
+    expect(entry.freezerItemId).toBe(fi.id)
+  })
+
+  it('freezerItemId is null when not provided', async () => {
+    const entry = await createPlanEntry({
+      date: '2026-06-01', mealType: 'dinner', entryKind: 'one-off',
+      oneOffText: 'Pizza night',
+    })
+    expect(entry.freezerItemId).toBeNull()
   })
 })

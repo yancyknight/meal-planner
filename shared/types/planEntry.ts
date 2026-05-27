@@ -12,6 +12,7 @@ export interface PlanEntry {
   dishImageUrl: string | null
   dishYieldServings: number | null
   oneOffText: string | null
+  freezerItemId: number | null
   guestCount: number
   createdAt: string
 }

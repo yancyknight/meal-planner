@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { selectionWeight, isEligibleForSlot, seasonOf, weightedRandom, generateDraft, reroll } from '../../server/services/planningEngineService'
+import { selectionWeight, isEligibleForSlot, seasonOf, weightedRandom, generateDraft, reroll, freezerUrgencyMultiplier } from '../../server/services/planningEngineService'
 import type { Dish } from '../../shared/types/dish'
 
 // ── Pure function unit tests ──────────────────────────────────────────────────
@@ -104,6 +104,36 @@ describe('weightedRandom', () => {
     const b = { id: 2 }
     const result = weightedRandom([{ item: a, weight: 0 }, { item: b, weight: 100 }])
     expect(result).toBe(b)
+  })
+})
+
+// ── freezerUrgencyMultiplier ──────────────────────────────────────────────────
+
+describe('freezerUrgencyMultiplier', () => {
+  const TARGET_INTERVAL = 14
+
+  it('returns 1.0 when slot is more than targetIntervalDays before target', () => {
+    // slot = 2026-06-01, target = 2026-07-01 (30 days away), targetInterval = 14
+    expect(freezerUrgencyMultiplier('2026-06-01', '2026-07-01', TARGET_INTERVAL)).toBeCloseTo(1.0)
+  })
+
+  it('returns 3.0 when slot date equals target date', () => {
+    expect(freezerUrgencyMultiplier('2026-06-15', '2026-06-15', TARGET_INTERVAL)).toBeCloseTo(3.0)
+  })
+
+  it('returns 3.0 when slot date is past target date', () => {
+    expect(freezerUrgencyMultiplier('2026-06-20', '2026-06-15', TARGET_INTERVAL)).toBeCloseTo(3.0)
+  })
+
+  it('returns 2.0 at the midpoint (targetIntervalDays / 2 days before target)', () => {
+    // slot = 2026-06-01, target = 2026-06-08 (7 days away = 14/2), targetInterval = 14
+    expect(freezerUrgencyMultiplier('2026-06-01', '2026-06-08', TARGET_INTERVAL)).toBeCloseTo(2.0)
+  })
+
+  it('returns a value between 1.0 and 3.0 within the ramp range', () => {
+    const val = freezerUrgencyMultiplier('2026-06-01', '2026-06-11', TARGET_INTERVAL) // 10 days away (< 14)
+    expect(val).toBeGreaterThan(1.0)
+    expect(val).toBeLessThan(3.0)
   })
 })
 
@@ -287,6 +317,49 @@ describe('generateDraft — no eligible dishes', () => {
     const { draftPlan, warnings } = generateDraft(input)
     expect(draftPlan['2026-06-01:dinner']?.dishId).toBe(-1)
     expect(warnings.length).toBeGreaterThan(0)
+  })
+})
+
+// ── generateDraft — freezer urgency ──────────────────────────────────────────
+
+describe('generateDraft — freezer urgency scoring', () => {
+  it('freezer-linked dish scores higher than equally-overdue non-linked dish when near target', () => {
+    const slotDate = '2026-06-08'
+    // Both dishes overdue (last served 14 days ago = same selectionWeight = 1.0)
+    // Dish 1 has a freezer hint with target = today → multiplier = 3.0
+    // Dish 2 has no hint → multiplier = 1.0
+    // Over many trials, dish 1 should be picked more often
+    const dishWithFreezer = makeDish({ id: 10, name: 'Freezer Dish', targetIntervalDays: 14 })
+    const dishWithout = makeDish({ id: 11, name: 'Regular Dish', targetIntervalDays: 14 })
+    const lastServed = '2026-05-25' // 14 days before slotDate
+
+    const freezerHints = new Map([[10, { earliestTargetUseDate: slotDate }]])
+
+    const committedEntries = [
+      { id: 1, date: lastServed, mealType: 'dinner', entryKind: 'fresh' as const, dishId: 10, dishName: 'Freezer Dish', dishImageLocalPath: null, dishImageUrl: null, dishYieldServings: null, oneOffText: null, freezerItemId: null, guestCount: 0, createdAt: '' },
+      { id: 2, date: lastServed, mealType: 'dinner', entryKind: 'fresh' as const, dishId: 11, dishName: 'Regular Dish', dishImageLocalPath: null, dishImageUrl: null, dishYieldServings: null, oneOffText: null, freezerItemId: null, guestCount: 0, createdAt: '' },
+    ]
+
+    const picks = { 10: 0, 11: 0 }
+    const TRIALS = 500
+    for (let i = 0; i < TRIALS; i++) {
+      const { draftPlan } = generateDraft({
+        slots: [{ date: slotDate, mealType: 'dinner', state: 'plan' }],
+        dishes: [dishWithFreezer, dishWithout],
+        committedEntries,
+        sessionVirtualTags: [],
+        pinnedTags: [],
+        wishlistTags: [],
+        householdSize: 3,
+        freezerHints,
+      })
+      const picked = draftPlan[`${slotDate}:dinner`]?.dishId
+      if (picked === 10) picks[10]++
+      else if (picked === 11) picks[11]++
+    }
+
+    // With 3× urgency multiplier on dish 10, it should win ~75% of the time (3:1 ratio)
+    expect(picks[10]).toBeGreaterThan(picks[11])
   })
 })
 
