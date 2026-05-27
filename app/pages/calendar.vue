@@ -17,6 +17,11 @@
             {{ format(anchor, 'MMM d') }}
           </template>
         </h1>
+        <p class="mt-0.5 text-sm text-text-muted capitalize">
+          <template v-if="view === 'month'">{{ monthLabel }}</template>
+          <template v-else-if="view === 'week'">{{ weekLabel }}</template>
+          <template v-else>{{ dayLabel }}</template>
+        </p>
       </div>
       <div class="flex items-center gap-2 flex-wrap">
         <!-- View toggle -->
@@ -304,6 +309,7 @@ import {
   parseISO,
   startOfDay,
 } from 'date-fns'
+import { weekRelativeLabel, dayRelativeLabel, monthRelativeLabel } from '~/utils/relativeDateLabel'
 import type { PlanEntry, MealType } from '#shared/types/planEntry'
 
 interface PlannerFeed {
@@ -336,6 +342,26 @@ const initialDate = computed(() => {
   return startOfDay(new Date())
 })
 const anchor = ref(initialDate.value)
+
+// ── Relative date labels ────────────────────────────────────────
+// today is a ref updated at midnight so labels stay accurate in long-running sessions
+const today = ref(startOfDay(new Date()))
+if (import.meta.client) {
+  const msUntilMidnight = () => {
+    const now = new Date()
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime()
+  }
+  const scheduleMidnightUpdate = () => {
+    setTimeout(() => {
+      today.value = startOfDay(new Date())
+      scheduleMidnightUpdate()
+    }, msUntilMidnight())
+  }
+  scheduleMidnightUpdate()
+}
+const weekLabel = computed(() => weekRelativeLabel(weekStart.value, today.value))
+const dayLabel = computed(() => dayRelativeLabel(anchor.value, today.value))
+const monthLabel = computed(() => monthRelativeLabel(anchor.value, today.value))
 
 // Reduce month-cell previews to 1 on narrow screens
 const monthPreviewCount = ref(3)

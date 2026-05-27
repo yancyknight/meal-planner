@@ -416,15 +416,16 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 19 — Shopping List One-offs + Calendar Date Labels (#46, #38)
-*No schema migration needed. Two independent small features.*
+## Milestone 19 — Shopping List One-offs + Calendar Date Labels (#46, #38) ✅
+*Schema migration required (canonicalIngredientId made nullable). Two independent small features.*
 
-- `[ ]` `shoppingListService.ts` — in `generateItems`, also fetch `one-off` entries (null `dishId`) in the date range; insert each as a shopping list item with `rawText = entry.oneOffText` and null `canonicalIngredientId`
-- `[ ]` Shopping list detail UI — confirm one-off items render in the combined view (no canonical grouping); checkboxes work; "by dish" toggle gracefully handles null-dish rows
-- `[ ]` Calendar week view — add a computed relative-week label using `date-fns` (`differenceInCalendarWeeks`): "this week", "next week", "last week", "in N weeks"; render alongside the existing date header
-- `[ ]` Calendar day view — add relative label: "today", "tomorrow", "yesterday", "N days ago", "in N days"
-- `[ ]` Calendar month view — add relative label: "this month", "next month", "last month", "in N months"
-- `[ ]` Tests: `shoppingListService` includes one-off entries as line items; label values at known date offsets (today, +1, +7, +30, -1)
+- `[x]` Schema migration: `shopping_list_items.canonicalIngredientId` made nullable (0012)
+- `[x]` `shoppingListService.ts` — in `generateItems`, also fetch `one-off` entries (null `dishId`) in the date range; insert each as a shopping list item with `rawText = entry.oneOffText` and null `canonicalIngredientId`
+- `[x]` Shopping list detail UI — one-off items render in combined view (name shown from rawText); checkboxes work; by-dish toggle shows one-offs in a separate "One-offs" section
+- `[x]` Calendar week view — relative label ("this week", "next week", "last week", "in N weeks"); rendered below the date header
+- `[x]` Calendar day view — relative label ("today", "tomorrow", "yesterday", "N days ago", "in N days")
+- `[x]` Calendar month view — relative label ("this month", "next month", "last month", "in N months")
+- `[x]` Tests: `shoppingListService` one-off items; null canonical handling; label pure-function tests in `relativeDateLabel.test.ts`
 
 ---
 

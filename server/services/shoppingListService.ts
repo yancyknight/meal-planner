@@ -18,8 +18,8 @@ export interface ShoppingListSummary {
 
 export interface ShoppingListItem {
   id: number
-  canonicalIngredientId: number
-  canonicalName: string
+  canonicalIngredientId: number | null
+  canonicalName: string | null
   walmartUrl: string | null
   sourceDishIds: number[]
   sourceDishNames: string[]
@@ -67,7 +67,7 @@ export async function createShoppingList(input: CreateShoppingListInput): Promis
 }
 
 async function generateItems(listId: number, start: string, end: string): Promise<void> {
-  // Only fresh entries contribute ingredients (leftovers were already cooked)
+  // Fresh dish entries → grouped ingredient items
   const freshEntries = await db
     .select({ dishId: planEntries.dishId })
     .from(planEntries)
@@ -81,50 +81,77 @@ async function generateItems(listId: number, start: string, end: string): Promis
     )
 
   const dishIds = [...new Set(freshEntries.map(e => e.dishId!).filter(Boolean))]
-  if (dishIds.length === 0) return
 
-  const ingredients = await db
-    .select({
-      dishId: dishIngredients.dishId,
-      dishName: dishes.name,
-      canonicalIngredientId: dishIngredients.canonicalIngredientId,
-      rawText: dishIngredients.rawText,
-    })
-    .from(dishIngredients)
-    .innerJoin(dishes, eq(dishIngredients.dishId, dishes.id))
-    .where(sql`${dishIngredients.dishId} IN ${dishIds}`)
-
-  // Group by canonical ingredient ID
-  const grouped = new Map<number, { dishIds: number[]; dishNames: string[]; rawTexts: string[] }>()
-  for (const row of ingredients) {
-    const existing = grouped.get(row.canonicalIngredientId)
-    if (existing) {
-      if (!existing.dishIds.includes(row.dishId)) {
-        existing.dishIds.push(row.dishId)
-        existing.dishNames.push(row.dishName)
-      }
-      existing.rawTexts.push(row.rawText)
-    }
-    else {
-      grouped.set(row.canonicalIngredientId, {
-        dishIds: [row.dishId],
-        dishNames: [row.dishName],
-        rawTexts: [row.rawText],
+  if (dishIds.length > 0) {
+    const ingredients = await db
+      .select({
+        dishId: dishIngredients.dishId,
+        dishName: dishes.name,
+        canonicalIngredientId: dishIngredients.canonicalIngredientId,
+        rawText: dishIngredients.rawText,
       })
+      .from(dishIngredients)
+      .innerJoin(dishes, eq(dishIngredients.dishId, dishes.id))
+      .where(sql`${dishIngredients.dishId} IN ${dishIds}`)
+
+    const grouped = new Map<number, { dishIds: number[]; dishNames: string[]; rawTexts: string[] }>()
+    for (const row of ingredients) {
+      const existing = grouped.get(row.canonicalIngredientId)
+      if (existing) {
+        if (!existing.dishIds.includes(row.dishId)) {
+          existing.dishIds.push(row.dishId)
+          existing.dishNames.push(row.dishName)
+        }
+        existing.rawTexts.push(row.rawText)
+      }
+      else {
+        grouped.set(row.canonicalIngredientId, {
+          dishIds: [row.dishId],
+          dishNames: [row.dishName],
+          rawTexts: [row.rawText],
+        })
+      }
+    }
+
+    if (grouped.size > 0) {
+      await db.insert(shoppingListItems).values(
+        [...grouped.entries()].map(([canonicalIngredientId, data]) => ({
+          shoppingListId: listId,
+          canonicalIngredientId,
+          sourceDishIds: JSON.stringify(data.dishIds),
+          rawTexts: JSON.stringify(data.rawTexts),
+          checked: 0,
+        })),
+      )
     }
   }
 
-  if (grouped.size === 0) return
+  // One-off entries → one row each with null canonicalIngredientId
+  const oneOffEntries = await db
+    .select({ oneOffText: planEntries.oneOffText })
+    .from(planEntries)
+    .where(
+      and(
+        gte(planEntries.date, start),
+        lte(planEntries.date, end),
+        eq(planEntries.entryKind, 'one-off'),
+        sql`${planEntries.oneOffText} IS NOT NULL`,
+      ),
+    )
 
-  const values = [...grouped.entries()].map(([canonicalIngredientId, data]) => ({
-    shoppingListId: listId,
-    canonicalIngredientId,
-    sourceDishIds: JSON.stringify(data.dishIds),
-    rawTexts: JSON.stringify(data.rawTexts),
-    checked: 0,
-  }))
+  const oneOffValues = oneOffEntries
+    .filter(e => e.oneOffText)
+    .map(e => ({
+      shoppingListId: listId,
+      canonicalIngredientId: null,
+      sourceDishIds: '[]',
+      rawTexts: JSON.stringify([e.oneOffText!]),
+      checked: 0,
+    }))
 
-  await db.insert(shoppingListItems).values(values)
+  if (oneOffValues.length > 0) {
+    await db.insert(shoppingListItems).values(oneOffValues)
+  }
 }
 
 export async function listShoppingLists(): Promise<ShoppingListSummary[]> {
@@ -186,9 +213,13 @@ export async function getById(id: number): Promise<ShoppingListDetail | null> {
       checked: shoppingListItems.checked,
     })
     .from(shoppingListItems)
-    .innerJoin(canonicalIngredients, eq(shoppingListItems.canonicalIngredientId, canonicalIngredients.id))
+    .leftJoin(canonicalIngredients, eq(shoppingListItems.canonicalIngredientId, canonicalIngredients.id))
     .where(eq(shoppingListItems.shoppingListId, id))
-    .orderBy(canonicalIngredients.name)
+    .orderBy(
+      sql`CASE WHEN ${canonicalIngredients.name} IS NULL THEN 1 ELSE 0 END`,
+      canonicalIngredients.name,
+      shoppingListItems.id,
+    )
 
   // Resolve dish names for all sourceDishIds
   const allDishIds = [...new Set(items.flatMap(item => JSON.parse(item.sourceDishIds) as number[]))]

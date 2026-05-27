@@ -15,7 +15,7 @@ export const shoppingLists = sqliteTable('shopping_lists', {
 export const shoppingListItems = sqliteTable('shopping_list_items', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   shoppingListId: integer('shoppingListId').notNull().references(() => shoppingLists.id, { onDelete: 'cascade' }),
-  canonicalIngredientId: integer('canonicalIngredientId').notNull().references(() => canonicalIngredients.id),
+  canonicalIngredientId: integer('canonicalIngredientId').references(() => canonicalIngredients.id),
   sourceDishIds: text('sourceDishIds').notNull().default('[]'),
   rawTexts: text('rawTexts').notNull().default('[]'),
   checked: integer('checked').notNull().default(0),

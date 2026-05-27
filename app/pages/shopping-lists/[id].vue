@@ -101,7 +101,7 @@
           :key="item.id"
           :item="item"
           @toggle="toggleItem(item.id, $event)"
-          @set-walmart-url="setWalmartUrl(item.canonicalIngredientId, $event)"
+          @set-walmart-url="item.canonicalIngredientId != null && setWalmartUrl(item.canonicalIngredientId, $event)"
         />
       </div>
 
@@ -125,7 +125,25 @@
               :key="item.id"
               :item="item"
               @toggle="toggleItem(item.id, $event)"
-              @set-walmart-url="setWalmartUrl(item.canonicalIngredientId, $event)"
+              @set-walmart-url="item.canonicalIngredientId != null && setWalmartUrl(item.canonicalIngredientId, $event)"
+            />
+          </div>
+        </div>
+
+        <!-- One-offs section -->
+        <div
+          v-if="oneOffItems.length"
+          class="rounded-lg border border-border bg-surface overflow-hidden"
+        >
+          <div class="border-b border-border bg-surface-alt px-5 py-3">
+            <p class="text-xs font-medium uppercase tracking-wider text-text-muted">One-offs</p>
+          </div>
+          <div class="divide-y divide-border">
+            <ShoppingListItemRow
+              v-for="item in oneOffItems"
+              :key="item.id"
+              :item="item"
+              @toggle="toggleItem(item.id, $event)"
             />
           </div>
         </div>
@@ -166,11 +184,12 @@ function formatCountdown(deletesAt: string): string {
   return `${minutes}m`
 }
 
-// By-dish sections: each unique dish with its items
+// By-dish sections: ingredient items grouped by source dish
 const dishesSections = computed(() => {
   if (!list.value) return []
   const map = new Map<number, { id: number; name: string; items: ShoppingListItem[] }>()
   for (const item of list.value.items) {
+    if (item.canonicalName === null) continue
     for (let i = 0; i < item.sourceDishIds.length; i++) {
       const dishId = item.sourceDishIds[i]!
       const dishName = item.sourceDishNames[i] ?? ''
@@ -179,6 +198,12 @@ const dishesSections = computed(() => {
     }
   }
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
+})
+
+// One-off items (from calendar one-off entries, no canonical ingredient)
+const oneOffItems = computed(() => {
+  if (!list.value) return []
+  return list.value.items.filter(item => item.canonicalName === null)
 })
 
 // Toggle item checked

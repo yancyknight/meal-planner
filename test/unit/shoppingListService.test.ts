@@ -55,10 +55,15 @@ async function seedDishIngredient(dishId: number, canonicalIngredientId: number,
   await db.insert(dishIngredients).values({ dishId, canonicalIngredientId, rawText, sortOrder: 0 })
 }
 
-async function seedPlanEntry(dishId: number | null, date: string, entryKind: string = 'fresh') {
+async function seedPlanEntry(
+  dishId: number | null,
+  date: string,
+  entryKind: string = 'fresh',
+  oneOffText: string | null = null,
+) {
   const now = new Date().toISOString()
   await db.insert(planEntries).values({
-    date, mealType: 'dinner', entryKind, dishId, oneOffText: null, guestCount: 0, createdAt: now,
+    date, mealType: 'dinner', entryKind, dishId, oneOffText, guestCount: 0, createdAt: now,
   })
 }
 
@@ -136,19 +141,73 @@ describe('createShoppingList — ingredient grouping', () => {
     expect(pastaItem.rawTexts).toEqual(['200g pasta'])
   })
 
-  it('excludes one-off entries from ingredient collection', async () => {
+  it('one-off entry with null text does not appear (no contribution)', async () => {
     const garlic = await seedIngredient('Garlic')
     const dish = await seedDish('Garlic Soup')
     await seedDishIngredient(dish.id, garlic.id, '3 cloves garlic')
 
-    // Fresh dish entry — should contribute
     await seedPlanEntry(dish.id, '2025-05-20', 'fresh')
-    // One-off entry — no dishId, no ingredients
-    await seedPlanEntry(null, '2025-05-21', 'one-off')
+    await seedPlanEntry(null, '2025-05-21', 'one-off', null)
 
     const list = await createShoppingList({ name: 'Test', dateRangeStart: '2025-05-19', dateRangeEnd: '2025-05-25' })
     expect(list.items).toHaveLength(1)
     expect(list.items[0]!.canonicalName).toBe('Garlic')
+  })
+
+  it('one-off entry with text appears as a separate item with null canonicalName', async () => {
+    const garlic = await seedIngredient('Garlic')
+    const dish = await seedDish('Garlic Soup')
+    await seedDishIngredient(dish.id, garlic.id, '3 cloves garlic')
+
+    await seedPlanEntry(dish.id, '2025-05-20', 'fresh')
+    await seedPlanEntry(null, '2025-05-21', 'one-off', 'Burger King')
+
+    const list = await createShoppingList({ name: 'Test', dateRangeStart: '2025-05-19', dateRangeEnd: '2025-05-25' })
+    expect(list.items).toHaveLength(2)
+
+    const ingredientItem = list.items.find(i => i.canonicalName === 'Garlic')!
+    expect(ingredientItem).toBeDefined()
+
+    const oneOffItem = list.items.find(i => i.canonicalName === null)!
+    expect(oneOffItem).toBeDefined()
+    expect(oneOffItem.canonicalIngredientId).toBeNull()
+    expect(oneOffItem.rawTexts).toEqual(['Burger King'])
+    expect(oneOffItem.sourceDishIds).toEqual([])
+  })
+
+  it('multiple one-off entries each produce a separate item', async () => {
+    await seedPlanEntry(null, '2025-05-20', 'one-off', 'Pizza Night')
+    await seedPlanEntry(null, '2025-05-21', 'one-off', 'Dinner at Gram\'s House')
+
+    const list = await createShoppingList({ name: 'Test', dateRangeStart: '2025-05-19', dateRangeEnd: '2025-05-25' })
+    expect(list.items).toHaveLength(2)
+    const texts = list.items.map(i => i.rawTexts[0])
+    expect(texts).toContain('Pizza Night')
+    expect(texts).toContain('Dinner at Gram\'s House')
+  })
+
+  it('one-off items appear after ingredient items (sorted last)', async () => {
+    const garlic = await seedIngredient('Garlic')
+    const dish = await seedDish('Garlic Bread')
+    await seedDishIngredient(dish.id, garlic.id, '2 cloves')
+    await seedPlanEntry(dish.id, '2025-05-20', 'fresh')
+    await seedPlanEntry(null, '2025-05-20', 'one-off', 'Restaurant pickup')
+
+    const list = await createShoppingList({ name: 'Test', dateRangeStart: '2025-05-19', dateRangeEnd: '2025-05-25' })
+    expect(list.items).toHaveLength(2)
+    expect(list.items[0]!.canonicalName).toBe('Garlic')
+    expect(list.items[1]!.canonicalName).toBeNull()
+  })
+
+  it('one-off item checkbox works (null canonical ingredient)', async () => {
+    await seedPlanEntry(null, '2025-05-20', 'one-off', 'Takeout')
+    const list = await createShoppingList({ name: 'Test', dateRangeStart: '2025-05-19', dateRangeEnd: '2025-05-25' })
+    const item = list.items[0]!
+    expect(item.checked).toBe(false)
+
+    await checkItem(item.id, true)
+    const updated = await getById(list.id)
+    expect(updated!.items[0]!.checked).toBe(true)
   })
 
   it('excludes leftover entries — only fresh entries contribute', async () => {
