@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import { db } from '../database'
 import { freezerCategories, freezerItems } from '../database/schema'
 import type { FreezerCategory } from '../../shared/types/freezer'
@@ -28,15 +28,24 @@ const SEEDED_CATEGORIES: Array<{ name: string; defaultLifetimeDays: number }> = 
   { name: 'Other', defaultLifetimeDays: 90 },
 ]
 
-export async function seedCategories(): Promise<void> {
+async function insertSystemCategories(): Promise<void> {
   const ts = now()
   await db.insert(freezerCategories)
     .values(SEEDED_CATEGORIES.map(c => ({ ...c, isSystem: 1, createdAt: ts, updatedAt: ts })))
     .onConflictDoNothing()
 }
 
+export async function seedCategories(): Promise<void> {
+  const [row] = await db.select({ n: count() }).from(freezerCategories)
+  if ((row?.n ?? 0) > 0) return
+  await insertSystemCategories()
+}
+
+export async function restoreDefaultCategories(): Promise<void> {
+  await insertSystemCategories()
+}
+
 export async function listFreezerCategories(): Promise<FreezerCategory[]> {
-  await seedCategories()
   return db.select().from(freezerCategories).orderBy(freezerCategories.name)
 }
 

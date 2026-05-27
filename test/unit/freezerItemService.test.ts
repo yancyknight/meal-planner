@@ -251,13 +251,15 @@ describe('getDashboard', () => {
 // ---- seedCategories (idempotent) ----
 
 describe('seedCategories', () => {
-  it('seeds 17 default categories on first call', async () => {
+  it('seeds 17 default categories when table is empty', async () => {
+    await db.delete(freezerCategories)
     await seedCategories()
     const cats = await listFreezerCategories()
     expect(cats.length).toBe(17)
   })
 
   it('is idempotent — second call does not duplicate', async () => {
+    await db.delete(freezerCategories)
     await seedCategories()
     await seedCategories()
     const cats = await listFreezerCategories()

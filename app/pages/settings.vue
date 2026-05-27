@@ -400,7 +400,14 @@
                   class="rounded border border-border bg-surface px-2.5 py-1 text-xs text-text-muted transition hover:bg-surface-alt disabled:opacity-40"
                 >Add</button>
               </form>
-              <p v-if="categoryError" class="text-xs text-warning">{{ categoryError }}</p>
+              <div class="flex items-center gap-3">
+                <p v-if="categoryError" class="text-xs text-warning">{{ categoryError }}</p>
+                <button
+                  type="button"
+                  class="text-xs text-text-muted underline-offset-2 hover:underline transition"
+                  @click="restoreDefaultCategories"
+                >Restore defaults</button>
+              </div>
             </div>
           </div>
         </div>
@@ -655,6 +662,17 @@ async function deleteCategoryConfirm(id: number) {
       ? (e as { data?: { message?: string } }).data?.message
       : undefined
     categoryError.value = msg ?? 'Cannot delete category. Move all items first.'
+  }
+}
+
+async function restoreDefaultCategories() {
+  categoryError.value = ''
+  try {
+    await $fetch('/api/freezer-categories/restore-defaults', { method: 'POST' })
+    refreshCategories()
+  }
+  catch {
+    categoryError.value = 'Failed to restore defaults.'
   }
 }
 </script>
