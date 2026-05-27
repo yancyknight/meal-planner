@@ -116,7 +116,7 @@
     </div>
 
     <!-- Free from -->
-    <div>
+    <div v-if="showAllergens">
       <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">
         Free from <span class="normal-case tracking-normal font-normal text-text-subtle">(only check what this dish is certified free from)</span>
       </label>
@@ -201,10 +201,12 @@
 </template>
 
 <script setup lang="ts">
+import { useQuery } from '@tanstack/vue-query'
 import type { CreateDishInput } from '#shared/schemas/dish'
 import { FREE_FROM_PRESETS, SEASON_OPTIONS } from '#shared/schemas/dish'
 import type { Tag } from '#shared/types/tag'
 import type { DishIngredient, IngredientRowValue } from '#shared/types/ingredient'
+import type { AppSettings } from '#shared/types/settings'
 
 interface Props {
   initialValues?: Partial<CreateDishInput> & { imageLocalPath?: string | null; tags?: Tag[] }
@@ -222,6 +224,12 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   submit: [data: CreateDishInput & { tagIds: number[]; pendingImageFile?: File; ingredients: IngredientRowValue[] }]
 }>()
+
+const { data: settings } = useQuery({
+  queryKey: computed(() => queryKeys.settings.all()),
+  queryFn: () => $fetch<AppSettings>('/api/settings'),
+})
+const showAllergens = computed(() => settings.value?.showAllergens ?? false)
 
 const difficultyOptions = [
   { value: null as null | 'easy' | 'medium' | 'hard', label: '—' },

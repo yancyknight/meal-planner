@@ -405,14 +405,14 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
-## Milestone 18 — Bug Fixes: Freezer Categories + Allergen Inputs (#47, #39)
+## Milestone 18 — Bug Fixes: Freezer Categories + Allergen Inputs (#47, #39) ✅
 *No schema migration needed. Two independent bug fixes grouped into one session.*
 
-- `[ ]` `freezerCategoryService.ts` — remove `seedCategories()` call from `listFreezerCategories()`; update `seedCategories()` to guard with a row-count check so it only inserts when the table is empty (first-run only)
-- `[ ]` `server/api/freezer-categories/restore-defaults.post.ts` — new route that calls `seedCategories()` directly; `ON CONFLICT DO NOTHING` makes it idempotent (re-inserts any missing system categories without touching existing ones)
-- `[ ]` `app/pages/settings.vue` — add "Restore Defaults" button in the categories section; calls the new route, then refreshes the category list
-- `[ ]` `app/components/DishForm.vue` — read `useSettings()` and wrap the "Free from" section in `v-if="settings?.showAllergens"`
-- `[ ]` Tests: seeding only runs when table is empty; a deleted system category is not re-seeded on `listFreezerCategories`; restore-defaults re-inserts a previously deleted system category; `DishForm` hides free-from when `showAllergens = false`
+- `[x]` `freezerCategoryService.ts` — remove `seedCategories()` call from `listFreezerCategories()`; update `seedCategories()` to guard with a row-count check so it only inserts when the table is empty (first-run only)
+- `[x]` `server/api/freezer-categories/restore-defaults.post.ts` — new route that calls `seedCategories()` directly; `ON CONFLICT DO NOTHING` makes it idempotent (re-inserts any missing system categories without touching existing ones)
+- `[x]` `app/pages/settings.vue` — add "Restore Defaults" button in the categories section; calls the new route, then refreshes the category list
+- `[x]` `app/components/DishForm.vue` — read `useSettings()` and wrap the "Free from" section in `v-if="settings?.showAllergens"`
+- `[x]` Tests: seeding only runs when table is empty; a deleted system category is not re-seeded on `listFreezerCategories`; restore-defaults re-inserts a previously deleted system category; `DishForm` hides free-from when `showAllergens = false`
 
 ---
 
