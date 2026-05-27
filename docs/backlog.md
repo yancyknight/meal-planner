@@ -405,6 +405,42 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
+## Milestone 18 — Bug Fixes: Freezer Categories + Allergen Inputs (#47, #39)
+*No schema migration needed. Two independent bug fixes grouped into one session.*
+
+- `[ ]` `freezerCategoryService.ts` — remove `seedCategories()` call from `listFreezerCategories()`; update `seedCategories()` to guard with a row-count check so it only inserts when the table is empty (first-run only)
+- `[ ]` `server/api/freezer-categories/restore-defaults.post.ts` — new route that calls `seedCategories()` directly; `ON CONFLICT DO NOTHING` makes it idempotent (re-inserts any missing system categories without touching existing ones)
+- `[ ]` `app/pages/settings.vue` — add "Restore Defaults" button in the categories section; calls the new route, then refreshes the category list
+- `[ ]` `app/components/DishForm.vue` — read `useSettings()` and wrap the "Free from" section in `v-if="settings?.showAllergens"`
+- `[ ]` Tests: seeding only runs when table is empty; a deleted system category is not re-seeded on `listFreezerCategories`; restore-defaults re-inserts a previously deleted system category; `DishForm` hides free-from when `showAllergens = false`
+
+---
+
+## Milestone 19 — Shopping List One-offs + Calendar Date Labels (#46, #38)
+*No schema migration needed. Two independent small features.*
+
+- `[ ]` `shoppingListService.ts` — in `generateItems`, also fetch `one-off` entries (null `dishId`) in the date range; insert each as a shopping list item with `rawText = entry.oneOffText` and null `canonicalIngredientId`
+- `[ ]` Shopping list detail UI — confirm one-off items render in the combined view (no canonical grouping); checkboxes work; "by dish" toggle gracefully handles null-dish rows
+- `[ ]` Calendar week view — add a computed relative-week label using `date-fns` (`differenceInCalendarWeeks`): "this week", "next week", "last week", "in N weeks"; render alongside the existing date header
+- `[ ]` Calendar day view — add relative label: "today", "tomorrow", "yesterday", "N days ago", "in N days"
+- `[ ]` Calendar month view — add relative label: "this month", "next month", "last month", "in N months"
+- `[ ]` Tests: `shoppingListService` includes one-off entries as line items; label values at known date offsets (today, +1, +7, +30, -1)
+
+---
+
+## Milestone 20 — Meal Slots on Dishes (#36)
+*Schema migration required. Dishes can optionally declare which meal slots they are suitable for; affects planning recommendations only — direct assignment is unrestricted.*
+
+- `[ ]` Schema: add `mealSlots` (text, nullable, default null) to `dishes`; store as JSON array of `'breakfast' | 'lunch' | 'dinner'`; null = eligible for all slots; generate and run migration
+- `[ ]` `shared/schemas/dish.ts` — add `mealSlots: z.array(z.enum(['breakfast', 'lunch', 'dinner'])).nullable().optional()`
+- `[ ]` `shared/types/dish.ts` — add `mealSlots: string[] | null`
+- `[ ]` `server/services/dishService.ts` — persist and return `mealSlots` on create/update/read
+- `[ ]` `app/components/DishForm.vue` — add Breakfast / Lunch / Dinner pill selector below the season pills; empty selection persists as null (all slots); label clarifies "planning only, not enforced on calendar"
+- `[ ]` `planningEngineService.ts` — in `isEligibleForSlot`, reject dishes where `mealSlots` is non-null and does not include the current slot's meal type
+- `[ ]` Tests: Zod accepts valid arrays and null; rejects unknown slot names; `dishService` round-trips null and populated values; `isEligibleForSlot` excludes a dinner-only dish from a breakfast slot and keeps it eligible for dinner; null `mealSlots` dish remains eligible for all slots
+
+---
+
 ## Post-MVP / Parking Lot
 
 *Ideas explicitly deferred until after the core feature ships. No commitment to build.*
