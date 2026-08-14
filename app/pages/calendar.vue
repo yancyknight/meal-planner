@@ -114,7 +114,7 @@
                 :class="isDragging ? 'bg-accent/5' : ''"
               >
                 <VueDraggable
-                  v-model="weekSlots[slotKey(day.iso, mt)]"
+                  v-model="weekSlots[slotKey(day.iso, mt)]!"
                   group="plan-entries"
                   class="flex flex-col gap-1.5 min-h-[28px]"
                   :class="isDragging ? '[&_a]:pointer-events-none' : ''"
@@ -446,21 +446,22 @@ function slotKey(date: string, mt: MealType): SlotKey {
 // Reactive map of slot arrays bound via v-model to VueDraggable.
 // Synced from query on every entries update; vue-draggable-plus mutates
 // these arrays in place during drag for live visual feedback.
-// Typed as Record<SlotKey, any> so noUncheckedIndexedAccess doesn't add | undefined
-// to the slot index access used in the VueDraggable v-model binding.
-// Runtime values are always PlanEntry[] — set exclusively by syncWeekSlots.
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const weekSlots = reactive({}) as unknown as Record<SlotKey, any>
+// Cast via unknown since reactive({}) doesn't structurally overlap Record<SlotKey, PlanEntry[]>.
+// SlotKey is a template literal type, so noUncheckedIndexedAccess still treats indexed
+// access as PlanEntry[] | undefined; call sites assert non-null (`!`) because
+// syncWeekSlots runs immediately on mount and populates every slot before it's read.
+const weekSlots = reactive({}) as unknown as Record<SlotKey, PlanEntry[]>
 
 function syncWeekSlots() {
   for (const day of weekDays.value) {
     for (const mt of MEAL_TYPES) {
       const key = slotKey(day.iso, mt)
       const fresh = entriesFor(day.iso, mt)
-      if (!weekSlots[key]) {
+      const slot = weekSlots[key]
+      if (!slot) {
         weekSlots[key] = [...fresh]
       } else {
-        weekSlots[key].splice(0, weekSlots[key].length, ...fresh)
+        slot.splice(0, slot.length, ...fresh)
       }
     }
   }
@@ -480,7 +481,7 @@ function onDragStart(
   fromMt: MealType,
 ) {
   isDragging.value = true
-  const sourceList = weekSlots[slotKey(fromDate, fromMt)]
+  const sourceList = weekSlots[slotKey(fromDate, fromMt)]!
   draggedEntryId = sourceList[evt.oldIndex ?? 0]?.id ?? null
 }
 
