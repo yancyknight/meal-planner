@@ -28,6 +28,9 @@ export default defineEventHandler(async (event) => {
     return { error: 'Planning session not found' }
   }
 
+  // Find pins and wishlist tag for this slot
+  const [slotDate, slotMealType] = slotKey.split(':')
+
   const weekEnd = format(addDays(new Date(session.weekStart), 6), 'yyyy-MM-dd')
   const [dishes, committedEntries, plannerHints] = await Promise.all([
     listDishes({ archived: false }),
@@ -49,8 +52,6 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  // Find pins and wishlist tag for this slot
-  const [slotDate, slotMealType] = slotKey.split(':')
   const slotPins = session.pinnedTags.filter(
     (p) => p.date === slotDate && p.mealType === slotMealType,
   )
