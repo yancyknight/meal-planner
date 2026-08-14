@@ -159,6 +159,12 @@ function extractHeuristic(html: string, url: string): RecipeImportResult | null 
   }
 }
 
+export function parseRecipeHtml(html: string, url: string): RecipeImportResult {
+  const result = extractJsonLd(html, url) ?? extractOg(html, url) ?? extractHeuristic(html, url)
+  if (!result) throw new Error('No recipe data found on that page')
+  return result
+}
+
 export async function importFromUrl(url: string): Promise<RecipeImportResult> {
   let html: string
   try {
@@ -179,7 +185,5 @@ export async function importFromUrl(url: string): Promise<RecipeImportResult> {
     throw new Error(`Could not fetch the recipe page: ${msg}`, { cause: e })
   }
 
-  const result = extractJsonLd(html, url) ?? extractOg(html, url) ?? extractHeuristic(html, url)
-  if (!result) throw new Error('No recipe data found on that page')
-  return result
+  return parseRecipeHtml(html, url)
 }

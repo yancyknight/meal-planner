@@ -104,6 +104,12 @@ export const planningSessions = sqliteTable('planning_sessions', {
   updatedAt: text('updatedAt').notNull(),
 })
 
+export const pendingRecipeImports = sqliteTable('pending_recipe_imports', {
+  id: text('id').primaryKey(),
+  resultJson: text('resultJson').notNull(),
+  createdAt: text('createdAt').notNull(),
+})
+
 export const dishCooldowns = sqliteTable('dish_cooldowns', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   dishId: integer('dishId').notNull().references(() => dishes.id, { onDelete: 'cascade' }).unique(),
