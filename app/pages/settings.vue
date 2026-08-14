@@ -127,6 +127,32 @@
         </div>
       </div>
 
+      <!-- Recipe import bookmarklet -->
+      <div class="rounded-xl border border-border bg-surface overflow-hidden">
+        <div class="border-b border-border px-7 py-5">
+          <h2 class="font-serif text-2xl font-medium leading-none text-text">
+            Recipe import <em class="font-normal italic text-accent-deep">bookmarklet</em>
+          </h2>
+          <p class="mt-1.5 font-serif italic text-sm text-text-muted">
+            For recipe sites that block automatic fetching (logins, paywalls, bot-blocking). Import straight from the page you're already viewing.
+          </p>
+        </div>
+        <div class="px-7 py-5 space-y-4">
+          <ol class="list-decimal list-inside text-sm text-text-muted space-y-1">
+            <li>Show your browser's bookmarks bar.</li>
+            <li>Drag the button below onto it.</li>
+            <li>On any recipe page, click the bookmark — a new tab opens here with the recipe pre-filled.</li>
+          </ol>
+          <a
+            v-if="bookmarkletHref"
+            :href="bookmarkletHref"
+            draggable="true"
+            class="inline-block cursor-move select-none rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white"
+            @click.prevent
+          >Import Recipe</a>
+        </div>
+      </div>
+
       <!-- Freezer -->
       <div class="rounded-xl border border-border bg-surface overflow-hidden">
         <!-- Card header -->
@@ -446,6 +472,20 @@ const { data: settings, isPending } = useQuery({
 const { data: backupStatus, isPending: backupStatusPending } = useQuery({
   queryKey: computed(() => queryKeys.backups.status()),
   queryFn: () => $fetch<{ lastBackup: string | null, nextBackup: string | null, backupCount: number }>('/api/backups/status'),
+})
+
+const bookmarkletOrigin = ref('')
+onMounted(() => { bookmarkletOrigin.value = window.location.origin })
+
+const bookmarkletHref = computed(() => {
+  if (!bookmarkletOrigin.value) return ''
+  const origin = bookmarkletOrigin.value
+  const src = `(function(){var h=document.documentElement.outerHTML,u=location.href;`
+    + `fetch(${JSON.stringify(origin)}+'/api/recipe-import/bookmarklet',{method:'POST',headers:{'Content-Type':'application/json'},`
+    + `body:JSON.stringify({url:u,html:h})}).then(function(r){return r.json();}).then(function(d){`
+    + `if(d&&d.importId){window.open(${JSON.stringify(origin)}+'/dishes/new?importId='+encodeURIComponent(d.importId),'_blank');}`
+    + `else{alert('Import failed: '+((d&&d.error)||'unknown error'));}}).catch(function(e){alert('Import failed: '+e.message);});})();`
+  return `javascript:${encodeURIComponent(src)}`
 })
 
 const { data: freezers, pending: freezersPending, refresh: refreshFreezers } = useFetch<Freezer[]>('/api/freezers', { key: 'freezers' })

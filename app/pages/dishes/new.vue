@@ -29,6 +29,7 @@
           {{ importLoading ? 'Importing…' : 'Import' }}
         </button>
       </div>
+      <p v-if="pendingImportLoading" class="mt-2 text-sm text-text-muted">Importing…</p>
       <p v-if="importError" class="mt-2 text-sm text-warning">{{ importError }}</p>
       <p v-if="importSuccess" class="mt-2 text-sm text-text-muted">
         Imported from <span class="font-medium text-text">{{ importSuccess }}</span>. Review the fields below before saving.
@@ -54,13 +55,14 @@
 </template>
 
 <script setup lang="ts">
-import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import type { CreateDishInput } from '#shared/schemas/dish'
 import type { Dish } from '#shared/types/dish'
 import type { CanonicalIngredient, IngredientRowValue } from '#shared/types/ingredient'
 import type { RecipeImportResult } from '#shared/types/recipeImport'
 
 const router = useRouter()
+const route = useRoute()
 const queryClient = useQueryClient()
 const saveError = ref<string>()
 
@@ -73,6 +75,20 @@ const formKey = ref(0)
 const importedValues = ref<Partial<CreateDishInput> | undefined>()
 const importedIngredientTexts = ref<string[] | undefined>()
 
+function applyImportResult(result: RecipeImportResult, label: string) {
+  importedValues.value = {
+    name: result.name,
+    imageUrl: result.imageUrl ?? null,
+    timeEstimateMinutes: result.timeEstimateMinutes ?? null,
+    yieldServings: result.yieldServings ?? null,
+    sourceUrl: result.sourceUrl,
+    sourceName: result.sourceName ?? null,
+  }
+  importedIngredientTexts.value = result.ingredientTexts
+  importSuccess.value = label
+  formKey.value++
+}
+
 async function runImport() {
   const url = importUrl.value.trim()
   if (!url) return
@@ -84,17 +100,7 @@ async function runImport() {
       method: 'POST',
       body: { url },
     })
-    importedValues.value = {
-      name: result.name,
-      imageUrl: result.imageUrl ?? null,
-      timeEstimateMinutes: result.timeEstimateMinutes ?? null,
-      yieldServings: result.yieldServings ?? null,
-      sourceUrl: result.sourceUrl,
-      sourceName: result.sourceName ?? null,
-    }
-    importedIngredientTexts.value = result.ingredientTexts
-    importSuccess.value = result.sourceName ?? new URL(url).hostname
-    formKey.value++
+    applyImportResult(result, result.sourceName ?? new URL(url).hostname)
   }
   catch (e: unknown) {
     importError.value = (e as { data?: { error?: string } })?.data?.error ?? 'Import failed'
@@ -103,6 +109,31 @@ async function runImport() {
     importLoading.value = false
   }
 }
+
+// Bookmarklet handoff: a pending import left by /settings' "Import from bookmarklet"
+const pendingImportId = computed(() => {
+  const q = route.query.importId
+  return typeof q === 'string' ? q : undefined
+})
+
+const { data: pendingImport, error: pendingImportError, isFetching: pendingImportLoading } = useQuery({
+  queryKey: computed(() => queryKeys.recipeImport.pending(pendingImportId.value ?? '')),
+  queryFn: () => $fetch<RecipeImportResult>(`/api/recipe-import/pending/${pendingImportId.value}`),
+  enabled: computed(() => !!pendingImportId.value),
+  retry: false,
+})
+
+watch(pendingImport, (result) => {
+  if (!result) return
+  applyImportResult(result, result.sourceName ?? 'bookmarklet import')
+  router.replace({ query: {} })
+})
+
+watch(pendingImportError, (e) => {
+  if (!e) return
+  importError.value = 'This import link has expired — try the bookmarklet again.'
+  router.replace({ query: {} })
+})
 
 async function resolveIngredients(rows: IngredientRowValue[]) {
   return Promise.all(

@@ -20,7 +20,7 @@ export default defineNuxtConfig({
   nitro: {
     experimental: { tasks: true },
     scheduledTasks: {
-      '*/15 * * * *': ['shopping-lists:cleanup'],
+      '*/15 * * * *': ['shopping-lists:cleanup', 'recipe-import:cleanup-pending'],
       '0 0 * * *': ['dishes:cleanup-cooldowns'],
       '0 * * * *': ['database:backup', 'freezer:weekly-digest'],
       '0 8 * * *': ['freezer:expiry-check'],

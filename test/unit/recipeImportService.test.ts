@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { importFromUrl } from '../../server/services/recipeImportService'
+import { importFromUrl, parseRecipeHtml } from '../../server/services/recipeImportService'
 
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
@@ -197,6 +197,47 @@ describeNetwork('importFromUrl — real network (RUN_NETWORK_TESTS=1)', () => {
     expect(result.sourceUrl).toBe('https://www.melskitchencafe.com/instant-pot-salsa-verde-chicken/')
     expect(result.sourceName).toBe('melskitchencafe.com')
   }, 30_000)
+})
+
+describe('parseRecipeHtml', () => {
+  it('prefers JSON-LD over OG and heuristic', () => {
+    const html = jsonLdHtml({
+      '@type': 'Recipe',
+      name: 'JSON-LD Recipe',
+      recipeIngredient: ['1 cup flour'],
+    })
+    const result = parseRecipeHtml(html, 'https://example.com/recipe')
+    expect(result.name).toBe('JSON-LD Recipe')
+    expect(result.ingredientTexts).toEqual(['1 cup flour'])
+  })
+
+  it('falls back to OG when no JSON-LD is present', () => {
+    const html = `<html><head>
+      <meta property="og:title" content="OG Recipe" />
+    </head></html>`
+    const result = parseRecipeHtml(html, 'https://example.com/recipe')
+    expect(result.name).toBe('OG Recipe')
+  })
+
+  it('falls back to heuristic when no JSON-LD or OG tags are present', () => {
+    const html = `<html><head>
+      <title>Heuristic Recipe</title>
+    </head><body>
+      <ul>
+        <li>1 can chickpeas</li>
+        <li>2 tbsp tahini</li>
+        <li>1 lemon, juiced</li>
+      </ul>
+    </body></html>`
+    const result = parseRecipeHtml(html, 'https://example.com/recipe')
+    expect(result.name).toBe('Heuristic Recipe')
+    expect(result.ingredientTexts).toHaveLength(3)
+  })
+
+  it('throws when no recipe data is found anywhere', () => {
+    expect(() => parseRecipeHtml('<html><body>Nothing here.</body></html>', 'https://example.com/empty'))
+      .toThrow('No recipe data found')
+  })
 })
 
 describe('importFromUrl — error handling', () => {

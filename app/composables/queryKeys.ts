@@ -54,4 +54,7 @@ export const queryKeys = {
   freezerPlannerFeed: {
     all: () => ['freezer', 'planner-feed'] as const,
   },
+  recipeImport: {
+    pending: (importId: string) => ['recipe-import', 'pending', importId] as const,
+  },
 }
