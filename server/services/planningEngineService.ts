@@ -194,7 +194,6 @@ export function generateDraft(input: GenerateDraftInput): GenerateDraftResult {
     extraConstraints: { tagRef: { kind: string; tagId?: number; id?: string } }[],
     exclude?: Set<number>,
   ): Dish[] {
-    const alreadyPlaced = draftHistory.map((h) => dishes.find((d) => d.id === h.dishId)!).filter(Boolean)
     return dishes.filter((dish) => {
       if (!baseEligible(dish)) return false
       if (exclude?.has(dish.id)) return false
@@ -329,7 +328,7 @@ export function generateDraft(input: GenerateDraftInput): GenerateDraftResult {
 
   // If a pin already placed a dish matching the wishlist tag, count it covered
   for (const tagId of wishlistTags) {
-    for (const [key, slot] of Object.entries(draftPlan)) {
+    for (const slot of Object.values(draftPlan)) {
       if (slot.dishId !== -1) {
         const dish = dishes.find((d) => d.id === slot.dishId)
         if (dish && dish.tags.some((t) => t.id === tagId)) {

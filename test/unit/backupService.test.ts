@@ -3,6 +3,8 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
+import { runBackup, pruneOldBackups, getStatus } from '../../server/services/backupService'
+
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
@@ -23,8 +25,6 @@ vi.mock('../../server/database/index', async () => {
 
   return { db, sqlite }
 })
-
-import { runBackup, pruneOldBackups, getStatus } from '../../server/services/backupService'
 
 let tmpDir: string
 

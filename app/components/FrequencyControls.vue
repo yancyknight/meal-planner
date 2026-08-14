@@ -53,7 +53,7 @@
           :max="365"
           class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
           @change="onTargetChange(($event.target as HTMLInputElement).valueAsNumber)"
-        />
+        >
       </div>
       <div>
         <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-text-muted">
@@ -66,7 +66,7 @@
           :max="targetIntervalDays"
           class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
           @change="onCooldownChange(($event.target as HTMLInputElement).valueAsNumber)"
-        />
+        >
         <p v-if="cooldownDays > targetIntervalDays" class="mt-1 text-xs text-warning">
           Cooldown must be ≤ target
         </p>

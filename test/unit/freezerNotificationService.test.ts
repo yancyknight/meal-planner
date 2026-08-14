@@ -1,6 +1,18 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { eq } from 'drizzle-orm'
 
+import { db } from '../../server/database/index'
+import { freezers, freezerItems, freezerCategories, appSettings } from '../../server/database/schema'
+import { sendNtfy } from '../../server/services/notificationService'
+import {
+  buildExpiryMessage,
+  buildAuditOverdueMessage,
+  buildWeeklyDigestMessage,
+  runExpiryCheck,
+  runAuditOverdueCheck,
+  runWeeklyDigest,
+} from '../../server/services/freezerNotificationService'
+
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
@@ -17,18 +29,6 @@ vi.mock('../../server/database/index', async () => {
 vi.mock('../../server/services/notificationService', () => ({
   sendNtfy: vi.fn(),
 }))
-
-import { db } from '../../server/database/index'
-import { freezers, freezerItems, freezerCategories, appSettings } from '../../server/database/schema'
-import { sendNtfy } from '../../server/services/notificationService'
-import {
-  buildExpiryMessage,
-  buildAuditOverdueMessage,
-  buildWeeklyDigestMessage,
-  runExpiryCheck,
-  runAuditOverdueCheck,
-  runWeeklyDigest,
-} from '../../server/services/freezerNotificationService'
 
 const mockSendNtfy = vi.mocked(sendNtfy)
 

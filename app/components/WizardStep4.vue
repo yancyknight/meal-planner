@@ -209,7 +209,7 @@
             type="text"
             placeholder="Search dishes…"
             class="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40 mb-2"
-          />
+          >
           <div class="max-h-60 overflow-y-auto rounded-lg border border-border bg-bg divide-y divide-border">
             <button
               v-for="dish in (swapResults ?? [])"
@@ -236,7 +236,7 @@
 </template>
 
 <script setup lang="ts">
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { format, addDays, parseISO } from 'date-fns'
 import type { PlanningSession } from '#shared/types/planningSession'
 import type { Dish } from '#shared/types/dish'
@@ -544,14 +544,12 @@ const confirmSummary = computed(() => {
   let kept = 0
   let blank = 0
 
-  for (const [key, slot] of Object.entries(session.draftPlan)) {
+  for (const slot of Object.values(session.draftPlan)) {
     if (slot.kind === 'standalone-freezer') written++
     else if (slot.dishId > 0) written++
     else blank++
   }
-  for (const entry of session.pendingOneOffEntries) {
-    written++
-  }
+  written += session.pendingOneOffEntries.length
   for (const day of dayCards.value) {
     for (const row of day.rows) {
       if (row.state === 'keep') kept++
@@ -622,7 +620,7 @@ async function doReroll(slotKey: string) {
 
 async function clearSlot(slotKey: string) {
   const updatedDraft = { ...props.session.draftPlan }
-  delete updatedDraft[slotKey]
+  Reflect.deleteProperty(updatedDraft, slotKey)
   emit('update', { draftPlan: updatedDraft })
 }
 
@@ -646,7 +644,7 @@ async function toggleLeftover(dinnerSlotKey: string) {
       leftoverFor: dinnerSlotKey,
     }
   } else {
-    delete updatedDraft[lunchSlotKey]
+    Reflect.deleteProperty(updatedDraft, lunchSlotKey)
   }
 
   emit('update', { leftoverToggles: updatedToggles, draftPlan: updatedDraft })

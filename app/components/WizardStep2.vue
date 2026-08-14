@@ -43,8 +43,8 @@
         <div class="ml-auto flex flex-wrap items-center gap-1.5">
           <span
             v-for="stat in statCounts"
-            :key="stat.state"
             v-show="stat.count > 0"
+            :key="stat.state"
             class="rounded-full px-2.5 py-0.5 text-xs font-medium"
             :class="stat.cls"
           >
@@ -117,7 +117,7 @@
                 placeholder="e.g. Pizza delivery"
                 class="w-full rounded-md border border-border bg-bg px-3 py-1.5 text-xs text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
                 @input="setOneOffText(day.iso, mealType, ($event.target as HTMLInputElement).value)"
-              />
+              >
 
               <!-- SKIP: hint -->
               <p
@@ -251,7 +251,7 @@ function setState(date: string, mealType: string, state: SlotState) {
   }
 
   if (state !== 'one-off') {
-    delete localOneOffTexts.value[key]
+    Reflect.deleteProperty(localOneOffTexts.value, key)
   }
 
   emitUpdate()

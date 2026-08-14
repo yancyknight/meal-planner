@@ -21,7 +21,7 @@
           <p class="font-serif text-2xl font-semibold text-text text-center leading-tight">
             {{ weekRangeLabel }}<em class="font-normal italic text-accent-deep text-lg"> — {{ weekHint }}</em>
           </p>
-          <hr class="my-3 border-dashed border-border" />
+          <hr class="my-3 border-dashed border-border" >
           <div class="grid grid-cols-7">
             <div
               v-for="day in weekDays"

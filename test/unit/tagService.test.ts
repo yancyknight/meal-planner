@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+import { db } from '../../server/database/index'
+import { tags, dishTags, dishes } from '../../server/database/schema'
+import { listTags, findOrCreateTag, setDishTags, getTagsForDishes } from '../../server/services/tagService'
+import { createDish, listDishes } from '../../server/services/dishService'
+
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
@@ -12,11 +17,6 @@ vi.mock('../../server/database/index', async () => {
   migrate(db, { migrationsFolder: 'server/database/migrations' })
   return { db }
 })
-
-import { db } from '../../server/database/index'
-import { tags, dishTags, dishes } from '../../server/database/schema'
-import { listTags, findOrCreateTag, setDishTags, getTagsForDishes } from '../../server/services/tagService'
-import { createDish, listDishes } from '../../server/services/dishService'
 
 beforeEach(async () => {
   await db.delete(dishTags)
@@ -122,7 +122,7 @@ describe('getTagsForDishes', () => {
 describe('listDishes tagId filter', () => {
   it('returns only dishes that have the given tag', async () => {
     const pasta = await createDish({ name: 'Pasta' })
-    const tacos = await createDish({ name: 'Tacos' })
+    await createDish({ name: 'Tacos' })
     const italian = await findOrCreateTag('italian')
     await setDishTags(pasta.id, [italian.id])
 

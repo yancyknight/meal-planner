@@ -1,6 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createDishSchema } from '../../shared/schemas/dish'
 
+import { db } from '../../server/database/index'
+import { dishes, planEntries } from '../../server/database/schema'
+import {
+  createDish,
+  getDishById,
+  listDishes,
+  updateDish,
+  deleteDish,
+  archiveDish,
+  unarchiveDish,
+} from '../../server/services/dishService'
+
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
@@ -13,18 +25,6 @@ vi.mock('../../server/database/index', async () => {
   migrate(db, { migrationsFolder: 'server/database/migrations' })
   return { db }
 })
-
-import { db } from '../../server/database/index'
-import { dishes, planEntries } from '../../server/database/schema'
-import {
-  createDish,
-  getDishById,
-  listDishes,
-  updateDish,
-  deleteDish,
-  archiveDish,
-  unarchiveDish,
-} from '../../server/services/dishService'
 
 beforeEach(async () => {
   await db.delete(planEntries)

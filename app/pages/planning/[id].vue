@@ -134,7 +134,7 @@
 </template>
 
 <script setup lang="ts">
-import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { format, parseISO, addDays } from 'date-fns'
 import type { PlanningSession } from '#shared/types/planningSession'
 
@@ -249,7 +249,7 @@ async function goBack() {
 
 async function discardSession() {
   if (!confirm('Discard this planning session? This cannot be undone.')) return
-  await $fetch(`/api/planning-sessions/${id.value}`, { method: 'DELETE' })
+  await $fetch<unknown>(`/api/planning-sessions/${id.value}`, { method: 'DELETE' })
   queryClient.invalidateQueries({ queryKey: queryKeys.planningSessions.all() })
   router.push('/planning')
 }

@@ -25,7 +25,7 @@
                 v-model="form.date"
                 type="date"
                 class="w-full rounded-lg border border-border bg-surface px-4 py-2.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
-              />
+              >
             </div>
 
             <!-- Meal type -->
@@ -109,7 +109,7 @@ watch(() => props.show, (v) => {
 
 const { mutateAsync } = useMutation({
   mutationFn: (body: { date: string; mealType: MealType }) =>
-    $fetch(`/api/plan-entries/${props.entry!.id}`, { method: 'PATCH', body }),
+    $fetch<PlanEntry>(`/api/plan-entries/${props.entry!.id}`, { method: 'PATCH', body }),
   onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.planEntries.all() }),
 })
 

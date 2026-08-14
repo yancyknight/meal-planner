@@ -26,7 +26,7 @@ function cancelRename() {
 
 const { mutate: rename } = useMutation({
   mutationFn: ({ id, name }: { id: number; name: string }) =>
-    $fetch(`/api/canonical-ingredients/${id}`, { method: 'PATCH', body: { name } }),
+    $fetch<unknown>(`/api/canonical-ingredients/${id}`, { method: 'PATCH', body: { name } }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.canonicalIngredients.all() })
     editingId.value = null
@@ -54,7 +54,7 @@ function cancelWalmartEdit() {
 
 const { mutate: saveWalmart } = useMutation({
   mutationFn: ({ id, walmartUrl }: { id: number; walmartUrl: string | null }) =>
-    $fetch(`/api/canonical-ingredients/${id}`, { method: 'PATCH', body: { walmartUrl } }),
+    $fetch<unknown>(`/api/canonical-ingredients/${id}`, { method: 'PATCH', body: { walmartUrl } }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.canonicalIngredients.all() })
     editingWalmartId.value = null
@@ -68,7 +68,7 @@ function submitWalmart(id: number) {
 
 // Delete
 const { mutate: deleteIngredient } = useMutation({
-  mutationFn: (id: number) => $fetch(`/api/canonical-ingredients/${id}`, { method: 'DELETE' }),
+  mutationFn: (id: number) => $fetch<unknown>(`/api/canonical-ingredients/${id}`, { method: 'DELETE' }),
   onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.canonicalIngredients.all() }),
   onError: () => alert('Cannot delete: this ingredient is used by one or more dishes.'),
 })
@@ -97,7 +97,7 @@ function cancelMerge() {
 
 const { mutate: doMerge, isPending: mergePending } = useMutation({
   mutationFn: ({ primaryId, secondaryId }: { primaryId: number; secondaryId: number }) =>
-    $fetch('/api/canonical-ingredients/merge', { method: 'POST', body: { primaryId, secondaryId } }),
+    $fetch<unknown>('/api/canonical-ingredients/merge', { method: 'POST', body: { primaryId, secondaryId } }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.canonicalIngredients.all() })
     cancelMerge()

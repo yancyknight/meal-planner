@@ -10,7 +10,7 @@
         :checked="modelValue.includes(option)"
         class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
         @change="toggle(option)"
-      />
+      >
       <span class="text-sm text-gray-700 capitalize">{{ option }}</span>
     </label>
   </div>

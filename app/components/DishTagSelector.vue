@@ -23,7 +23,7 @@
         @keydown.enter.prevent="selectFirst"
         @keydown.escape="isOpen = false"
         @input="isOpen = true"
-      />
+      >
 
       <div
         v-if="isOpen && (filteredTags.length || canCreate)"

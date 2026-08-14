@@ -19,7 +19,7 @@ function makeResponse(body: string, status = 200) {
 function jsonLdHtml(recipe: Record<string, unknown>): string {
   return `<html><head>
     <title>Test Recipe</title>
-    <script type="application/ld+json">${JSON.stringify(recipe)}<\/script>
+    <script type="application/ld+json">${JSON.stringify(recipe)}</script>
   </head><body></body></html>`
 }
 
@@ -90,7 +90,7 @@ describe('importFromUrl — JSON-LD parsing', () => {
           { '@type': 'WebPage', name: 'Page' },
           { '@type': 'Recipe', name: 'Graph Recipe', recipeIngredient: ['1 cup flour'] },
         ],
-      })}<\/script>
+      })}</script>
     </head></html>`))
 
     const result = await importFromUrl('https://example.com/test')
@@ -122,7 +122,7 @@ describe('importFromUrl — JSON-LD parsing', () => {
 
   it('skips malformed JSON-LD and continues', async () => {
     mockFetch.mockReturnValue(makeResponse(`<html><head>
-      <script type="application/ld+json">NOT VALID JSON<\/script>
+      <script type="application/ld+json">NOT VALID JSON</script>
       <meta property="og:title" content="OG Fallback" />
     </head></html>`))
 

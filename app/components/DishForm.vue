@@ -11,14 +11,14 @@
         required
         class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
         placeholder="e.g. Spaghetti Carbonara"
-      />
+      >
     </div>
 
     <!-- Image -->
     <div>
       <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Image</label>
       <div v-if="imagePreview" class="mb-3 relative inline-block">
-        <img :src="imagePreview" alt="Dish preview" class="h-32 w-48 rounded-lg border border-border object-cover" />
+        <img :src="imagePreview" alt="Dish preview" class="h-32 w-48 rounded-lg border border-border object-cover" >
         <button
           type="button"
           class="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full border border-border bg-surface text-xs text-text-muted hover:text-warning"
@@ -31,7 +31,7 @@
         accept="image/*"
         class="block w-full text-sm text-text-muted file:mr-3 file:rounded file:border-0 file:bg-surface-alt file:px-3 file:py-1.5 file:text-sm file:text-text hover:file:bg-border"
         @change="handleFileChange"
-      />
+      >
       <p class="mt-2 text-xs text-text-subtle">Or enter an image URL:</p>
       <input
         v-model="form.imageUrl"
@@ -39,7 +39,7 @@
         class="mt-1.5 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
         placeholder="https://..."
         @blur="onImageUrlBlur"
-      />
+      >
     </div>
 
     <!-- Source -->
@@ -51,7 +51,7 @@
           type="url"
           class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
           placeholder="https://..."
-        />
+        >
       </div>
       <div>
         <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Source Name</label>
@@ -60,7 +60,7 @@
           type="text"
           class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
           placeholder="e.g. NYT Cooking"
-        />
+        >
       </div>
     </div>
 
@@ -74,7 +74,7 @@
           min="1"
           class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
           placeholder="30"
-        />
+        >
       </div>
       <div>
         <label class="mb-1.5 block text-xs font-medium uppercase tracking-wider text-text-muted">Yield (servings)</label>
@@ -84,7 +84,7 @@
           min="1"
           class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
           placeholder="4"
-        />
+        >
       </div>
     </div>
 
@@ -217,6 +217,9 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  initialValues: undefined,
+  initialIngredients: () => [],
+  pendingIngredientTexts: () => [],
   submitLabel: 'Save dish',
   loading: false,
 })

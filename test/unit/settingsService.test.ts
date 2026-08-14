@@ -1,6 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { updateSettingsSchema } from '../../shared/schemas/settings'
 
+import { db } from '../../server/database/index'
+import { appSettings } from '../../server/database/schema'
+import {
+  seedDefaults,
+  getSettings,
+  updateSettings,
+} from '../../server/services/settingsService'
+
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
@@ -13,14 +21,6 @@ vi.mock('../../server/database/index', async () => {
   migrate(db, { migrationsFolder: 'server/database/migrations' })
   return { db }
 })
-
-import { db } from '../../server/database/index'
-import { appSettings } from '../../server/database/schema'
-import {
-  seedDefaults,
-  getSettings,
-  updateSettings,
-} from '../../server/services/settingsService'
 
 beforeEach(async () => {
   await db.delete(appSettings)

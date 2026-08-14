@@ -90,7 +90,7 @@
                 type="number"
                 min="1"
                 class="w-20 rounded-lg border border-border bg-surface-alt px-3 py-1.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
-              />
+              >
               <span class="text-sm text-text-muted">hours</span>
             </div>
             <div class="flex items-center gap-3">
@@ -100,7 +100,7 @@
                 type="number"
                 min="1"
                 class="w-20 rounded-lg border border-border bg-surface-alt px-3 py-1.5 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
-              />
+              >
               <span class="text-sm text-text-muted">backups</span>
             </div>
           </div>
@@ -161,7 +161,7 @@
                       class="flex-1 rounded border border-border bg-surface px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
                       @keydown.enter="saveRename(f.id)"
                       @keydown.escape="renamingFreezerId = null"
-                    />
+                    >
                     <button type="button" class="text-xs text-accent underline" @click="saveRename(f.id)">Save</button>
                     <button type="button" class="text-xs text-text-muted underline" @click="renamingFreezerId = null">Cancel</button>
                   </div>
@@ -201,7 +201,7 @@
                 type="text"
                 class="flex-1 bg-transparent text-sm text-text placeholder:italic placeholder:text-text-muted focus:outline-none"
                 placeholder="Add a freezer…"
-              />
+              >
               <button
                 type="submit"
                 :disabled="!newFreezerName.trim()"
@@ -226,7 +226,7 @@
                 type="number"
                 min="1"
                 class="w-14 bg-transparent px-2.5 py-1.5 text-right text-sm text-text focus:outline-none"
-              />
+              >
               <span class="pr-3 text-xs text-text-muted">days</span>
             </div>
           </div>
@@ -265,7 +265,7 @@
                   type="url"
                   class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
                   placeholder="https://meals.home (used in notification links)"
-                />
+                >
               </div>
               <div class="flex items-center gap-3">
                 <label class="w-28 shrink-0 text-xs text-text-muted">Server URL</label>
@@ -274,7 +274,7 @@
                   type="url"
                   class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
                   placeholder="https://ntfy.sh"
-                />
+                >
               </div>
               <div class="flex items-center gap-3">
                 <label class="w-28 shrink-0 text-xs text-text-muted">Topic</label>
@@ -283,7 +283,7 @@
                   type="text"
                   class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
                   placeholder="my-freezer-alerts"
-                />
+                >
               </div>
               <div class="flex items-center gap-3">
                 <label class="w-28 shrink-0 text-xs text-text-muted">Auth token</label>
@@ -293,7 +293,7 @@
                   autocomplete="off"
                   class="flex-1 rounded border border-border bg-surface px-2.5 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
                   placeholder="Optional bearer token"
-                />
+                >
               </div>
             </div>
             <!-- Audit overdue threshold -->
@@ -308,7 +308,7 @@
                   type="number"
                   min="1"
                   class="w-14 bg-transparent px-2.5 py-1.5 text-right text-sm text-text focus:outline-none"
-                />
+                >
                 <span class="pr-3 text-xs text-text-muted">days</span>
               </div>
             </div>
@@ -338,7 +338,7 @@
                     min="0"
                     max="23"
                     class="w-12 bg-transparent px-2 py-1.5 text-right text-sm text-text focus:outline-none"
-                  />
+                  >
                   <span class="pr-2 text-xs text-text-muted">h UTC</span>
                 </div>
               </div>
@@ -364,7 +364,7 @@
                   min="1"
                   class="min-w-0 flex-1 bg-transparent px-2 py-1.5 text-right text-xs text-text focus:outline-none"
                   @change="saveCategoryLifetime(cat.id)"
-                />
+                >
                 <span class="pr-2 text-xs text-text-muted">d</span>
               </div>
               <span
@@ -386,14 +386,14 @@
                   type="text"
                   class="w-36 bg-transparent text-xs text-text placeholder:italic placeholder:text-text-muted focus:outline-none"
                   placeholder="Category name…"
-                />
+                >
                 <input
                   v-model.number="newCategoryLifetime"
                   type="number"
                   min="1"
                   class="w-14 rounded border border-border bg-surface px-2 py-1 text-xs font-mono text-text focus:outline-none"
                   placeholder="days"
-                />
+                >
                 <button
                   type="submit"
                   :disabled="!newCategoryName.trim() || !newCategoryLifetime"
@@ -561,7 +561,7 @@ async function addFreezer() {
   if (!newFreezerName.value.trim()) return
   freezerError.value = ''
   try {
-    await $fetch('/api/freezers', { method: 'POST', body: { name: newFreezerName.value.trim() } })
+    await $fetch<unknown>('/api/freezers', { method: 'POST', body: { name: newFreezerName.value.trim() } })
     newFreezerName.value = ''
     refreshFreezers()
   }
@@ -577,7 +577,7 @@ function startRename(f: Freezer) {
 
 async function saveRename(id: number) {
   if (!renameValue.value.trim()) return
-  await $fetch(`/api/freezers/${id}`, { method: 'PATCH', body: { name: renameValue.value.trim() } })
+  await $fetch<unknown>(`/api/freezers/${id}`, { method: 'PATCH', body: { name: renameValue.value.trim() } })
   renamingFreezerId.value = null
   refreshFreezers()
 }
@@ -585,7 +585,7 @@ async function saveRename(id: number) {
 async function deleteFreezerConfirm(id: number) {
   freezerError.value = ''
   try {
-    await $fetch(`/api/freezers/${id}`, { method: 'DELETE' })
+    await $fetch<unknown>(`/api/freezers/${id}`, { method: 'DELETE' })
     refreshFreezers()
   }
   catch (e: unknown) {
@@ -630,7 +630,7 @@ function formatAudited(lastAuditedAt: string | null): string {
 async function saveCategoryLifetime(id: number) {
   const val = editingLifetimes.value[id]
   if (!val || val < 1) return
-  await $fetch(`/api/freezer-categories/${id}`, { method: 'PATCH', body: { defaultLifetimeDays: val } })
+  await $fetch<unknown>(`/api/freezer-categories/${id}`, { method: 'PATCH', body: { defaultLifetimeDays: val } })
   refreshCategories()
 }
 
@@ -638,7 +638,7 @@ async function addCategory() {
   if (!newCategoryName.value.trim() || !newCategoryLifetime.value) return
   categoryError.value = ''
   try {
-    await $fetch('/api/freezer-categories', {
+    await $fetch<unknown>('/api/freezer-categories', {
       method: 'POST',
       body: { name: newCategoryName.value.trim(), defaultLifetimeDays: newCategoryLifetime.value },
     })
@@ -654,7 +654,7 @@ async function addCategory() {
 async function deleteCategoryConfirm(id: number) {
   categoryError.value = ''
   try {
-    await $fetch(`/api/freezer-categories/${id}`, { method: 'DELETE' })
+    await $fetch<unknown>(`/api/freezer-categories/${id}`, { method: 'DELETE' })
     refreshCategories()
   }
   catch (e: unknown) {
@@ -668,7 +668,7 @@ async function deleteCategoryConfirm(id: number) {
 async function restoreDefaultCategories() {
   categoryError.value = ''
   try {
-    await $fetch('/api/freezer-categories/restore-defaults', { method: 'POST' })
+    await $fetch<unknown>('/api/freezer-categories/restore-defaults', { method: 'POST' })
     refreshCategories()
   }
   catch {

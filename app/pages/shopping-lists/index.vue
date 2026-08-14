@@ -113,7 +113,7 @@
                   v-model="form.dateRangeStart"
                   type="date"
                   class="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
-                />
+                >
               </div>
               <div>
                 <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-text-muted">To</label>
@@ -121,7 +121,7 @@
                   v-model="form.dateRangeEnd"
                   type="date"
                   class="w-full rounded-lg border border-border bg-bg px-3 py-2 text-sm text-text focus:outline-none focus:ring-2 focus:ring-accent/40"
-                />
+                >
               </div>
             </div>
             <p v-if="formError" class="text-sm text-warning">{{ formError }}</p>
@@ -231,7 +231,7 @@ async function confirmDelete(id: number, name: string) {
   if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
   deletingId.value = id
   try {
-    await $fetch(`/api/shopping-lists/${id}`, { method: 'DELETE' })
+    await $fetch<unknown>(`/api/shopping-lists/${id}`, { method: 'DELETE' })
     queryClient.invalidateQueries({ queryKey: queryKeys.shoppingLists.all() })
   }
   finally {

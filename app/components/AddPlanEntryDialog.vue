@@ -67,7 +67,7 @@
                 type="text"
                 placeholder="Search dishes…"
                 class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
-              />
+              >
               <div v-if="dishSearch && !selectedDish" class="mt-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-surface shadow-sm">
                 <div v-if="dishesLoading" class="px-3 py-2 text-sm text-text-subtle">Searching…</div>
                 <div v-else-if="!dishResults?.length" class="px-3 py-2 text-sm text-text-subtle">No dishes found.</div>
@@ -131,7 +131,7 @@
                 type="text"
                 placeholder="e.g. Dinner at Mom's, Pizza night…"
                 class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
-              />
+              >
             </div>
           </template>
         </div>
@@ -159,7 +159,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/vue-query'
 import { format, parseISO } from 'date-fns'
 import type { Dish } from '#shared/types/dish'
-import type { MealType } from '#shared/types/planEntry'
+import type { MealType, PlanEntry } from '#shared/types/planEntry'
 
 const MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'uncategorized']
 
@@ -232,7 +232,7 @@ const canSubmit = computed(() => {
 
 const { mutateAsync } = useMutation({
   mutationFn: (body: Record<string, unknown>) =>
-    $fetch('/api/plan-entries', { method: 'POST', body }),
+    $fetch<PlanEntry>('/api/plan-entries', { method: 'POST', body }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.planEntries.all() })
   },

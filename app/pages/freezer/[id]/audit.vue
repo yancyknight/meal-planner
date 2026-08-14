@@ -107,7 +107,7 @@ async function onUsed() {
   if (busy.value) return
   busy.value = true
   try {
-    await $fetch(`/api/freezer-items/${queue.value[cursor.value]!.id}/use`, { method: 'POST' })
+    await $fetch<unknown>(`/api/freezer-items/${queue.value[cursor.value]!.id}/use`, { method: 'POST' })
     usedCount.value++
   }
   catch {
@@ -124,7 +124,7 @@ async function onWasted() {
   if (busy.value) return
   busy.value = true
   try {
-    await $fetch(`/api/freezer-items/${queue.value[cursor.value]!.id}/waste`, { method: 'POST' })
+    await $fetch<unknown>(`/api/freezer-items/${queue.value[cursor.value]!.id}/waste`, { method: 'POST' })
     wastedCount.value++
   }
   catch {
@@ -170,7 +170,7 @@ function advance() {
 async function finishAudit() {
   finished.value = true
   try {
-    await $fetch(`/api/freezers/${freezerId.value}/audit-complete`, { method: 'POST' })
+    await $fetch<unknown>(`/api/freezers/${freezerId.value}/audit-complete`, { method: 'POST' })
   }
   catch {
     // best-effort; still redirect

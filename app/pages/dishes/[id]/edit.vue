@@ -91,7 +91,7 @@ const { mutateAsync, isPending: savePending } = useMutation({
     })
 
     const resolved = await resolveIngredients(data.ingredients)
-    await $fetch(`/api/dishes/${id.value}/ingredients`, {
+    await $fetch<unknown>(`/api/dishes/${id.value}/ingredients`, {
       method: 'PUT',
       body: resolved.map((i, idx) => ({
         rawText: i.rawText,

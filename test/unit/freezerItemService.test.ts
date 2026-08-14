@@ -1,5 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+import { db } from '../../server/database/index'
+import { freezerItems, freezerCategories, freezers, dishes } from '../../server/database/schema'
+import {
+  createFreezerItem,
+  listFreezerItems,
+  markFreezerItemUsed,
+  markFreezerItemWasted,
+  getDashboard,
+  computeDates,
+  updateFreezerItem,
+  getPlannerHints,
+  getStandaloneHints,
+} from '../../server/services/freezerItemService'
+import { seedCategories, listFreezerCategories } from '../../server/services/freezerCategoryService'
+
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
@@ -12,22 +27,6 @@ vi.mock('../../server/database/index', async () => {
   migrate(db, { migrationsFolder: 'server/database/migrations' })
   return { db }
 })
-
-import { db } from '../../server/database/index'
-import { freezerItems, freezerCategories, freezers, dishes } from '../../server/database/schema'
-import {
-  createFreezerItem,
-  getFreezerItem,
-  listFreezerItems,
-  markFreezerItemUsed,
-  markFreezerItemWasted,
-  getDashboard,
-  computeDates,
-  updateFreezerItem,
-  getPlannerHints,
-  getStandaloneHints,
-} from '../../server/services/freezerItemService'
-import { seedCategories, listFreezerCategories } from '../../server/services/freezerCategoryService'
 
 let freezerId: number
 let categoryId: number

@@ -8,7 +8,7 @@
       v-if="full && thumbSrc"
       :src="thumbSrc"
       class="h-10 w-10 rounded object-cover flex-shrink-0"
-    />
+    >
 
     <div class="min-w-0 flex-1 pr-12">
       <!-- Entry name — links to dish detail when a dish is attached -->
@@ -109,7 +109,7 @@ const queryClient = useQueryClient()
 const markingUsed = ref(false)
 
 const { mutate: doMarkUsed } = useMutation({
-  mutationFn: (id: number) => $fetch(`/api/freezer-items/${id}/use`, { method: 'POST' }),
+  mutationFn: (id: number) => $fetch<unknown>(`/api/freezer-items/${id}/use`, { method: 'POST' }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.freezerItems.all() })
     queryClient.invalidateQueries({ queryKey: queryKeys.freezerPlannerFeed.all() })

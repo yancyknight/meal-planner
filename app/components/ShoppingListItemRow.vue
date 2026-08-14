@@ -60,7 +60,7 @@
           type="url"
           placeholder="https://www.walmart.com/ip/..."
           class="min-w-0 flex-1 rounded border border-border bg-surface px-2 py-1 text-xs text-text placeholder:text-text-subtle focus:border-accent focus:outline-none"
-        />
+        >
         <button
           type="submit"
           :disabled="!urlDraft.trim()"

@@ -68,7 +68,7 @@ const saving = ref(false)
 async function handleSubmit(data: CreateFreezerItemInput) {
   saving.value = true
   try {
-    await $fetch('/api/freezer-items', { method: 'POST', body: data })
+    await $fetch<unknown>('/api/freezer-items', { method: 'POST', body: data })
     if (resolvedPrefillFreezerId.value) {
       await navigateTo(`/freezer/add?freezerId=${resolvedPrefillFreezerId.value}`)
     }
