@@ -36,8 +36,10 @@ export const patchPlanningSessionSchema = z.object({
   pinnedTags: z.array(pinnedTagSchema).optional(),
   wishlistTags: z.array(z.number().int().positive()).optional(),
   draftPlan: z.record(z.string(), z.object({
-    kind: z.enum(['dish', 'leftover-suggestion']),
-    dishId: z.number().int().positive(),
+    kind: z.enum(['dish', 'leftover-suggestion', 'standalone-freezer']),
+    dishId: z.number().int(),
+    freezerItemId: z.number().int().positive().optional(),
+    oneOffText: z.string().optional(),
     isManualOverride: z.boolean().optional(),
     warningLabels: z.array(z.string()).optional(),
     wishlistTag: z.number().int().positive().optional(),

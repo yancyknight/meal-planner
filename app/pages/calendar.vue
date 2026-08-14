@@ -63,7 +63,7 @@
             class="ml-1 h-9 rounded-lg border border-border bg-surface px-2 text-xs text-text-muted focus:outline-none focus:ring-2 focus:ring-accent/40"
             aria-label="Jump to date"
             @change="onJumpDate"
-          />
+          >
         </div>
       </div>
     </div>
@@ -449,6 +449,7 @@ function slotKey(date: string, mt: MealType): SlotKey {
 // Typed as Record<SlotKey, any> so noUncheckedIndexedAccess doesn't add | undefined
 // to the slot index access used in the VueDraggable v-model binding.
 // Runtime values are always PlanEntry[] — set exclusively by syncWeekSlots.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const weekSlots = reactive({}) as unknown as Record<SlotKey, any>
 
 function syncWeekSlots() {
@@ -497,7 +498,7 @@ async function onDragEnd(evt: { to: HTMLElement; from: HTMLElement }) {
   if (!toDate || !toMt) return
   if (toDate === fromDate && toMt === fromMt) return
 
-  await $fetch(`/api/plan-entries/${id}`, {
+  await $fetch<unknown>(`/api/plan-entries/${id}`, {
     method: 'PATCH',
     body: { date: toDate, mealType: toMt },
   })
@@ -509,7 +510,7 @@ async function onDragEnd(evt: { to: HTMLElement; from: HTMLElement }) {
 
 // ── Delete ───────────────────────────────────────────────────────
 const { mutate: deleteEntry } = useMutation({
-  mutationFn: (id: number) => $fetch(`/api/plan-entries/${id}`, { method: 'DELETE' }),
+  mutationFn: (id: number) => $fetch<unknown>(`/api/plan-entries/${id}`, { method: 'DELETE' }),
   onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.planEntries.all() }),
 })
 

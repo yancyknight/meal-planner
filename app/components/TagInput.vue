@@ -24,7 +24,7 @@
         :placeholder="placeholder"
         class="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         @keydown.enter.prevent="add"
-      />
+      >
       <button
         type="button"
         class="px-3 py-1.5 text-sm bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200"
@@ -53,6 +53,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  presets: undefined,
   placeholder: 'Add tag...',
 })
 

@@ -10,7 +10,7 @@
         :src="imageSrc"
         :alt="dish.name"
         class="h-full w-full object-cover"
-      />
+      >
       <div v-else class="flex h-full items-center justify-center text-text-subtle">
         <span class="text-4xl">✦</span>
       </div>

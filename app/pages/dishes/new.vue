@@ -19,7 +19,7 @@
           class="min-w-0 flex-1 rounded-lg border border-border bg-canvas px-3 py-2.5 text-sm text-text placeholder:text-text-subtle focus:outline-none focus:ring-2 focus:ring-accent/40"
           :disabled="importLoading"
           @keydown.enter.prevent="runImport"
-        />
+        >
         <button
           type="button"
           :disabled="importLoading || !importUrl.trim()"
@@ -140,7 +140,7 @@ const { mutateAsync, isPending } = useMutation({
 
     const resolved = await resolveIngredients(data.ingredients)
     if (resolved.length > 0) {
-      await $fetch(`/api/dishes/${dish.id}/ingredients`, {
+      await $fetch<unknown>(`/api/dishes/${dish.id}/ingredients`, {
         method: 'PUT',
         body: resolved.map((i, idx) => ({
           rawText: i.rawText,

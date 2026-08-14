@@ -1,6 +1,5 @@
 import { getPlanningSession, deletePlanningSession } from '../../../services/planningSessionService'
 import { createPlanEntry, deletePlanEntry } from '../../../services/planEntryService'
-import { addDays, format } from 'date-fns'
 
 export default defineEventHandler(async (event) => {
   const id = Number(getRouterParam(event, 'id'))

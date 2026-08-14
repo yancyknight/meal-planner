@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
+import { db } from '../../server/database/index'
+import { freezers, freezerItems, freezerCategories } from '../../server/database/schema'
+import { completeAudit, getFreezer } from '../../server/services/freezerService'
+import { markFreezerItemUsed, markFreezerItemWasted } from '../../server/services/freezerItemService'
+
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
@@ -12,11 +17,6 @@ vi.mock('../../server/database/index', async () => {
   migrate(db, { migrationsFolder: 'server/database/migrations' })
   return { db }
 })
-
-import { db } from '../../server/database/index'
-import { freezers, freezerItems, freezerCategories } from '../../server/database/schema'
-import { completeAudit, getFreezer, createFreezer } from '../../server/services/freezerService'
-import { markFreezerItemUsed, markFreezerItemWasted } from '../../server/services/freezerItemService'
 
 async function seedFreezer(name = 'Kitchen') {
   const now = new Date().toISOString()

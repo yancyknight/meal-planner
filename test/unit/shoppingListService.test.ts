@@ -1,18 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { eq } from 'drizzle-orm'
 import { createShoppingListSchema } from '../../shared/schemas/shoppingList'
-
-vi.mock('../../server/database/index', async () => {
-  const { default: Database } = await import('better-sqlite3')
-  const { drizzle } = await import('drizzle-orm/better-sqlite3')
-  const { migrate } = await import('drizzle-orm/better-sqlite3/migrator')
-  const schema = await import('../../server/database/schema')
-
-  const sqlite = new Database(':memory:')
-  sqlite.pragma('foreign_keys = ON')
-  const db = drizzle(sqlite, { schema })
-  migrate(db, { migrationsFolder: 'server/database/migrations' })
-  return { db }
-})
 
 import { db } from '../../server/database/index'
 import {
@@ -29,9 +17,21 @@ import {
   getById,
   checkItem,
   setDone,
-  deleteList,
   deleteExpired,
 } from '../../server/services/shoppingListService'
+
+vi.mock('../../server/database/index', async () => {
+  const { default: Database } = await import('better-sqlite3')
+  const { drizzle } = await import('drizzle-orm/better-sqlite3')
+  const { migrate } = await import('drizzle-orm/better-sqlite3/migrator')
+  const schema = await import('../../server/database/schema')
+
+  const sqlite = new Database(':memory:')
+  sqlite.pragma('foreign_keys = ON')
+  const db = drizzle(sqlite, { schema })
+  migrate(db, { migrationsFolder: 'server/database/migrations' })
+  return { db }
+})
 
 async function seedDish(name: string) {
   const now = new Date().toISOString()
@@ -394,12 +394,12 @@ describe('deleteExpired', () => {
     const oldDoneAt = new Date(Date.now() - 40 * 60 * 60 * 1000).toISOString()
     await db.update(shoppingLists)
       .set({ isDone: 1, doneAt: oldDoneAt })
-      .where((t => require('drizzle-orm').eq(t.id, list.id))(shoppingLists))
+      .where(eq(shoppingLists.id, list.id))
 
     await deleteExpired()
 
     const itemsRemaining = await db.select().from(shoppingListItems).where(
-      (t => require('drizzle-orm').eq(t.shoppingListId, list.id))(shoppingListItems),
+      eq(shoppingListItems.shoppingListId, list.id),
     )
     expect(itemsRemaining).toHaveLength(0)
   })

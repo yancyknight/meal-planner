@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 
+import { db } from '../../server/database/index'
+import { appSettings } from '../../server/database/schema'
+import { sendNtfy } from '../../server/services/notificationService'
+
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
@@ -12,10 +16,6 @@ vi.mock('../../server/database/index', async () => {
   migrate(db, { migrationsFolder: 'server/database/migrations' })
   return { db }
 })
-
-import { db } from '../../server/database/index'
-import { appSettings } from '../../server/database/schema'
-import { sendNtfy } from '../../server/services/notificationService'
 
 const fetchSpy = vi.fn()
 vi.stubGlobal('fetch', fetchSpy)

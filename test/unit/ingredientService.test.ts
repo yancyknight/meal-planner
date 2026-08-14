@@ -1,18 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-vi.mock('../../server/database/index', async () => {
-  const { default: Database } = await import('better-sqlite3')
-  const { drizzle } = await import('drizzle-orm/better-sqlite3')
-  const { migrate } = await import('drizzle-orm/better-sqlite3/migrator')
-  const schema = await import('../../server/database/schema')
-
-  const sqlite = new Database(':memory:')
-  sqlite.pragma('foreign_keys = ON')
-  const db = drizzle(sqlite, { schema })
-  migrate(db, { migrationsFolder: 'server/database/migrations' })
-  return { db }
-})
-
 import { db } from '../../server/database/index'
 import { canonicalIngredients, dishIngredients, dishes, freezerItems, freezerCategories, freezers } from '../../server/database/schema'
 import {
@@ -27,6 +14,19 @@ import {
   setDishIngredients,
 } from '../../server/services/ingredientService'
 import { createDish } from '../../server/services/dishService'
+
+vi.mock('../../server/database/index', async () => {
+  const { default: Database } = await import('better-sqlite3')
+  const { drizzle } = await import('drizzle-orm/better-sqlite3')
+  const { migrate } = await import('drizzle-orm/better-sqlite3/migrator')
+  const schema = await import('../../server/database/schema')
+
+  const sqlite = new Database(':memory:')
+  sqlite.pragma('foreign_keys = ON')
+  const db = drizzle(sqlite, { schema })
+  migrate(db, { migrationsFolder: 'server/database/migrations' })
+  return { db }
+})
 
 beforeEach(async () => {
   await db.delete(dishIngredients)

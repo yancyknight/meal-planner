@@ -167,7 +167,7 @@ import type { PlanningSession, PinnedTag, TagRef } from '#shared/types/planningS
 import type { Tag } from '#shared/types/tag'
 import type { Dish } from '#shared/types/dish'
 import type { AppSettings } from '#shared/types/settings'
-import { VIRTUAL_TAGS, getVirtualTag } from '#shared/virtualTags'
+import { getVirtualTag } from '#shared/virtualTags'
 import { detectAnchorConflicts } from '#shared/utils/anchorConflicts'
 
 const props = defineProps<{

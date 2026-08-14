@@ -37,7 +37,7 @@
         class="w-full rounded-lg border border-border bg-surface px-3 py-2.5 font-serif text-base focus:outline-none focus:ring-1 focus:ring-accent"
         placeholder="e.g. Chicken breasts"
         required
-      />
+      >
     </div>
 
     <!-- Category -->
@@ -67,7 +67,7 @@
         v-model="form.addedAt"
         type="date"
         class="mt-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
-      />
+      >
     </div>
 
     <!-- Preview chip -->
@@ -96,7 +96,7 @@
           min="1"
           class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
           placeholder="Leave blank to use category default"
-        />
+        >
       </div>
     </details>
 
@@ -124,7 +124,7 @@
           type="text"
           class="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent"
           placeholder="Search dishes…"
-        />
+        >
         <div v-if="dishResults.length" class="max-h-40 overflow-y-auto rounded-lg border border-border bg-surface">
           <button
             v-for="d in dishResults"

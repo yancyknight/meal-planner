@@ -1,5 +1,5 @@
 <template>
-  <div class="relative" ref="containerRef">
+  <div ref="containerRef" class="relative">
     <!-- Trigger -->
     <button
       type="button"
@@ -29,7 +29,7 @@
           class="w-full bg-transparent text-sm outline-none placeholder:text-text-subtle"
           placeholder="Search tags…"
           @keydown.escape="open = false"
-        />
+        >
       </div>
 
       <div class="max-h-56 overflow-y-auto py-1">

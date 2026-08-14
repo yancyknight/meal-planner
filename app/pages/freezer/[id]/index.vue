@@ -87,7 +87,7 @@
           :checked="selected.size === (items as FreezerItem[]).filter(i => i.status === 'active').length"
           class="h-4 w-4 rounded border-border text-accent focus:ring-accent"
           @change="toggleSelectAll"
-        />
+        >
         <label for="select-all" class="text-xs text-text-muted">Select all active</label>
         <span class="ml-auto font-mono text-xs text-text-subtle">{{ (items as FreezerItem[]).length }} item{{ (items as FreezerItem[]).length === 1 ? '' : 's' }}</span>
       </div>
@@ -104,7 +104,7 @@
             :checked="selected.has(item.id)"
             class="h-4 w-4 rounded border-border text-accent focus:ring-accent"
             @change="toggleSelect(item.id)"
-          />
+          >
         </div>
         <div class="min-w-0 flex-1">
           <FreezerItemRow
@@ -193,23 +193,23 @@ function toggleSelectAll() {
 
 // --- Actions ---
 async function doMarkUsed(itemId: number) {
-  await $fetch(`/api/freezer-items/${itemId}/use`, { method: 'POST' })
+  await $fetch<unknown>(`/api/freezer-items/${itemId}/use`, { method: 'POST' })
   refresh()
 }
 
 async function doMarkWasted(itemId: number) {
-  await $fetch(`/api/freezer-items/${itemId}/waste`, { method: 'POST' })
+  await $fetch<unknown>(`/api/freezer-items/${itemId}/waste`, { method: 'POST' })
   refresh()
 }
 
 async function bulkMarkUsed() {
-  await Promise.all([...selected].map(id => $fetch(`/api/freezer-items/${id}/use`, { method: 'POST' })))
+  await Promise.all([...selected].map(id => $fetch<unknown>(`/api/freezer-items/${id}/use`, { method: 'POST' })))
   selected.clear()
   refresh()
 }
 
 async function bulkMarkWasted() {
-  await Promise.all([...selected].map(id => $fetch(`/api/freezer-items/${id}/waste`, { method: 'POST' })))
+  await Promise.all([...selected].map(id => $fetch<unknown>(`/api/freezer-items/${id}/waste`, { method: 'POST' })))
   selected.clear()
   refresh()
 }
@@ -226,7 +226,7 @@ function moveItem(itemId: number) {
 
 async function confirmMove(newFreezerId: number) {
   if (!movingItemId.value) return
-  await $fetch(`/api/freezer-items/${movingItemId.value}`, {
+  await $fetch<unknown>(`/api/freezer-items/${movingItemId.value}`, {
     method: 'PATCH',
     body: { freezerId: newFreezerId },
   })

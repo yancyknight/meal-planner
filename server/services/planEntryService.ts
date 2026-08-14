@@ -1,8 +1,10 @@
-import { and, count, eq, gte, lte, desc, isNull } from 'drizzle-orm'
+import { and, count, eq, gte, lte, desc } from 'drizzle-orm'
 import { db } from '../database'
 import { planEntries, dishes } from '../database/schema'
 import type { PlanEntry, MealType, EntryKind } from '../../shared/types/planEntry'
 import type { CreatePlanEntryInput, UpdatePlanEntryInput } from '../../shared/schemas/planEntry'
+
+import type { DishStats } from '../../shared/types/dishStats'
 
 type PlanEntryRow = typeof planEntries.$inferSelect
 
@@ -150,8 +152,6 @@ export function hasLeftovers(yieldServings: number | null, guestCount: number, h
   if (yieldServings == null) return false
   return yieldServings > householdSize + guestCount
 }
-
-import type { DishStats } from '../../shared/types/dishStats'
 
 /** Returns planning stats for a dish derived from its fresh plan entries up to today. */
 export async function getDishStats(dishId: number): Promise<DishStats> {

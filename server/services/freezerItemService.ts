@@ -1,6 +1,6 @@
-import { eq, and, lt, gte, desc, asc, inArray, isNull, isNotNull } from 'drizzle-orm'
+import { eq, and, lt, gte, desc, asc, isNull, isNotNull } from 'drizzle-orm'
 import { db } from '../database'
-import { freezerItems, freezers, freezerCategories } from '../database/schema'
+import { freezerItems, freezers } from '../database/schema'
 import type { FreezerItem, FreezerDashboardPayload, FreezerBucketGroup, Freezer } from '../../shared/types/freezer'
 import type { CreateFreezerItemInput, UpdateFreezerItemInput, ListFreezerItemsInput } from '../../shared/schemas/freezer'
 import { getFreezerCategory } from './freezerCategoryService'

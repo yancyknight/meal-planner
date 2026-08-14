@@ -5,6 +5,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
 
   modules: [
+    '@nuxt/eslint',
     '@nuxt/test-utils',
     '@oro.ad/nuxt-claude-devtools',
     '@vueuse/nuxt',

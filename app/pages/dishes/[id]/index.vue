@@ -55,7 +55,7 @@
               :src="imageSrc"
               :alt="dish.name"
               class="w-full object-cover"
-            />
+            >
             <div v-else class="flex h-52 items-center justify-center text-text-subtle">
               <span class="text-5xl">✦</span>
             </div>
@@ -166,7 +166,7 @@
                   type="date"
                   :min="cooldownMinDate"
                   class="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm text-text focus:outline-none focus:ring-1 focus:ring-accent"
-                />
+                >
                 <button
                   class="rounded-md bg-accent px-3 py-1.5 text-xs font-medium text-white transition hover:bg-accent-hover disabled:opacity-50"
                   :disabled="!cooldownEndsAt || cooldownSetting"
@@ -382,7 +382,7 @@ async function setCooldown() {
   if (!cooldownEndsAt.value) return
   cooldownSetting.value = true
   try {
-    await $fetch(`/api/dishes/${id.value}/cooldown`, {
+    await $fetch<unknown>(`/api/dishes/${id.value}/cooldown`, {
       method: 'PUT',
       body: { endsAt: cooldownEndsAt.value },
     })
@@ -397,7 +397,7 @@ async function setCooldown() {
 async function removeCooldown() {
   cooldownRemoving.value = true
   try {
-    await $fetch(`/api/dishes/${id.value}/cooldown`, { method: 'DELETE' })
+    await $fetch<unknown>(`/api/dishes/${id.value}/cooldown`, { method: 'DELETE' })
     queryClient.invalidateQueries({ queryKey: queryKeys.dishes.cooldown(id.value) })
   }
   finally {
@@ -423,7 +423,7 @@ function toggleArchive() {
 const deleteError = ref<string>()
 
 const { mutate: deleteDish } = useMutation({
-  mutationFn: () => $fetch<void>(`/api/dishes/${id.value}`, { method: 'DELETE' }),
+  mutationFn: () => $fetch<unknown>(`/api/dishes/${id.value}`, { method: 'DELETE' }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.dishes.all() })
     router.push('/dishes')

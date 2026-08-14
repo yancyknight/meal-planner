@@ -1,6 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { createPlanEntrySchema, updatePlanEntrySchema } from '../../shared/schemas/planEntry'
 
+import { db } from '../../server/database/index'
+import { dishes, planEntries, freezers, freezerCategories, freezerItems } from '../../server/database/schema'
+import {
+  createPlanEntry,
+  updatePlanEntry,
+  deletePlanEntry,
+  listByDateRange,
+  daysSinceLastServedFresh,
+  hasEntriesForDish,
+  hasLeftovers,
+} from '../../server/services/planEntryService'
+
 vi.mock('../../server/database/index', async () => {
   const { default: Database } = await import('better-sqlite3')
   const { drizzle } = await import('drizzle-orm/better-sqlite3')
@@ -13,18 +25,6 @@ vi.mock('../../server/database/index', async () => {
   migrate(db, { migrationsFolder: 'server/database/migrations' })
   return { db }
 })
-
-import { db } from '../../server/database/index'
-import { dishes, planEntries, freezers, freezerCategories, freezerItems } from '../../server/database/schema'
-import {
-  createPlanEntry,
-  updatePlanEntry,
-  deletePlanEntry,
-  listByDateRange,
-  daysSinceLastServedFresh,
-  hasEntriesForDish,
-  hasLeftovers,
-} from '../../server/services/planEntryService'
 
 async function seedDish(name = 'Test Dish', yieldServings: number | null = null) {
   const now = new Date().toISOString()

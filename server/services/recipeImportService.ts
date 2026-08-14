@@ -176,7 +176,7 @@ export async function importFromUrl(url: string): Promise<RecipeImportResult> {
   }
   catch (e) {
     const msg = e instanceof Error ? e.message : 'Unknown error'
-    throw new Error(`Could not fetch the recipe page: ${msg}`)
+    throw new Error(`Could not fetch the recipe page: ${msg}`, { cause: e })
   }
 
   const result = extractJsonLd(html, url) ?? extractOg(html, url) ?? extractHeuristic(html, url)

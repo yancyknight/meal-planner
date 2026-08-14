@@ -144,7 +144,7 @@ async function confirmDelete(session: PlanningSession) {
   if (!confirm(`Delete the planning session for week of ${formatWeek(session.weekStart)}? This cannot be undone.`)) return
   deletingId.value = session.id
   try {
-    await $fetch(`/api/planning-sessions/${session.id}`, { method: 'DELETE' })
+    await $fetch<unknown>(`/api/planning-sessions/${session.id}`, { method: 'DELETE' })
     queryClient.invalidateQueries({ queryKey: queryKeys.planningSessions.all() })
   }
   finally {

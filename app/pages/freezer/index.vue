@@ -103,13 +103,9 @@
 </template>
 
 <script setup lang="ts">
-import { useQueryClient } from '@tanstack/vue-query'
-import { queryKeys } from '~/composables/queryKeys'
 import type { FreezerDashboardPayload, Freezer } from '#shared/types/freezer'
 
 useHead({ title: 'Freezer' })
-
-const queryClient = useQueryClient()
 
 const { data: freezers } = useFetch<Freezer[]>('/api/freezers', {
   default: () => [],
@@ -149,12 +145,12 @@ const auditNote = computed(() => {
 // --- Actions ---
 
 async function markUsed(id: number) {
-  await $fetch(`/api/freezer-items/${id}/use`, { method: 'POST' })
+  await $fetch<unknown>(`/api/freezer-items/${id}/use`, { method: 'POST' })
   refreshDashboard()
 }
 
 async function markWasted(id: number) {
-  await $fetch(`/api/freezer-items/${id}/waste`, { method: 'POST' })
+  await $fetch<unknown>(`/api/freezer-items/${id}/waste`, { method: 'POST' })
   refreshDashboard()
 }
 
@@ -178,7 +174,7 @@ function moveItem(id: number) {
 
 async function confirmMove(newFreezerId: number) {
   if (!movingItemId.value) return
-  await $fetch(`/api/freezer-items/${movingItemId.value}`, {
+  await $fetch<unknown>(`/api/freezer-items/${movingItemId.value}`, {
     method: 'PATCH',
     body: { freezerId: newFreezerId },
   })

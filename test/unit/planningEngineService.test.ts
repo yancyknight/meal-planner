@@ -2,6 +2,10 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { selectionWeight, isEligibleForSlot, seasonOf, weightedRandom, generateDraft, reroll, freezerUrgencyMultiplier } from '../../server/services/planningEngineService'
 import type { Dish } from '../../shared/types/dish'
 
+import { db } from '../../server/database/index'
+import { dishes, planEntries } from '../../server/database/schema'
+import { daysSinceLastServedFresh } from '../../server/services/planEntryService'
+
 // ── Pure function unit tests ──────────────────────────────────────────────────
 
 describe('selectionWeight', () => {
@@ -533,10 +537,6 @@ vi.mock('../../server/database/index', async () => {
   migrate(db, { migrationsFolder: 'server/database/migrations' })
   return { db }
 })
-
-import { db } from '../../server/database/index'
-import { dishes, planEntries } from '../../server/database/schema'
-import { daysSinceLastServedFresh } from '../../server/services/planEntryService'
 
 async function seedDish() {
   const now = new Date().toISOString()

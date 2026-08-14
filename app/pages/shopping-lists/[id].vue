@@ -209,7 +209,7 @@ const oneOffItems = computed(() => {
 // Toggle item checked
 const { mutate: patchItem } = useMutation({
   mutationFn: ({ itemId, checked }: { itemId: number; checked: boolean }) =>
-    $fetch(`/api/shopping-list-items/${itemId}`, { method: 'PATCH', body: { checked } }),
+    $fetch<unknown>(`/api/shopping-list-items/${itemId}`, { method: 'PATCH', body: { checked } }),
   onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.shoppingLists.detail(id.value) }),
 })
 
@@ -220,7 +220,7 @@ function toggleItem(itemId: number, checked: boolean) {
 // Set Walmart URL on a canonical ingredient
 const { mutate: patchWalmartUrl } = useMutation({
   mutationFn: ({ canonicalId, url }: { canonicalId: number; url: string }) =>
-    $fetch(`/api/canonical-ingredients/${canonicalId}`, { method: 'PATCH', body: { walmartUrl: url } }),
+    $fetch<unknown>(`/api/canonical-ingredients/${canonicalId}`, { method: 'PATCH', body: { walmartUrl: url } }),
   onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.shoppingLists.detail(id.value) }),
 })
 
@@ -231,7 +231,7 @@ function setWalmartUrl(canonicalId: number, url: string) {
 // Mark done / undo done
 const { mutate: patchDone, isPending: togglingDone } = useMutation({
   mutationFn: (isDone: boolean) =>
-    $fetch(`/api/shopping-lists/${id.value}`, { method: 'PATCH', body: { isDone } }),
+    $fetch<unknown>(`/api/shopping-lists/${id.value}`, { method: 'PATCH', body: { isDone } }),
   onSuccess: () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.shoppingLists.detail(id.value) })
     queryClient.invalidateQueries({ queryKey: queryKeys.shoppingLists.all() })
