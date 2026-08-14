@@ -442,6 +442,17 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
+## Milestone 21 — Bulk Paste Ingredients (#53) ✅
+*Some recipe sites can't be auto-imported (login walls, etc). Let the user paste a copied ingredients list and have it split into rows using the same fuzzy-match/canonical-link pipeline recipe import already uses.*
+
+- `[x]` `shared/utils/parseIngredientList.ts` — pure function splitting pasted text into ingredient lines: one per newline, strips bullet/number markers (`-`, `*`, `•`, `1.`, `1)`), drops blank lines and bare section headers (e.g. "Ingredients:")
+- `[x]` `app/components/IngredientList.vue` — "Paste list" toggle reveals a textarea; on submit, parsed lines are appended as new rows (reusing the same row-creation path as `pendingTexts` from recipe import, so each new `IngredientEntry` auto-triggers canonical suggestion on mount)
+- `[x]` Available on both dish create and edit forms for free, since both already render `IngredientList`
+- `[x]` Tests: `parseIngredientListText` unit tests (bullets, numbering, blank lines, section headers, CRLF)
+- `[x]` Manual verification via dev server + screenshots (paste flow on new-dish form)
+
+---
+
 ## Post-MVP / Parking Lot
 
 *Ideas explicitly deferred until after the core feature ships. No commitment to build.*

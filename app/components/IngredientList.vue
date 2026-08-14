@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { DishIngredient, IngredientRowValue } from '../../shared/types/ingredient'
+import { parseIngredientListText } from '#shared/utils/parseIngredientList'
 
 interface IngredientRow {
   key: number
@@ -49,6 +50,28 @@ function addRow() {
   rows.value.push({ key: nextKey++, rawText: '', canonicalIngredientId: null })
 }
 
+const showPaste = ref(false)
+const pasteText = ref('')
+
+function openPaste() {
+  showPaste.value = true
+}
+
+function cancelPaste() {
+  showPaste.value = false
+  pasteText.value = ''
+}
+
+function addPastedIngredients() {
+  const lines = parseIngredientListText(pasteText.value)
+  for (const line of lines) {
+    rows.value.push({ key: nextKey++, rawText: line, canonicalIngredientId: null })
+  }
+  showPaste.value = false
+  pasteText.value = ''
+  if (lines.length > 0) emitUpdate()
+}
+
 function removeRow(index: number) {
   rows.value.splice(index, 1)
   emitUpdate()
@@ -84,12 +107,52 @@ function emitUpdate() {
       @update="updateRow(idx, $event)"
       @remove="removeRow(idx)"
     />
-    <button
-      type="button"
-      class="self-start rounded border border-dashed border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600"
-      @click="addRow"
-    >
-      + Add ingredient
-    </button>
+    <div v-if="showPaste" class="flex flex-col gap-2 rounded-lg border border-dashed border-gray-300 p-3">
+      <label class="text-xs font-medium text-gray-500" for="ingredient-paste-textarea">
+        Paste an ingredients list, one per line
+      </label>
+      <textarea
+        id="ingredient-paste-textarea"
+        v-model="pasteText"
+        rows="6"
+        placeholder="2 cups flour&#10;1 tsp salt&#10;3 eggs"
+        class="w-full resize-y rounded border border-gray-300 px-2 py-1.5 text-sm focus:border-indigo-500 focus:outline-none"
+      />
+      <div class="flex gap-2">
+        <button
+          type="button"
+          :disabled="!pasteText.trim()"
+          class="rounded bg-indigo-600 px-3 py-1.5 text-sm text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="addPastedIngredients"
+        >
+          Add ingredients
+        </button>
+        <button
+          type="button"
+          class="rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:text-gray-700"
+          @click="cancelPaste"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+
+    <div class="flex gap-2">
+      <button
+        type="button"
+        class="self-start rounded border border-dashed border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600"
+        @click="addRow"
+      >
+        + Add ingredient
+      </button>
+      <button
+        v-if="!showPaste"
+        type="button"
+        class="self-start rounded border border-dashed border-gray-300 px-3 py-1.5 text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600"
+        @click="openPaste"
+      >
+        Paste list
+      </button>
+    </div>
   </div>
 </template>
