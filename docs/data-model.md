@@ -196,6 +196,26 @@ Individual items in a freezer.
 Check (enforced in the Zod schema): `lifetimeDaysOverride >= 1`; `tossByDate > addedAt`;
 `addedAt <= targetUseDate <= tossByDate`.
 
+### `dish_files`
+
+Supporting files attached to a Dish — most often a PDF assembled by hand when a cook combines
+parts of two recipes, so the household does not have to hunt down both sources again.
+
+| Column | Type | Constraints | Notes |
+|---|---|---|---|
+| `id` | integer | PK, autoincrement | |
+| `dishId` | integer | NOT NULL, FK → dishes ON DELETE CASCADE | Owning dish |
+| `storedName` | text | NOT NULL | Name on disk: `{uuid}.{ext}` under `$FILE_DIR` |
+| `originalName` | text | NOT NULL | Name the file was uploaded with; shown in the UI and in `Content-Disposition` |
+| `mimeType` | text | NOT NULL | As reported at upload, validated against the extension allowlist |
+| `sizeBytes` | integer | NOT NULL | Byte length of the stored blob |
+| `createdAt` | text | NOT NULL | ISO 8601 |
+
+Rows cascade with the dish, but the blobs do not — `dishService.deleteDish` calls
+`dishFileService.deleteAllFilesForDish` first so nothing is orphaned on disk.
+
+---
+
 ### `app_settings`
 
 Key-value store for global app configuration.
@@ -231,6 +251,7 @@ CREATE INDEX idx_dish_ingredients_canonical_id ON dish_ingredients(canonicalIngr
 CREATE INDEX idx_shopping_list_items_list_id ON shopping_list_items(shoppingListId);
 CREATE INDEX idx_canonical_ingredients_name ON canonical_ingredients(name);
 CREATE INDEX idx_dishes_archived ON dishes(archived);
+CREATE INDEX idx_dish_files_dish_id ON dish_files(dishId);
 CREATE INDEX idx_freezer_items_freezer_id ON freezer_items(freezerId);
 CREATE INDEX idx_freezer_items_status ON freezer_items(status);
 CREATE INDEX idx_freezer_items_toss_by ON freezer_items(tossByDate) WHERE status = 'active';
@@ -247,6 +268,7 @@ The partial index `idx_plan_entries_dish_fresh` accelerates the `daysSinceLastSe
 ```
 dishes ──< dish_ingredients >── canonical_ingredients
 dishes ──< dish_tags >── tags
+dishes ──< dish_files
 plan_entries >── dishes (nullable; null = one-off)
 plan_entries >── freezer_items (nullable; set on one-off entries created from standalone freezer recommendations)
 shopping_lists ──< shopping_list_items >── canonical_ingredients

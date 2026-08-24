@@ -99,6 +99,13 @@
       "when": 1786734102216,
       "tag": "0013_magical_major_mapleleaf",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1787600096832,
+      "tag": "0014_chilly_veda",
+      "breakpoints": true
     }
   ]
 }

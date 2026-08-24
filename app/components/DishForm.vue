@@ -176,6 +176,13 @@
       />
     </div>
 
+    <!-- Files — uploads save immediately, so they need a dish that already exists -->
+    <div>
+      <label class="mb-2 block text-xs font-medium uppercase tracking-wider text-text-muted">Files</label>
+      <DishFileList v-if="props.dishId" :dish-id="props.dishId" />
+      <p v-else class="text-sm text-text-subtle">Save the dish first to attach files.</p>
+    </div>
+
     <!-- Frequency controls -->
     <div class="rounded-lg border border-border p-4">
       <p class="mb-4 text-xs font-medium uppercase tracking-wider text-text-muted">Planning Frequency</p>
@@ -214,6 +221,8 @@ interface Props {
   pendingIngredientTexts?: string[]
   submitLabel?: string
   loading?: boolean
+  /** Set on edit only — file uploads need a persisted dish to attach to. */
+  dishId?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -222,6 +231,7 @@ const props = withDefaults(defineProps<Props>(), {
   pendingIngredientTexts: () => [],
   submitLabel: 'Save dish',
   loading: false,
+  dishId: undefined,
 })
 
 const emit = defineEmits<{

@@ -6,6 +6,7 @@ import type { Tag } from '../../shared/types/tag'
 import type { CreateDishInput, UpdateDishInput } from '../../shared/schemas/dish'
 import { getTagsForDishes, setDishTags } from './tagService'
 import { hasEntriesForDish } from './planEntryService'
+import { deleteAllFilesForDish } from './dishFileService'
 
 type DishRow = typeof dishes.$inferSelect
 
@@ -187,6 +188,8 @@ export async function deleteDish(id: number): Promise<{ deleted: boolean; hasPla
   if (await hasEntriesForDish(id)) {
     return { deleted: false, hasPlanEntries: true }
   }
+  // Rows cascade with the dish; the blobs on disk do not.
+  await deleteAllFilesForDish(id)
   const result = await db.delete(dishes).where(eq(dishes.id, id)).returning({ id: dishes.id })
   return { deleted: result.length > 0, hasPlanEntries: false }
 }

@@ -22,6 +22,7 @@
       <DishForm
         :initial-values="dish"
         :initial-ingredients="existingIngredients ?? []"
+        :dish-id="id"
         submit-label="Save changes"
         :loading="savePending"
         @submit="handleSubmit"

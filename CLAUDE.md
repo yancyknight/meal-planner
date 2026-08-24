@@ -81,6 +81,7 @@ public/
 data/                      # Docker volume mount point
   app.db                   # SQLite database file
   images/                  # Uploaded dish images
+  files/                   # Uploaded dish file attachments
 ```
 
 ## Coding Conventions
@@ -101,6 +102,8 @@ data/                      # Docker volume mount point
 |-----------------|------------------|------------------------------------|
 | `DATABASE_URL`  | `/data/app.db`   | SQLite file path                   |
 | `IMAGE_DIR`     | `/data/images`   | Image upload directory             |
+| `FILE_DIR`      | `/data/files`    | Dish file attachment directory     |
+| `MAX_UPLOAD_MB` | `100`            | Per-file upload ceiling (MB)       |
 | `BACKUP_DIR`    | `/data/backups`  | Database backup output directory   |
 
 ## Docker

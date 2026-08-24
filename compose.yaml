@@ -8,6 +8,7 @@ services:
     environment:
       DATABASE_URL: /data/app.db
       IMAGE_DIR: /data/images
+      FILE_DIR: /data/files
     restart: unless-stopped
 
   test:
@@ -21,6 +22,7 @@ services:
     environment:
       DATABASE_URL: /tmp/test-app.db
       IMAGE_DIR: /tmp/test-images
+      FILE_DIR: /tmp/test-files
     command: pnpm test
 
 volumes:
