@@ -76,6 +76,11 @@ PATCH  /api/settings
 GET    /api/images/[filename]   # Serve uploaded images
 POST   /api/images              # Upload image; returns filename
 
+GET    /api/dishes/[id]/files   # List files attached to a dish
+POST   /api/dishes/[id]/files   # Upload a file attachment (multipart, field name `file`)
+GET    /api/dish-files/[id]/download  # Serve an attachment
+DELETE /api/dish-files/[id]     # Delete an attachment (row + blob)
+
 GET    /api/freezers
 POST   /api/freezers
 GET    /api/freezers/[id]
@@ -114,6 +119,8 @@ Key services:
 - `shoppingListService.ts` — list generation and item management
 - `planningSessionService.ts` — session persistence and step management
 - `imageService.ts` — upload, serve, and cleanup of dish images
+- `fileService.ts` — disk layer for dish file attachments (`$FILE_DIR`), plus the upload ceiling
+- `dishFileService.ts` — attachment CRUD; validates type and size, keeps rows and blobs in sync
 - `freezerService.ts` — freezer CRUD + audit-complete writes
 - `freezerCategoryService.ts` — category CRUD + first-run seeding
 - `freezerItemService.ts` — item CRUD, status transitions, dashboard bucketing, planner-feed query
@@ -169,6 +176,27 @@ When a user types a new raw ingredient text on a Dish:
 - Serving: `GET /api/images/[filename]` → reads from `$IMAGE_DIR`
 - Dish model stores `imageUrl` (external, from import) and `imageLocalPath` (local upload)
 - Display priority: local > external URL
+
+## File Attachments
+
+Supporting files on a Dish (see [`data-model.md`](./data-model.md#dish_files)) are stored the same
+way images are, in their own directory:
+
+- Uploads: `POST /api/dishes/[id]/files` (multipart, field `file`) → saved to `$FILE_DIR/{uuid}.{ext}`
+- Serving: `GET /api/dish-files/[id]/download` → reads the blob, restores `originalName`
+- `FILE_DIR` defaults to `/data/files`; `MAX_UPLOAD_MB` (default 100) caps a single upload
+
+Validation is an **extension allowlist** (`shared/schemas/dishFile.ts`) checked against the
+reported MIME type; a generic `application/octet-stream` falls back to trusting the extension,
+since browsers report it for markdown, HEIC, and Office formats. `readMultipartFormData` buffers
+the whole body in memory, which is what the size cap is really bounding — a `413` beats an OOM.
+
+Only a small inline-safe list (pdf, raster images, `text/plain`) is served with its own
+`Content-Type`. Everything else goes out as `application/octet-stream` with
+`Content-Disposition: attachment`, so a stored html or svg can never execute against this origin.
+All responses carry `X-Content-Type-Options: nosniff`.
+
+Blobs are not covered by the backup task, which copies `app.db` only.
 
 ## Planning Engine
 

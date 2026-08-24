@@ -231,6 +231,12 @@
             <p class="mb-2 text-xs font-medium uppercase tracking-wider text-text-muted">Notes</p>
             <p class="whitespace-pre-wrap text-sm leading-relaxed text-text-muted">{{ dish.notes }}</p>
           </div>
+
+          <!-- Files -->
+          <div>
+            <p class="mb-3 text-xs font-medium uppercase tracking-wider text-text-muted">Files</p>
+            <DishFileList :dish-id="id" />
+          </div>
         </div>
       </div>
     </template>

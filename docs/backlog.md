@@ -453,6 +453,29 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 
 ---
 
+## Milestone 22 — Dish File Attachments (#61) ✅
+*Schema migration required. Upload supporting files (usually a hand-assembled PDF combining two recipes) to a Dish so the household doesn't have to hunt down both sources again.*
+
+- `[x]` Schema: new `dish_files` table (`dishId` FK → `dishes` ON DELETE CASCADE, `storedName`, `originalName`, `mimeType`, `sizeBytes`, `createdAt`) + `idx_dish_files_dish_id`; generate and run migration
+- `[x]` `shared/types/dishFile.ts` — `DishFile` interface
+- `[x]` `shared/schemas/dishFile.ts` — extension allowlist (`ALLOWED_FILE_TYPES`), `isAllowedUpload`, `isInlineSafe`, `FILE_ACCEPT_ATTR`, `DEFAULT_MAX_UPLOAD_MB` (100), `uploadedFileMetaSchema`
+- `[x]` `server/services/fileService.ts` — `$FILE_DIR` disk layer: `saveFile` / `readStoredFile` / `deleteStoredFile` / `getMaxUploadBytes` (`MAX_UPLOAD_MB` override)
+- `[x]` `server/services/dishFileService.ts` — `listFilesForDish`, `addFileToDish` (validate → write → insert; unlink on insert failure), `getDishFile`, `deleteDishFile`, `deleteAllFilesForDish`
+- `[x]` `dishService.deleteDish` calls `deleteAllFilesForDish` first — the FK cascade clears rows but not blobs
+- `[x]` Routes: `GET`/`POST /api/dishes/[id]/files`, `GET /api/dish-files/[id]/download`, `DELETE /api/dish-files/[id]`; 400 bad type, 413 over cap, 404 unknown dish/file
+- `[x]` Download serves only inline-safe types (pdf, raster images, `text/plain`) with their own Content-Type; everything else is `application/octet-stream` + `attachment`, all with `nosniff`
+- `[x]` `app/components/FileDropzone.vue` — generic drag-and-drop + browse input with client-side type/size rejection
+- `[x]` `app/components/DishFileList.vue` — file rows (glyph, name, size, download, remove) + dropzone; invalidates `queryKeys.dishFiles.forDish`
+- `[x]` `queryKeys.dishFiles.forDish(dishId)`
+- `[x]` Files section on `/dishes/[id]`; `DishForm` gains an optional `dishId` prop and renders the list on edit ("Save the dish first to attach files" on create)
+- `[x]` `FILE_DIR` wired into `compose.yaml` (app + test), `Dockerfile`, and the CLAUDE.md env table alongside `MAX_UPLOAD_MB`
+- `[x]` Docs: `data-model.md` (table, index, relationship), `architecture.md` (routes, services, File Attachments section), `spec.md` §1 (Dish Files)
+- `[x]` Tests: `dishFileService` (disk+row round trip, allowlist, MIME mismatch, generic MIME fallback, size cap, empty file, ordering, delete, dish-delete cleanup, refused delete keeps files); `dish-files-api` (upload/list/download headers/delete, 400/404); nuxt component tests for `FileDropzone` rejection paths and `DishFileList` rendering
+
+**Deferred to the parking lot:** renaming an attachment's display label.
+
+---
+
 ## Post-MVP / Parking Lot
 
 *Ideas explicitly deferred until after the core feature ships. No commitment to build.*
@@ -461,6 +484,8 @@ Acceptance is "consistent with each other and the design direction" — not pixe
 - **Per-category approaching-toss-by windows.** Today the window is a single global setting. Per-category (e.g. raw fish at 3 days, ice cream at 30) is more accurate but adds settings UI.
 - **Audit history per freezer.** A small log table to see "how often did we audit this freezer last year."
 - **Freezer item bulk import.** CSV/JSON paste-in for first-time setup.
+- **Rename a dish file attachment.** Files display under the name they were uploaded with; a PDF printed by hand often lands as `document(3).pdf`. A small inline rename on the file row would fix that.
+- **Back up uploaded blobs.** `database:backup` copies `app.db` only — neither `/data/images` nor `/data/files` is included.
 
 ---
 

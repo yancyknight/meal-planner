@@ -175,3 +175,15 @@ export const freezerItems = sqliteTable('freezer_items', {
   index('idx_freezer_items_dish_id').on(table.dishId).where(sql`status = 'active' AND dishId IS NOT NULL`),
   index('idx_freezer_items_standalone').on(table.targetUseDate).where(sql`status = 'active' AND dishId IS NULL AND eligibleForPlanning = 1`),
 ])
+
+export const dishFiles = sqliteTable('dish_files', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  dishId: integer('dishId').notNull().references(() => dishes.id, { onDelete: 'cascade' }),
+  storedName: text('storedName').notNull(),
+  originalName: text('originalName').notNull(),
+  mimeType: text('mimeType').notNull(),
+  sizeBytes: integer('sizeBytes').notNull(),
+  createdAt: text('createdAt').notNull(),
+}, (table) => [
+  index('idx_dish_files_dish_id').on(table.dishId),
+])

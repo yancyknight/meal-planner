@@ -44,6 +44,7 @@ A self-hosted meal planning web app for a two-person household. No authenticatio
 - **Edit** — all fields editable
 - **Archive / Unarchive** — archived dishes are excluded from planning suggestions and hidden in default views; reversible at any time
 - **Delete** — only allowed if the dish has zero Plan Entries. If it has history, the user must archive instead.
+- **Attach files** — upload supporting files (see *Dish Files* below)
 
 ### Dish Library View
 
@@ -58,6 +59,22 @@ A self-hosted meal planning web app for a two-person household. No authenticatio
 - Ingredient list (raw text with canonical ingredient linked)
 - Planning stats: times planned, last planned date
 - Frequency controls (preset dropdown + advanced cooldown/target inputs + exclude toggle — see §5)
+- Files section — attached files with download and remove, plus a drop zone to add more
+
+### Dish Files
+
+Supporting files attached to a Dish. The motivating case: a cook combines the main part of one
+recipe with the sauce from another, assembles a PDF by hand, and attaches it so nobody has to
+hunt down both sources next time.
+
+- Upload by drag-and-drop or file picker, on both the dish detail view and the dish edit form
+- Uploads save immediately rather than on form submit, so the create form shows
+  "Save the dish first to attach files" instead of a drop zone
+- Multiple files per dish; listed newest first with name, size, and a download link
+- Allowed types are an extension allowlist — PDFs, images, plain text/markdown/CSV, and common
+  Office and OpenDocument formats. Anything else is refused.
+- Maximum 100 MB per file (`MAX_UPLOAD_MB`)
+- Removing a file deletes it from disk; deleting a dish deletes all of its files
 
 ### Ingredient Entry on a Dish
 

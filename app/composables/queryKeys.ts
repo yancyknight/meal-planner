@@ -21,6 +21,9 @@ export const queryKeys = {
   dishIngredients: {
     forDish: (dishId: number) => ['dish-ingredients', dishId] as const,
   },
+  dishFiles: {
+    forDish: (dishId: number) => ['dish-files', dishId] as const,
+  },
   tags: {
     all: () => ['tags'] as const,
   },

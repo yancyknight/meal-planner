@@ -24,6 +24,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV DATABASE_URL=/data/app.db
 ENV IMAGE_DIR=/data/images
+ENV FILE_DIR=/data/files
 
 COPY --from=build /app/.output ./.output
 COPY --from=build /app/server/database/migrations ./server/database/migrations
