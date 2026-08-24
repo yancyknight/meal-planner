@@ -8,16 +8,11 @@ Self-hosted deployment using Docker Compose. Runs on any Linux host with Docker 
 
 ## Quick start
 
-1. **Copy the compose file** to your host and create a `.env` file next to it:
+1. **Copy the compose file** to your host:
 
    ```bash
    cp compose.yml /srv/meal-planner/
    cd /srv/meal-planner
-   ```
-
-   Create `.env`:
-   ```env
-   WATCHTOWER_TOKEN=choose-a-long-random-secret
    ```
 
 2. **Pull and start:**
@@ -43,7 +38,7 @@ Two named volumes are created automatically:
 
 | Volume | Mount | Contents |
 |--------|-------|----------|
-| `meal-planner-data` | `/data` | SQLite database + uploaded images |
+| `meal-planner-data` | `/data` | SQLite database, uploaded images, and dish file attachments |
 | `meal-planner-backups` | `/data/backups` | Automated hourly backup files |
 
 Keeping backups in a separate volume means you can wipe and recreate the app without touching backup history, and can snapshot or rsync the two volumes independently.
@@ -52,24 +47,56 @@ Keeping backups in a separate volume means you can wipe and recreate the app wit
 
 ## Updates
 
-### Automatic (Watchtower HTTP API)
-
-Watchtower runs alongside the app and watches for new images on GHCR. To trigger an immediate update after a new release is published:
-
-```bash
-WATCHTOWER_TOKEN=<your-token> ./update.sh
-```
-
-Watchtower will pull the new image, restart the container with zero manual intervention, and clean up the old image.
-
-A daily poll also runs as a fallback — the app will update on its own within 24 hours of a new release even if you never call `update.sh`.
+A new image is published to GHCR when a `v*.*.*` tag is pushed — see `.github/workflows/docker-publish.yml`. Merging to `main` builds the image but does **not** publish it, so cutting a tag is what makes a release deployable.
 
 ### Manual
 
 ```bash
-docker compose pull app
-docker compose up -d app
+./update.sh
 ```
+
+Pulls the latest image and recreates the container if it changed. A no-op when you are already current.
+
+### Scheduled
+
+To pick up releases without thinking about it, run `update.sh` on a systemd timer:
+
+`/etc/systemd/system/meal-planner-update.service`
+```ini
+[Unit]
+Description=Meal Planner image update
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+User=<your-user>
+WorkingDirectory=/srv/meal-planner
+ExecStart=/srv/meal-planner/update.sh
+StandardOutput=append:/var/log/meal-planner-update.log
+StandardError=append:/var/log/meal-planner-update.log
+```
+
+`/etc/systemd/system/meal-planner-update.timer`
+```ini
+[Unit]
+Description=Meal Planner image update check (hourly)
+
+[Timer]
+OnCalendar=hourly
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+```bash
+sudo systemctl enable --now meal-planner-update.timer
+systemctl list-timers meal-planner-update.timer
+```
+
+A cron entry works just as well if you prefer it — `0 * * * * /srv/meal-planner/update.sh >> /var/log/meal-planner-update.log 2>&1`.
 
 ---
 
@@ -87,12 +114,14 @@ This spins up a throwaway Alpine container, mounts both volumes, and writes a ti
 
 ### Wiring backup to pre-update
 
-To automatically snapshot before every Watchtower-triggered restart, add `com.centurylinklabs.watchtower.lifecycle.pre-update` label to the app service and point it at a script — or simply call `./backup.sh` before `./update.sh` in your own wrapper:
+To snapshot before every update, call `backup.sh` first — either in a wrapper script that the timer runs, or by hand before a release you want a rollback point for:
 
 ```bash
 #!/usr/bin/env bash
 ./backup.sh && ./update.sh
 ```
+
+Worth doing for any release that carries a schema migration.
 
 ---
 

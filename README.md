@@ -35,6 +35,7 @@ A self-hosted meal planning web app built for household use. Plan your week, man
 - **Calendar** — week, month, and day views. Drag and drop entries between slots. Mark leftovers.
 - **Planning wizard** — 4-step guided session: pick the week, configure each slot, set anchor constraints (pinned tags, wishlist tags, dietary virtual tags), then review a weighted-random draft with per-slot reroll and swap controls.
 - **Suggestion engine** — dishes are ranked by how overdue they are relative to their target interval. Cooldown prevents a dish from appearing too soon after it was last served fresh.
+- **File attachments** — attach a PDF or other supporting file to a dish, for when a meal combines parts of two recipes.
 - **Shopping lists** — generate from a date range; grouped by ingredient with Walmart links; check items off as you shop; auto-cleanup after done.
 - **Backups** — automated hourly SQLite backups with configurable retention, plus a manual pre-deploy backup script.
 - **Responsive** — usable on phones and tablets.
@@ -49,10 +50,7 @@ Requires Docker with Compose.
 # 1. Copy the deploy template
 cp deploy/compose.yml ./compose.yml
 
-# 2. Create a .env with your Watchtower token
-echo 'WATCHTOWER_TOKEN=choose-a-long-random-secret' > .env
-
-# 3. Start
+# 2. Start
 docker compose up -d
 ```
 
@@ -70,6 +68,8 @@ All configuration is via environment variables. The defaults work out of the box
 |---|---|---|
 | `DATABASE_URL` | `/data/app.db` | SQLite file path |
 | `IMAGE_DIR` | `/data/images` | Uploaded dish image directory |
+| `FILE_DIR` | `/data/files` | Dish file attachment directory |
+| `MAX_UPLOAD_MB` | `100` | Per-file upload ceiling for attachments |
 | `BACKUP_DIR` | `/data/backups` | Automated backup output directory |
 
 Backup interval and retention count are configured in the app's Settings page (stored in the database, no restart needed).
