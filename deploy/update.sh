@@ -1,16 +1,12 @@
 #!/usr/bin/env bash
-# Trigger an immediate image update check via the Watchtower HTTP API.
-# Requires WATCHTOWER_TOKEN to be set (same value as in your .env or compose env).
-# Usage: WATCHTOWER_TOKEN=<token> ./update.sh
-#    or: export WATCHTOWER_TOKEN=<token> && ./update.sh
+# Pull the latest meal-planner image and restart the container if it changed.
+# Safe to run manually; also what the systemd timer calls (see README).
 
 set -euo pipefail
 
-: "${WATCHTOWER_TOKEN:?WATCHTOWER_TOKEN must be set}"
+cd "$(dirname "$0")"
 
-echo "Triggering Watchtower update..."
-curl -sf \
-  -H "Authorization: Bearer ${WATCHTOWER_TOKEN}" \
-  http://localhost:8080/v1/update
-
-echo "Update triggered — Watchtower will pull and redeploy if a new image is available."
+echo "[$(date -Iseconds)] Checking for updates..."
+docker compose pull app
+docker compose up -d app
+echo "[$(date -Iseconds)] Done."
